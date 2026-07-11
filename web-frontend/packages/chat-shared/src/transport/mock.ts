@@ -61,6 +61,9 @@ export const mockAuthTransport: AuthTransport = {
       user: {
         username: payload.username,
         displayName: payload.username,
+        realName: payload.username,
+        email: `${payload.username}@example.com`,
+        phone: '138****0000',
         loginAt: Date.now(),
       },
     });

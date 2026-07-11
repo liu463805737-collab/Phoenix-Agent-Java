@@ -49,8 +49,10 @@ async function handleSubmit() {
 <template>
   <div class="login">
     <header class="login__hero">
-      <div class="login__logo">智</div>
-      <div class="login__title">智能体助手</div>
+      <div class="login__logo">
+        <img src="/imgs/logo.png" alt="Phoenix" class="login__logo-img" />
+      </div>
+      <div class="login__title">Phoenix 智能体助手</div>
       <div class="login__slogan">一句话，让数据为你做事</div>
     </header>
 
@@ -109,14 +111,16 @@ async function handleSubmit() {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 64px;
-  height: 64px;
-  font-size: 26px;
-  font-weight: 600;
-  color: #fff;
-  background: linear-gradient(135deg, #4079ff 0%, #2f6bff 60%, #1d4ed8 100%);
+  width: 72px;
+  height: 72px;
+  background: linear-gradient(135deg, #f0f4ff 0%, #e8eeff 100%);
   border-radius: 18px;
-  box-shadow: 0 12px 28px rgb(47 107 255 / 28%);
+  box-shadow: 0 8px 20px rgb(64 121 255 / 20%);
+}
+
+.login__logo-img {
+  width: 48px;
+  height: 48px;
 }
 
 .login__title {

@@ -27,6 +27,18 @@ const router = createRouter({
       meta: { requiresAuth: true, title: '我的' },
     },
     {
+      path: '/me/setting',
+      name: 'me-setting',
+      component: () => import('../views/me/UserSetting.vue'),
+      meta: { requiresAuth: true, title: '个人设置' },
+    },
+    {
+      path: '/about',
+      name: 'about',
+      component: () => import('../views/about/AboutPage.vue'),
+      meta: { requiresAuth: true, title: '关于我们' },
+    },
+    {
       path: '/:pathMatch(.*)*',
       redirect: '/chat',
     },
