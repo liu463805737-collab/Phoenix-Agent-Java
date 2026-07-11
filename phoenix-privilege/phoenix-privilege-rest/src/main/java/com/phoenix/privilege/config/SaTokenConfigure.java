@@ -17,6 +17,9 @@ import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 
+/**
+ * satoken配置
+ */
 @Slf4j
 @Configuration
 public class SaTokenConfigure implements WebFilter {
