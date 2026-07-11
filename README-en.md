@@ -1,5 +1,5 @@
 <div align="center">
-  <p><a href="./README-ch.md">中文</a> | English</p>
+  <p><a href="./README.md">中文</a> | English</p>
   <h1>Phoenix — Enterprise AI Agent Management Platform</h1>
   <p>
     <strong>Enterprise-grade AI Agent Management & Analytics Engine powered by <a href="https://github.com/alibaba/spring-ai-alibaba" target="_blank">Spring AI Alibaba</a> Graph</strong>
