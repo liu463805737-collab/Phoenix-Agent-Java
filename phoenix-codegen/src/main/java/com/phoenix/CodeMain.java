@@ -51,7 +51,6 @@ public class CodeMain {
         columnConfig.setLarge(true);
         columnConfig.setVersion(true);
         globalConfig.setColumnConfig("tb_account", columnConfig);
-
         return globalConfig;
     }
 
