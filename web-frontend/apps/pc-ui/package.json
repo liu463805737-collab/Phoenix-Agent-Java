@@ -1,0 +1,31 @@
+{
+  "name": "@vben/pc-ui",
+  "version": "5.5.2",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "bootstrap": "pnpm install",
+    "dev": "vite --mode development",
+    "build": "vue-tsc --noEmit --skipLibCheck && vite build --mode production",
+    "build:test": "vite build --mode test",
+    "build:prod": "vite build --mode production",
+    "preview": "vite preview",
+    "typecheck": "vue-tsc --noEmit --skipLibCheck"
+  },
+  "imports": {
+    "#/*": "./src/*"
+  },
+  "dependencies": {
+    "@phoenix/chat-shared": "workspace:*",
+    "pinia": "catalog:",
+    "vue": "catalog:",
+    "vue-router": "catalog:"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "catalog:",
+    "@vitejs/plugin-vue-jsx": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vue-tsc": "catalog:"
+  }
+}

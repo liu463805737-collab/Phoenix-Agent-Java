@@ -1,0 +1,15 @@
+{
+  "permissionManagement": "Permission Management",
+  "roleManagement": "Role Management",
+  "accountManagement": "Account Management",
+  "menuManagement": "Menu Management",
+  "permissionValueManagement": "Permission Value",
+  "logManagement": "Log Management",
+  "organizationManagement": "Organization",
+  "companyManagement": "Company",
+  "departmentManagement": "Department",
+  "employeeManagement": "Employee",
+  "platformAccount": "Platform Account",
+  "platformAccountInfo": "Account Management",
+  "platformGroupInfo": "Group Management"
+}

@@ -1,0 +1,9 @@
+{
+  "title": "智能体",
+  "list": "智能体列表",
+  "create": "创建智能体",
+  "edit": "编辑智能体",
+  "run": "运行智能体",
+  "modelConfig": "模型配置",
+  "datasource": "数据源配置"
+}

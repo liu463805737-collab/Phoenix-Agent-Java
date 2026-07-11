@@ -1,0 +1,48 @@
+server:
+  port: 8066
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+spring:
+  output:
+    ansi:
+      enabled: always
+  profiles:
+    active: local
+  banner:
+    location: classpath:phoenix-banner.txt
+  main:
+    web-application-type: reactive
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+mybatis-flex:
+  # Mapper XML 文件位置
+  mapper-locations: classpath*:/mapper/**/*.xml
+  # 别名包扫描路径
+  type-aliases-package: com.phoenix
+  # MyBatis 原生配置（如日志、缓存等）
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    map-underscore-to-camel-case: true
+  # MyBatis-Flex 全局配置
+  global-config:
+    # 逻辑删除配置
+    logic-delete-column: del_flag
+    normal-value-of-logic-delete: 0 # 未删除
+    deleted-value-of-logic-delete: 1 # 已删除
+    # 乐观锁配置
+    version-column: version
+    # 是否打印 Banner
+    print-banner: true
+# 日志配置
+logging:
+  level:
+    com.alibaba.cloud.ai.dataagent.service: debug
+    com.alibaba.cloud.ai.dataagent.workflow.node: debug
+    com.alibaba.cloud.ai.mapper: debug
+    org.springframework.jdbc: debug
+

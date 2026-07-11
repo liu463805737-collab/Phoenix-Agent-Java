@@ -1,0 +1,49 @@
+# Git
+.git/
+.gitignore
+.gitattributes
+.gitmodules
+
+# Maven build output
+**/target/
+**/classes/
+**/generated-sources/
+
+# Node
+**/node_modules/
+**/.pnpm-store/
+**/.turbo/
+**/.cache/
+
+# IDE
+**/.idea/
+**/.vscode/
+**/*.iml
+**/*.ipr
+**/*.iws
+
+# OS
+**/.DS_Store
+**/Thumbs.db
+
+# Logs
+**/logs/
+**/*.log
+
+# Env local overrides (contain secrets)
+**/.env.*.local
+**/.env.local
+
+# Docker (prevent recursive issues)
+docker-compose*.yml
+docker-compose*.yaml
+
+# Temp
+**/tmp/
+**/temp/
+
+# Stylelint cache
+**/.stylelintcache
+
+# ESLint cache
+**/.eslintcache

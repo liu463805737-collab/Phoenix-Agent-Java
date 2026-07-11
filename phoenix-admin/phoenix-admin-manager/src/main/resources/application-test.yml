@@ -1,0 +1,106 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://127.0.0.1:5432/phoenix?stringtype=unspecified&useGeneratedKeys=true
+    username: phoenix
+    password: 123456
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      minimum-idle: 10
+      maximum-pool-size: 50
+      auto-commit: true
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      pool-name: Phoenix-Connection-Pool
+      connection-test-query: SELECT 1
+
+  ai:
+    openai:
+      api-key: xxx
+      base-url: https://api.deepseek.com
+      chat:
+        options:
+          model: deepseek-v4-flash
+          temperature: 0.7
+          max-tokens: 2000
+
+    vectorstore:
+      type: simple
+    phoenix:
+      data-agent:
+        vector-store:
+          table-topk-limit: 10
+          table-similarity-threshold: 0.2
+          default-topk-limit: 8
+          default-similarity-threshold: 0.4
+          enable-hybrid-search: true # 开启混合模式
+        llm-service-type: stream
+        code-executor:
+          # 运行Python代码的环境（生产环境建议使用docker，不建议使用local）
+          code-pool-executor: local
+          # Python执行的最大重试次数
+          python-max-tries-count: 5
+        file:
+          type: local
+          path-prefix: data-agent
+          # 当前目录下不要用点， ./uploads win下拼接完整格式路径会解析不了，比如 data-agent/./uploads win识别不了
+          path: uploads
+          url-prefix: /uploads
+          imageSize: 2097152
+          oss:
+            access-key-id: ${OSS_ACCESS_KEY_ID:}
+            access-key-secret: ${OSS_ACCESS_KEY_SECRET:}
+            endpoint: ${OSS_ENDPOINT:}
+            bucket-name: ${OSS_BUCKET_NAME:}
+            custom-domain: ${OSS_CUSTOM_DOMAIN:}
+        max-sql-retry-count: 10
+        # Langfuse 可观测性配置
+        langfuse:
+          enabled: ${LANGFUSE_ENABLED:false}
+          host: ${LANGFUSE_HOST:}
+          public-key: ${LANGFUSE_PUBLIC_KEY:}
+          secret-key: ${LANGFUSE_SECRET_KEY:}
+  ################################################ Redis配置 ##############################
+  data:
+    redis:
+      database: 8
+      host: 127.0.0.1
+      port: 6379
+      password: 123456
+      timeout: 10s
+      lettuce:
+        pool:
+          max-active: 200
+          max-wait: -1ms
+          max-idle: 10
+          min-idle: 0
+  webflux:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+      enabled: true
+##############日志配置###########
+log:
+  path: ./logs/phoenix/admin
+  level: INFO
+#######################################jetcache config####################################
+jetcache:
+  # 全局配置
+  statIntervalMinutes: 5        # 每5分钟输出缓存统计（INFO日志）
+  areaInCacheName: false        # 缓存 key 是否自动加 area 前缀
+  decodeFilterAllowPatterns:    # 哪些包下面的类可以加入缓存
+    - com.phoenix.
+  # 远程缓存（Redis - Lettuce）
+  remote:
+    default:
+      type: redis.lettuce
+      keyConvertor: fastjson2            # 键序列化
+      valueEncoder: kryo5                # 值编码
+      valueDecoder: kryo5                # 值解码
+      decodeFilterEnabled: false
+      ## 如果是账号密码是：redis://username:password@host:port/db # 如有密码：redis://:pwd@host:port/db
+      uri: redis://:123456@127.0.0.1:6379/8     # redis://username:password@host:port/db
+      poolConfig:
+        minIdle: 5
+        maxIdle: 20
+        maxTotal: 50

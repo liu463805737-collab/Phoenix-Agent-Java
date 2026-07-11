@@ -1,0 +1,9 @@
+{
+  "title": "Agent",
+  "list": "Agent List",
+  "create": "Create Agent",
+  "edit": "Edit Agent",
+  "run": "Run Agent",
+  "modelConfig": "Model Config",
+  "datasource": "Datasource Config"
+}

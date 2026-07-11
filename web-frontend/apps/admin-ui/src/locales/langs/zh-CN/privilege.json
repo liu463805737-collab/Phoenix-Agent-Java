@@ -1,0 +1,15 @@
+{
+  "permissionManagement": "权限管理",
+  "roleManagement": "角色管理",
+  "accountManagement": "账号管理",
+  "menuManagement": "菜单管理",
+  "permissionValueManagement": "权限值管理",
+  "logManagement": "日志管理",
+  "organizationManagement": "组织管理",
+  "companyManagement": "公司管理",
+  "departmentManagement": "部门管理",
+  "employeeManagement": "人员管理",
+  "platformAccount": "前台账号",
+  "platformAccountInfo": "账号管理",
+  "platformGroupInfo": "组管理"
+}

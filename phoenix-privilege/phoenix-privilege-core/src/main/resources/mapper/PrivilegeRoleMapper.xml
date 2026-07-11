@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.phoenix.privilege.mapper.PrivilegeRoleMapper">
+
+	<sql id="pageWhere">
+		<where>
+			r.del_flag = 0
+			<if test="dto.name != null and dto.name != ''">
+				AND r.name LIKE CONCAT('%', #{dto.name}, '%')
+			</if>
+			<if test="dto.sn != null and dto.sn != ''">
+				AND r.sn = #{dto.sn}
+			</if>
+			<if test="dto.companyId != null">
+				AND r.company_id = #{dto.companyId}
+			</if>
+			<if test="dto.keyword != null and dto.keyword != ''">
+				AND EXISTS (SELECT 1 FROM tbl_privilege_user_role ur
+					LEFT JOIN tbl_privilege_user u ON u.id::text = ur.user_id
+					WHERE ur.role_id = r.id AND ur.del_flag = 0 AND u.del_flag = 0
+					AND (u.code LIKE CONCAT('%', #{dto.keyword}, '%')
+					     OR u.username LIKE CONCAT('%', #{dto.keyword}, '%')
+					     OR u.real_name LIKE CONCAT('%', #{dto.keyword}, '%')))
+			</if>
+		</where>
+	</sql>
+
+	<select id="selectPageByQuery" resultType="com.phoenix.privilege.entity.PrivilegeRole">
+		SELECT r.*, c.cname AS company_name, d.name AS dept_name
+		FROM tbl_privilege_role r
+		LEFT JOIN tbl_privilege_company c ON c.id = r.company_id
+		LEFT JOIN tbl_privilege_department d ON d.id = r.dept_id
+		<include refid="pageWhere"/>
+		ORDER BY r.create_time DESC
+		LIMIT #{limit} OFFSET #{offset}
+	</select>
+
+	<select id="countPageByQuery" resultType="long">
+		SELECT COUNT(*)
+		FROM tbl_privilege_role r
+		LEFT JOIN tbl_privilege_company c ON c.id = r.company_id
+		LEFT JOIN tbl_privilege_department d ON d.id = r.dept_id
+		<include refid="pageWhere"/>
+	</select>
+
+</mapper>

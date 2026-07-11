@@ -1,0 +1,182 @@
+<!--
+ * Copyright 2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+-->
+<template>
+  <div class="base-layout">
+    <!-- 现代化头部导航 -->
+    <header class="page-header">
+      <div class="header-content">
+        <div class="brand-section">
+          <div class="brand-logo">
+            <!--            <i class="bi bi-robot"></i>-->
+            <img alt="" src="/logo.png" class="logo-img" />
+            <span class="brand-text">Phoenix AI</span>
+          </div>
+          <nav class="header-nav">
+            <div
+              class="nav-item"
+              :class="{ active: isAgentPage() }"
+              @click="goToAgentList"
+            >
+              <i class="bi bi-grid-3x3-gap"></i>
+              <span>智能体列表</span>
+            </div>
+            <div
+              class="nav-item"
+              :class="{ active: isModelConfigPage() }"
+              @click="goToModelConfig"
+            >
+              <i class="bi bi-gear"></i>
+              <span>模型配置</span>
+            </div>
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <!-- 页面内容区域 -->
+    <main class="page-content">
+      <slot></slot>
+    </main>
+  </div>
+</template>
+
+<script>
+import { useRouter } from 'vue-router';
+
+export default {
+  name: 'BaseLayout',
+  setup() {
+    const router = useRouter();
+
+    // 导航方法
+    const goToAgentList = () => {
+      router.push('/agents');
+    };
+
+    const goToModelConfig = () => {
+      router.push('/model-config');
+    };
+
+    const isAgentPage = () => {
+      return (
+        router.currentRoute.value.name === 'AgentList' ||
+        router.currentRoute.value.name === 'AgentDetail' ||
+        router.currentRoute.value.name === 'AgentCreate' ||
+        router.currentRoute.value.name === 'AgentRun'
+      );
+    };
+
+    const isModelConfigPage = () => {
+      return router.currentRoute.value.name === 'ModelConfig';
+    };
+
+    return {
+      goToAgentList,
+      goToModelConfig,
+      isAgentPage,
+      isModelConfigPage,
+    };
+  },
+};
+</script>
+
+<style scoped>
+.base-layout {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.page-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: white;
+  border-bottom: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 10%);
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 4rem;
+  padding: 0 1.5rem;
+}
+
+.brand-section {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+.brand-logo {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.brand-logo i {
+  font-size: 1.5rem;
+  color: #3b82f6;
+}
+
+.brand-logo .logo-img {
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+}
+
+.header-nav {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.nav-item {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.nav-item:hover {
+  color: #334155;
+  background: #f1f5f9;
+}
+
+.nav-item.active {
+  color: #0369a1;
+  background: #e0f2fe;
+}
+
+.nav-item i {
+  font-size: 1rem;
+}
+
+.page-content {
+  flex: 1;
+  padding: 0;
+}
+</style>

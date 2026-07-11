@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.phoenix.privilege.mapper.PrivilegeUserMapper">
+
+	<sql id="pageWhere">
+		<where>
+			u.del_flag = 0
+			<if test="dto.username != null and dto.username != ''">
+				AND u.username LIKE CONCAT('%', #{dto.username}, '%')
+			</if>
+			<if test="dto.realName != null and dto.realName != ''">
+				AND u.real_name LIKE CONCAT('%', #{dto.realName}, '%')
+			</if>
+			<if test="dto.mobile != null and dto.mobile != ''">
+				AND u.mobile LIKE CONCAT('%', #{dto.mobile}, '%')
+			</if>
+			<if test="dto.code != null and dto.code != ''">
+				AND u.code = #{dto.code}
+			</if>
+			<if test="dto.companyId != null">
+				AND u.company_id = #{dto.companyId}
+			</if>
+			<if test="dto.deptId != null">
+				AND u.dept_id = #{dto.deptId}
+			</if>
+			<if test="dto.userType != null">
+				AND u.user_type = #{dto.userType}
+			</if>
+			<if test="dto.keyword != null and dto.keyword != ''">
+				AND (u.code LIKE CONCAT('%', #{dto.keyword}, '%')
+				     OR u.username LIKE CONCAT('%', #{dto.keyword}, '%')
+				     OR u.real_name LIKE CONCAT('%', #{dto.keyword}, '%'))
+			</if>
+		</where>
+	</sql>
+
+	<select id="selectPageByQuery" resultType="com.phoenix.privilege.entity.PrivilegeUser">
+		SELECT u.*, c.cname AS companyName, d.name AS deptName
+		FROM tbl_privilege_user u
+		LEFT JOIN tbl_privilege_company c ON c.id = u.company_id
+		LEFT JOIN tbl_privilege_department d ON d.id = u.dept_id
+		<include refid="pageWhere"/>
+		ORDER BY u.create_time DESC
+		LIMIT #{limit} OFFSET #{offset}
+	</select>
+
+	<select id="countPageByQuery" resultType="long">
+		SELECT COUNT(*)
+		FROM tbl_privilege_user u
+		LEFT JOIN tbl_privilege_company c ON c.id = u.company_id
+		LEFT JOIN tbl_privilege_department d ON d.id = u.dept_id
+		<include refid="pageWhere"/>
+	</select>
+
+</mapper>

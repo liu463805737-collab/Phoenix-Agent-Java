@@ -1,0 +1,75 @@
+:root {
+  // 主题色（保留原蓝色系）
+  --m-brand-primary: #2f6bff;
+  --m-brand-primary-soft: #eaf1ff;
+  --m-brand-primary-strong: #1d4ed8;
+
+  // 背景层级
+  --m-bg: #f7f7f8;
+  --m-bg-elevated: #fff;
+  --m-panel: #fff;
+
+  // 边线
+  --m-border: #e5e5ea;
+  --m-border-soft: #efeff3;
+
+  // 文本层级
+  --m-text-primary: #0d0d0d;
+  --m-text-regular: #2b2b2f;
+  --m-text-soft: #6e6e75;
+  --m-text-muted: #9a9aa1;
+
+  // 消息气泡：用户用品牌主色胶囊，助手不带背景
+  --m-bubble-user-bg: var(--m-brand-primary);
+  --m-bubble-user-fg: #fff;
+  --m-bubble-bot-fg: var(--m-text-primary);
+
+  // 状态
+  --m-danger: #b42318;
+  --m-safe-top: env(safe-area-inset-top, 0px);
+  --m-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --m-navbar-h: 48px;
+  --m-radius-bubble: 18px;
+  --m-radius-input: 24px;
+
+  // Vant 主色覆盖
+  --van-primary-color: var(--m-brand-primary);
+  --van-nav-bar-background: var(--m-bg);
+  --van-nav-bar-title-text-color: var(--m-text-primary);
+  --van-nav-bar-icon-color: var(--m-text-primary);
+  --van-nav-bar-border-color: transparent;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  overscroll-behavior-y: none;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei',
+    'Segoe UI', Roboto, sans-serif;
+  color: var(--m-text-primary);
+  background: var(--m-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button {
+  font-family: inherit;
+}
+
+input,
+textarea {
+  font-family: inherit;
+  font-size: 16px;
+}

@@ -1,0 +1,78 @@
+package com.phoenix.data.service.semantic;
+
+import com.phoenix.data.dto.schema.SemanticModelImportItem;
+import com.alibaba.excel.EasyExcel;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
+
+/**
+ * Excel解析服务
+ */
+@Service
+@Slf4j
+@Transactional(rollbackFor = Exception.class)
+public class SemanticModelExcelService {
+
+	/**
+	 * 解析Excel文件（从 InputStream）
+	 */
+	public List<SemanticModelImportItem> parseExcel(InputStream inputStream, String filename) throws IOException {
+		log.info("开始解析Excel文件: {}", filename);
+
+		try {
+			// 使用 EasyExcel 同步读取，自动根据 @ExcelProperty 注解映射列
+			List<SemanticModelImportItem> items = EasyExcel.read(inputStream)
+				.head(SemanticModelImportItem.class)
+				.sheet()
+				.doReadSync();
+
+			if (items == null || items.isEmpty()) {
+				throw new IllegalArgumentException("Excel文件中没有有效数据");
+			}
+
+			// 验证必填字段
+			for (int i = 0; i < items.size(); i++) {
+				SemanticModelImportItem item = items.get(i);
+				int rowNum = i + 2;
+
+				if (item.getTableName() == null || item.getTableName().trim().isEmpty()) {
+					throw new IllegalArgumentException("第" + rowNum + "行：表名不能为空");
+				}
+				if (item.getColumnName() == null || item.getColumnName().trim().isEmpty()) {
+					throw new IllegalArgumentException("第" + rowNum + "行：字段名不能为空");
+				}
+				if (item.getBusinessName() == null || item.getBusinessName().trim().isEmpty()) {
+					throw new IllegalArgumentException("第" + rowNum + "行：业务名称不能为空");
+				}
+				if (item.getDataType() == null || item.getDataType().trim().isEmpty()) {
+					throw new IllegalArgumentException("第" + rowNum + "行：数据类型不能为空");
+				}
+
+				// 清理字段值
+				item.setTableName(item.getTableName().trim());
+				item.setColumnName(item.getColumnName().trim());
+				item.setBusinessName(item.getBusinessName().trim());
+				item.setDataType(item.getDataType().trim());
+				if (item.getSynonyms() != null) {
+					item.setSynonyms(item.getSynonyms().trim());
+				}
+				if (item.getBusinessDescription() != null) {
+					item.setBusinessDescription(item.getBusinessDescription().trim());
+				}
+			}
+
+			log.info("成功解析Excel文件，共{}条记录", items.size());
+			return items;
+		}
+		catch (Exception e) {
+			log.error("解析Excel文件失败: {}", filename, e);
+			throw new IOException("解析Excel文件失败: " + e.getMessage(), e);
+		}
+	}
+
+}

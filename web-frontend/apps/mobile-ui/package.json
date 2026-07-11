@@ -1,0 +1,39 @@
+{
+  "name": "@vben/mobile-ui",
+  "version": "5.5.2",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "bootstrap": "pnpm install",
+    "dev": "vite --mode development",
+    "build": "vue-tsc --noEmit --skipLibCheck && vite build --mode production",
+    "build:test": "vite build --mode test",
+    "build:prod": "vite build --mode production",
+    "preview": "vite preview",
+    "typecheck": "vue-tsc --noEmit --skipLibCheck"
+  },
+  "imports": {
+    "#/*": "./src/*"
+  },
+  "dependencies": {
+    "@phoenix/chat-shared": "workspace:*",
+    "dompurify": "3.2.4",
+    "highlight.js": "11.11.1",
+    "marked": "12.0.2",
+    "pinia": "catalog:",
+    "vant": "^4.9.14",
+    "vue": "catalog:",
+    "vue-router": "catalog:"
+  },
+  "devDependencies": {
+    "@types/dompurify": "^3.2.0",
+    "@vant/auto-import-resolver": "^1.2.1",
+    "@vitejs/plugin-vue": "catalog:",
+    "@vitejs/plugin-vue-jsx": "catalog:",
+    "postcss-px-to-viewport-8-plugin": "^1.2.5",
+    "typescript": "catalog:",
+    "unplugin-vue-components": "^0.27.5",
+    "vite": "catalog:",
+    "vue-tsc": "catalog:"
+  }
+}

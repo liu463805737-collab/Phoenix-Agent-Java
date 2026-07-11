@@ -1,0 +1,49 @@
+HELP.md
+target/
+/**/node_modules/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+!**/out/
+/uploads/
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+.mvn/
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+#/dist/
+!**/form-render/dist/
+!**/form-designer/dist/
+/nbdist/
+/.nb-gradle/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
+
+application-local.yml
+clean-deploy-all-local.bat
+### LOG ###
+/logPath_IS_UNDEFINED
+/logs
+/Permanent_Data
+*.log
+*.marker
+.flattened-pom.xml
+/phoenix-agent/.flattened-pom.xml
+.DS_Store

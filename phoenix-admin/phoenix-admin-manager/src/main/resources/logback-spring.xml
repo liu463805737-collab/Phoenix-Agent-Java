@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<property name="APP_NAME" value="app-admin"/>
+	<include resource="org/springframework/boot/logging/logback/base.xml"/>
+	<springProperty scope="context" name="logLevel" source="log.level"/>
+	<springProperty scope="context" name="logPath" source="log.path"/>
+	<appender name="ROLLING" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<file>${logPath}/phoenix.log</file>
+		<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+			<fileNamePattern>${logPath}/back/%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+			<maxFileSize>500MB</maxFileSize>
+			<maxHistory>24</maxHistory>
+			<totalSizeCap>12GB</totalSizeCap>
+		</rollingPolicy>
+		<encoder>
+			<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%.15thread] %logger{36}:%X{sysUser} - %.-4096msg%n</pattern>
+			<charset>UTF-8</charset>
+		</encoder>
+	</appender>
+	<appender name="ERROR-LOG" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+			<level>ERROR</level>
+		</filter>
+		<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+			<fileNamePattern>${logPath}/back/error-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+			<maxFileSize>500MB</maxFileSize>
+			<maxHistory>24</maxHistory>
+			<totalSizeCap>12GB</totalSizeCap>
+		</rollingPolicy>
+		<encoder>
+			<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%.15thread] %logger{36}:%X{sysUser} - %.-4096msg%n</pattern>
+			<charset>UTF-8</charset>
+		</encoder>
+	</appender>
+	<appender name="ASYNC-INFO" class="ch.qos.logback.classic.AsyncAppender">
+		<queueSize>512</queueSize>
+		<appender-ref ref="ROLLING"/>
+	</appender>
+	<appender name="ASYNC-ERROR" class="ch.qos.logback.classic.AsyncAppender">
+		<queueSize>256</queueSize>
+		<appender-ref ref="ERROR-LOG"/>
+	</appender>
+	<root level="${logLevel:-INFO}">
+		<appender-ref ref="ASYNC-INFO"/>
+		<appender-ref ref="ASYNC-ERROR"/>
+	</root>
+</configuration>
