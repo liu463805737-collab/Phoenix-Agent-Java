@@ -163,9 +163,9 @@ Phoenix 前端基于 **Vben 5**（Vue 3 + TypeScript + Vite）构建，实现前
 
 ```bash
 # 1. 克隆项目
-git clone https://github.com/liu463805737-collab/phoenix.git
+git clone https://github.com/liu463805737-collab/Phoenix-Agent-Java.git
 或
-git clone https://gitee.com/lwj/phoenix.git
+git clone https://gitee.com/lwj/phoenix-agent-java.git
 cd phoenix
 
 # 2. 导入数据库（PostgreSQL）
