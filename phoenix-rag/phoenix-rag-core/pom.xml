@@ -32,6 +32,14 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-jsoup-document-reader</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-rag</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-vector-store</artifactId>
             <version>${spring-ai.version}</version>
         </dependency>
