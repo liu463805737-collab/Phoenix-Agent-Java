@@ -253,7 +253,8 @@ mvn spring-boot:run -pl phoenix-admin/phoenix-admin-manager
 感兴趣的朋友欢迎加微信一起交流探讨～
 
 <div align="left">
-  <img src="img/weixin.png" alt="微信" width="300">
+  <img src="img/weixin.png" alt="微信" width="300" height="300">
+  <img src="img/qq.png" alt="微信" width="300" height="300">
 </div>
 
 ## 📄 许可证
