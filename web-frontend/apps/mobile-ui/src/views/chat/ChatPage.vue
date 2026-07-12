@@ -27,6 +27,7 @@ const { sessions } = storeToRefs(chat);
 const scrollRef = ref<HTMLElement | null>(null);
 const drawerOpen = ref(false);
 const pickerOpen = ref(false);
+const avatarError = ref(false);
 const bubbleMenu = useActionMenu();
 const longPressIndex = ref<number>(-1);
 
@@ -54,6 +55,7 @@ watch(
   () => void scrollToBottom(),
 );
 watch(activeSessionId, () => void scrollToBottom());
+watch(currentAgent, () => { avatarError.value = false; });
 
 onMounted(async () => {
   if (agentStore.agents.length === 0) await agentStore.loadAll();
@@ -222,10 +224,11 @@ async function handleRegenerate(idx: number) {
       <div v-if="!hasMessages" class="empty-state">
         <div class="empty-state__avatar">
           <img
-            v-if="currentAgent?.avatar && (currentAgent.avatar.startsWith('/') || currentAgent.avatar.startsWith('http'))"
+            v-if="currentAgent?.avatar && !avatarError && (currentAgent.avatar.startsWith('/') || currentAgent.avatar.startsWith('http'))"
             :src="currentAgent.avatar"
             :alt="currentAgent.name || '智能体'"
             class="empty-state__avatar-img"
+            @error="avatarError = true"
           />
           <span v-else>{{ currentAgent?.name ? [...currentAgent.name][0] : '智' }}</span>
         </div>
@@ -253,7 +256,7 @@ async function handleRegenerate(idx: number) {
           :role="msg.role"
           :content="msg.content"
           :message-type="msg.messageType ?? 'text'"
-          :bot-avatar="currentAgent?.avatar ?? '智'"
+          :bot-avatar="currentAgent?.avatar || '智'"
           @longpress="handleLongPress(idx)"
           @copy="handleCopy(msg.content)"
           @regenerate="handleRegenerate(idx)"
@@ -261,7 +264,7 @@ async function handleRegenerate(idx: number) {
         <ChatBubble
           v-if="sending"
           role="assistant"
-          :bot-avatar="currentAgent?.avatar ?? '智'"
+          :bot-avatar="currentAgent?.avatar || '智'"
           typing
         />
       </div>

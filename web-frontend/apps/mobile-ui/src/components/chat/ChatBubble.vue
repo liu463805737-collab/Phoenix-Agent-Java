@@ -26,6 +26,13 @@ const emit = defineEmits<{
   (e: 'regenerate'): void;
 }>();
 
+const imgError = ref(false);
+
+const botAvatar = computed(() => {
+  const a = props.botAvatar;
+  return a && !imgError.value && (a.startsWith('/') || a.startsWith('http'));
+});
+
 const isHtml = computed(
   () =>
     props.role === 'assistant' &&
@@ -59,12 +66,13 @@ function clearTimer() {
     <template v-if="props.role === 'assistant'">
       <div class="bubble__avatar">
         <img
-          v-if="props.botAvatar && (props.botAvatar.startsWith('/') || props.botAvatar.startsWith('http'))"
+          v-if="botAvatar"
           :src="props.botAvatar"
           :alt="props.botName || '助手'"
           class="bubble__avatar-img"
+          @error="imgError = true"
         />
-        <span v-else>{{ props.botName ? [...props.botName][0] : props.botAvatar }}</span>
+        <span v-else>{{ props.botName ? [...props.botName][0] : '智' }}</span>
       </div>
       <div class="bubble__main">
         <div
