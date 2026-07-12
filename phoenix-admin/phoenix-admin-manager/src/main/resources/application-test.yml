@@ -66,7 +66,7 @@ spring:
       database: 8
       host: 127.0.0.1
       port: 6379
-      password: 123456
+#      password: 123456
       timeout: 10s
       lettuce:
         pool:
@@ -99,7 +99,7 @@ jetcache:
       valueDecoder: kryo5                # 值解码
       decodeFilterEnabled: false
       ## 如果是账号密码是：redis://username:password@host:port/db # 如有密码：redis://:pwd@host:port/db
-      uri: redis://:123456@127.0.0.1:6379/8     # redis://username:password@host:port/db
+      uri: redis://:@127.0.0.1:6379/8     # redis://username:password@host:port/db
       poolConfig:
         minIdle: 5
         maxIdle: 20
