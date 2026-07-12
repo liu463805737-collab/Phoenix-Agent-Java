@@ -69,10 +69,16 @@
         <dingtalk.version>2.2.44</dingtalk.version>
         <larksuite.version>2.7.3</larksuite.version>
         <jetcache.version>2.8.0.RC</jetcache.version>
+        <agentscope.version>2.0.0</agentscope.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>io.agentscope</groupId>
+                <artifactId>agentscope-harness</artifactId>
+                <version>${agentscope.version}</version>
+            </dependency>
             <dependency>
                 <groupId>com.alicp.jetcache</groupId>
                 <artifactId>jetcache-starter-redis-lettuce</artifactId>
