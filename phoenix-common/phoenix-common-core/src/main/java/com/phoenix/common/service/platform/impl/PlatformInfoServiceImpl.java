@@ -10,9 +10,15 @@ import com.phoenix.common.service.platform.PlatformInfoService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @Transactional(rollbackFor = Exception.class)
 public class PlatformInfoServiceImpl extends ServiceImpl<PlatformInfoMapper, PlatformInfo> implements PlatformInfoService {
+    @Override
+    public List<PlatformInfo> queryList(PlatformInfo query) {
+        return QueryChain.of(this.mapper).like(PlatformInfo::getName, query.getName(),StrUtil.isNotBlank(query.getName())).orderBy(PlatformInfo::getCreateTime,false).list();
+    }
 
     @Override
     public Page<PlatformInfo> page(Page<PlatformInfo> page, PlatformInfo query) {
