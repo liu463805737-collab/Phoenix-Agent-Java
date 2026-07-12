@@ -16,7 +16,7 @@ public class PlatformInfo extends BaseModel {
     @Id(keyType = KeyType.Generator, value = KeyGenerators.snowFlakeId)
     private String id;
     /**
-     * @see com.phoenix.platform.enm.PlatformTypeEnm
+     * @see com.phoenix.common.enm.PlatformTypeEnm
      */
     private String type;
     private String name;
