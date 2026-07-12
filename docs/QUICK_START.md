@@ -27,6 +27,9 @@
 psql -U your_user -d your_db < sql/all_schema.sql
 ```
 
+## 账号密码
+### 前台：lwj 123456  后端管理：liufang 123456
+
 ## ⚙️ 2. 配置
 
 Phoenix 项目**没有** `application.yml` / `application.properties` 文件，所有配置通过环境变量或 `@ConfigurationProperties` 默认值提供。
