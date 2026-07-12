@@ -307,11 +307,11 @@ onMounted(() => {
 
 <template>
   <Page>
-    <div class="page-container">
-      <ElCard class="table-section" :body-style="{ padding: '20px' }">
+    <div class="bg-background-deep">
+      <ElCard class="rounded-xl" :body-style="{ padding: '20px' }">
         <FilterForm />
 
-        <div class="table-toolbar">
+        <div class="flex gap-3 mb-4">
           <ElButton type="primary" @click="showAddDialog">
             <ElIcon><IconifyIcon icon="lucide:plus" /></ElIcon>
             新增
@@ -365,7 +365,7 @@ onMounted(() => {
           </ElTableColumn>
         </ElTable>
 
-        <div class="pagination-wrapper">
+        <div class="flex justify-end mt-4">
           <ElPagination
             v-model:current-page="page"
             v-model:page-size="pageSize"
@@ -413,14 +413,14 @@ onMounted(() => {
         width="1000px"
         :close-on-click-modal="false"
       >
-        <div v-loading="aclLoading" class="acl-body">
-          <div v-if="aclTreeData.length === 0 && !aclLoading" class="acl-empty">
+        <div v-loading="aclLoading" class="acl-body max-h-[600px] overflow-y-auto">
+          <div v-if="aclTreeData.length === 0 && !aclLoading" class="py-8 text-center text-gray-400">
             暂无菜单数据
           </div>
-          <div v-else class="acl-tree-wrapper">
-            <div class="acl-header">
-              <div class="acl-header-col-name">菜单名称</div>
-              <div class="acl-header-col-checkall">
+          <div v-else>
+            <div class="grid grid-cols-[220px_100px_1fr] items-center px-2 py-2 pl-6 mb-1 text-xs font-semibold text-gray-500 border-b border-gray-200">
+              <div>菜单名称</div>
+              <div class="text-left">
                 <ElCheckbox
                   :model-value="headerAllSelected"
                   :indeterminate="headerIndeterminate"
@@ -429,7 +429,7 @@ onMounted(() => {
                   {{ headerAllSelected ? '取消全选' : '全选' }}
                 </ElCheckbox>
               </div>
-              <div class="acl-header-col-pvalues">操作权限</div>
+              <div>操作权限</div>
             </div>
             <ElTree
               ref="treeRef"
@@ -439,16 +439,16 @@ onMounted(() => {
               :default-expand-all="true"
             >
             <template #default="{ data }: { data: AclTreeNode }">
-              <div class="acl-node">
-                <div class="acl-node-col-name" :style="{ paddingLeft: ((data as any)._level || 0) * 24 + 'px' }">
-                  <ElIcon class="acl-node-icon">
+              <div class="grid grid-cols-[220px_100px_1fr] gap-2 items-center w-full min-w-0">
+                <div class="flex gap-2 items-center min-w-0" :style="{ paddingLeft: ((data as any)._level || 0) * 24 + 'px' }">
+                  <ElIcon class="flex shrink-0 items-center text-base">
                     <IconifyIcon
                       :icon="data.image || (data.type === '0' ? 'lucide:folder' : 'lucide:file-text')"
                     />
                   </ElIcon>
-                  <span class="acl-node-name">{{ data.name }}</span>
+                  <span class="truncate text-sm font-medium">{{ data.name }}</span>
                 </div>
-                <div v-if="data.pvalues?.length" class="acl-node-col-checkall">
+                <div v-if="data.pvalues?.length" class="flex items-center text-xs">
                   <ElCheckbox
                     :model-value="data.pvalues.every((pv) => pv.enabled)"
                     :indeterminate="
@@ -476,8 +476,8 @@ onMounted(() => {
                     全选
                   </ElCheckbox>
                 </div>
-                <div v-else class="acl-node-col-checkall" />
-                <div v-if="data.pvalues?.length" class="acl-node-col-pvalues">
+                <div v-else class="flex items-center text-xs" />
+                <div v-if="data.pvalues?.length" class="flex flex-wrap gap-1 gap-x-3 items-center">
                   <ElCheckbox
                     v-for="pv in data.pvalues"
                     :key="pv.pvalueId"
@@ -487,7 +487,7 @@ onMounted(() => {
                       pv.enabled = !!val;
                       handlePvalueChange(data);
                     }"
-                    class="acl-node-pvalue"
+                    class="text-xs"
                   >
                     {{ pv.pvalueName || pv.name }}
                   </ElCheckbox>
@@ -507,53 +507,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.page-container {
-  @apply bg-background-deep;
-}
-
-.table-section {
-  border-radius: 12px;
-}
-
-.table-toolbar {
-  display: flex;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-}
-
-.pagination-wrapper {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 1rem;
-}
-
-.acl-body {
-  max-height: 600px;
-  overflow-y: auto;
-}
-
-.acl-header {
-  display: grid;
-  grid-template-columns: 220px 100px 1fr;
-  align-items: center;
-  padding: 0.5rem 0.5rem 0.5rem 1.5rem;
-  margin-bottom: 0.25rem;
-  font-size: 13px;
-  font-weight: 600;
-  color: #6b7280;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.acl-header-col-checkall {
-  text-align: left;
-}
-
-.acl-empty {
-  padding: 2rem 0;
-  color: #999;
-  text-align: center;
-}
-
 .acl-body :deep(.el-tree-node) {
   padding-left: 0 !important;
 }
@@ -562,53 +515,5 @@ onMounted(() => {
   height: auto;
   padding: 0.35rem 0.5rem;
   padding-left: 8px !important;
-}
-
-.acl-node {
-  display: grid;
-  grid-template-columns: 220px 100px 1fr;
-  gap: 0.5rem;
-  align-items: center;
-  width: 100%;
-  min-width: 0;
-}
-
-.acl-node-col-name {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  min-width: 0;
-}
-
-.acl-node-icon {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  font-size: 16px;
-}
-
-.acl-node-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 14px;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-.acl-node-col-checkall {
-  display: flex;
-  align-items: center;
-  font-size: 13px;
-}
-
-.acl-node-col-pvalues {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 0.75rem;
-  align-items: center;
-}
-
-.acl-node-pvalue {
-  font-size: 13px;
 }
 </style>
