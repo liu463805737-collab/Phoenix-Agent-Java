@@ -6,7 +6,7 @@ import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryChain;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
-import com.phoenix.privilege.dto.PrivilegeRoleDTO;
+import com.phoenix.privilege.dto.query.PrivilegeRoleQuery;
 import com.phoenix.privilege.entity.PrivilegeAcl;
 import com.phoenix.privilege.entity.PrivilegeModule;
 import com.phoenix.privilege.entity.PrivilegePvalue;
@@ -19,7 +19,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -106,14 +105,14 @@ public class PrivilegeRoleServiceImpl extends ServiceImpl<PrivilegeRoleMapper, P
 	}
 
 	@Override
-	public Page<PrivilegeRoleVO> pageByQuery(Page<PrivilegeRoleVO> page, PrivilegeRoleDTO dto) {
+	public Page<PrivilegeRoleVO> pageByQuery(PrivilegeRoleQuery query) {
 		QueryWrapper qw = QueryWrapper.create()
 			.select("tbl_privilege_role.*")
-			.like(PrivilegeRole::getName, dto.getName(), StrUtil.isNotBlank(dto.getName()))
-			.eq(PrivilegeRole::getSn, dto.getSn(), StrUtil.isNotBlank(dto.getSn()))
-			.eq(PrivilegeRole::getCompanyId, dto.getCompanyId(), dto.getCompanyId() != null);
+			.like(PrivilegeRole::getName, query.getName(), StrUtil.isNotBlank(query.getName()))
+			.eq(PrivilegeRole::getSn, query.getSn(), StrUtil.isNotBlank(query.getSn()))
+			.eq(PrivilegeRole::getCompanyId, query.getCompanyId(), query.getCompanyId() != null);
 		qw.orderBy(PrivilegeRole::getCreateTime, false);
-		Page<PrivilegeRole> entityPage = getMapper().paginate(page.getPageNumber(), page.getPageSize(), qw);
+		Page<PrivilegeRole> entityPage = getMapper().paginate(query.getPage(), query.getSize(), qw);
 		Page<PrivilegeRoleVO> voPage = new Page<>(entityPage.getPageNumber(), entityPage.getPageSize(),
 				entityPage.getTotalRow());
 		voPage.setRecords(

@@ -4,6 +4,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import com.mybatisflex.core.paginate.Page;
 import com.phoenix.privilege.dto.PrivilegeRoleDTO;
+import com.phoenix.privilege.dto.query.PrivilegeRoleQuery;
 import com.phoenix.privilege.service.IPrivilegeRoleService;
 import com.phoenix.privilege.vo.PrivilegeRoleVO;
 import com.phoenix.privilege.vo.RoleAclVO;
@@ -20,10 +21,9 @@ public class PrivilegeRoleController {
 
 	private final IPrivilegeRoleService privilegeRoleService;
 
-	@GetMapping("/page")
-	public ReturnVo<Page<PrivilegeRoleVO>> page(@RequestParam(defaultValue = "1") long pageNumber,
-			@RequestParam(defaultValue = "10") long pageSize, PrivilegeRoleDTO dto) {
-		return ReturnVo.ok(privilegeRoleService.pageByQuery(new Page<>(pageNumber, pageSize), dto));
+	@PostMapping("/page")
+	public ReturnVo<Page<PrivilegeRoleVO>> page(@RequestBody PrivilegeRoleQuery query) {
+		return ReturnVo.ok(privilegeRoleService.pageByQuery(query));
 	}
 
 	@GetMapping("/{id}")

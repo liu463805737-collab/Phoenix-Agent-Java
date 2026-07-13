@@ -39,15 +39,13 @@ export interface AclTreeNode {
 }
 
 export async function getRolePageApi(
-  page: number,
-  size: number,
   params?: Record<string, any>,
 ) {
-  return requestClient.get<PageResult<PrivilegeRole>>(
+  return requestClient.post<PageResult<PrivilegeRole>>(
     '/api/privilege/role/page',
+      params,
     {
-      params: { page, size, ...params },
-      responseReturn: 'body',
+      responseReturn: 'data',
     },
   );
 }

@@ -1,11 +1,19 @@
 <script lang="ts" setup>
 import type { FormInstance, FormRules } from 'element-plus';
+import type { Recordable } from '@vben/types';
 
 import type { AclPvalueItem, AclRecord, AclTreeNode, PrivilegeRole } from '#/api';
-
+import {useVbenVxeGrid, VbenTableAction} from '#/adapter/vxe-table';
+import type { TableActionProps } from '@vben/common-ui';
+import { useColumns, useSearchFormSchema } from './data';
+import type {VxeGridProps} from '#/adapter/vxe-table';
+import {PerEnum} from "#/enums/perEnum";
+import Form from './form.vue';
+import AssignMenu from './assign-menu.vue';
 import { computed, onMounted, reactive, ref } from 'vue';
+import type {VbenFormProps} from '@vben/common-ui';
 
-import { Page } from '@vben/common-ui';
+import { Page, useVbenModal } from '@vben/common-ui';
 import { IconifyIcon } from '@vben/icons';
 import { useVbenForm } from '#/adapter/form';
 
@@ -36,6 +44,7 @@ import {
   saveModuleAclApi,
   updateRoleApi,
 } from '#/api';
+const PerPrefix = "Role:";
 
 const loading = ref(false);
 const tableData = ref<PrivilegeRole[]>([]);
@@ -46,6 +55,88 @@ const dialogVisible = ref(false);
 const isEditMode = ref(false);
 const submitting = ref(false);
 const formRef = ref<FormInstance>();
+
+const [FormModal, formModalApi] = useVbenModal({
+  connectedComponent: Form,
+  destroyOnClose: true,
+});
+
+const [AssignMenuModal, assignMenuModalApi] = useVbenModal({
+  connectedComponent: AssignMenu,
+  destroyOnClose: true,
+});
+
+const formOptions: VbenFormProps = {
+  showCollapseButton: false,
+  submitOnEnter: true,
+  commonConfig: {
+    labelWidth: 60,
+  },
+  wrapperClass: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4',
+  actionWrapperClass: 'pl-2 !justify-end md:!justify-start',
+  actionPosition: 'left',
+  actionLayout: 'inline',
+  schema: useSearchFormSchema(),
+};
+
+const gridOptions: VxeGridProps = {
+  checkboxConfig: {
+    highlight: true,
+    labelField: 'name',
+  },
+  columns: useColumns(onStatusChange),
+  columnConfig: {resizable: true},
+  height: 'auto',
+  keepSource: true,
+  border: false,
+  stripe: true,
+  showOverflow: false,
+  proxyConfig: {
+    ajax: {
+      query: async ({page}, formValues) => {
+        return await getRolePageApi({
+          page: page.currentPage,
+          size: page.pageSize,
+          ...formValues,
+        });
+      },
+    },
+  },
+};
+
+const [Grid, gridApi] = useVbenVxeGrid({formOptions, gridOptions});
+
+function onCreate() {
+  formModalApi.setData(null).open();
+}
+function onEdit(row: any) {
+  formModalApi.setData(row).open();
+}
+/**
+ * 状态开关即将改变
+ * @param newStatus 期望改变的状态值
+ * @param row 行数据
+ * @returns 返回false则中止改变，返回其他值（undefined、true）则允许改变
+ */
+async function onStatusChange(
+    newStatus: number,
+    row: any,
+) {
+  const status: Recordable<string> = {
+    0: '禁用',
+    1: '启用',
+  };
+  try {
+    await confirm(
+        `你要将${row.name}的状态切换为 【${status[newStatus.toString()]}】 吗？`,
+        `切换状态`,
+    );
+    await updateUser(row.id, { status: newStatus });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 const [FilterForm] = useVbenForm({
   commonConfig: { componentProps: { clearable: true } },
@@ -170,6 +261,10 @@ async function handleDelete(id: string, name: string) {
 }
 
 async function handleAssignMenu(row: PrivilegeRole) {
+
+  assignMenuModalApi.setData().open(row);
+
+  return;
   currentRole.value = row;
   assignDialogVisible.value = true;
   aclLoading.value = true;
@@ -299,15 +394,80 @@ function handleSizeChange(val: number) {
   page.value = 1;
   loadData();
 }
+/**
+ * 刷新表格
+ */
+function refreshGrid() {
+  gridApi.query();
+}
+
+
+function onDelete(row: SystemUserApi.SystemUser) {
+  /*const hideLoading = message.loading({
+    content: '加载中...',
+    duration: 0,
+    key: 'action_process_msg',
+  });*/
+  deleteRoleApi(row.id)
+      .then((res) => {
+        ElMessage.success('删除成功');
+        /*message.success({
+          content: $t('ui.actionMessage.deleteSuccess', [row.name]),
+          key: 'action_process_msg',
+        });*/
+        refreshGrid();
+      })
+      .catch(() => {
+        // hideLoading();
+      });
+}
 
 onMounted(() => {
-  loadData();
+  // loadData();
 });
 </script>
 
 <template>
-  <Page>
-    <div class="bg-background-deep">
+  <Page auto-content-height>
+    <AssignMenuModal @success="refreshGrid" />
+    <FormModal @success="refreshGrid" />
+    <Grid table-title="角色列表">
+      <template #toolbar-tools>
+        <ElButton type="primary" @click="onCreate">新建</ElButton>
+      </template>
+
+      <template #action="{ row }">
+        <VbenTableAction
+            align="center"
+            :actions="[
+                {
+                  text: '分配权限',
+                  icon: 'lucide:edit',
+                  onClick: () => handleAssignMenu(row),
+                },
+                {
+                  text: '编辑',
+                  icon: 'lucide:edit',
+                  onClick: () => onEdit(row),
+                },
+                {
+                  text: '删除',
+                  icon: 'lucide:trash-2',
+                  danger: true,
+                  popConfirm: {
+                    title: `确定要删除【${row.name}】吗？`,
+                    confirm: () => onDelete(row),
+                    okText: '确定',
+                    cancelText: '取消',
+                  },
+                },
+              ]"
+        />
+      </template>
+    </Grid>
+
+
+<!--    <div class="bg-background-deep">
       <ElCard class="rounded-xl" :body-style="{ padding: '20px' }">
         <FilterForm />
 
@@ -502,7 +662,7 @@ onMounted(() => {
           <ElButton type="primary" @click="handleSaveAcl">保存</ElButton>
         </template>
       </ElDialog>
-    </div>
+    </div>-->
   </Page>
 </template>
 

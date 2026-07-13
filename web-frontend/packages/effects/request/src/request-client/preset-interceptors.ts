@@ -21,9 +21,11 @@ export const defaultResponseInterceptor = ({
   return {
     fulfilled: (response) => {
       const { config, data: responseData, status } = response;
-
       if (config.responseReturn === 'raw') {
         return response;
+      }
+      if (config.responseReturn === 'data') {
+        return response.data.data;
       }
 
       if (status >= 200 && status < 400) {

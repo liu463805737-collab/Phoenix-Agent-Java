@@ -97,7 +97,7 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
   client.addResponseInterceptor({
     fulfilled: async (response) => {
       // responseReturn=body 时 response 是响应体本身，responseReturn=raw 时 response.data 是响应体
-      const body = response?.code != null ? response : response?.data;
+      const body = response?.code != null ? response?.data : response;
       if (Number(body?.code) === 401) {
         await doReAuthenticate();
         throw new Error(body?.msg || '用户未登录');
