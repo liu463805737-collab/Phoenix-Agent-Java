@@ -1,23 +1,15 @@
 <script lang="ts" setup>
-import { computed, ref } from 'vue';
+import {computed, ref} from 'vue';
 
-import { useVbenModal } from '@vben/common-ui';
-import {
-  createRoleApi,
-  deleteRoleApi,
-  getAclsByReleaseIdApi,
-  getRoleAclsApi,
-  getRolePageApi,
-  saveAllAclApi,
-  saveModuleAclApi,
-  updateRoleApi,
-} from '#/api';
+import {useVbenModal} from '@vben/common-ui';
+import {getAclsByReleaseIdApi, getRoleAclsApi, saveAllAclApi, saveModuleAclApi,} from '#/api';
+import {IconifyIcon} from '@vben/icons';
 
-import { useVbenForm } from '#/adapter/form';
+import {ElCheckbox, ElIcon, ElMessage, ElTree,} from 'element-plus';
 
-import { useSchema } from './data';
 const aclLoading = ref(false);
 const aclTreeData = ref<any[]>([]);
+const existingAclMap = ref(new Map<string, any>());
 
 const emit = defineEmits(['success']);
 const formData = ref<any>();
@@ -27,48 +19,49 @@ const getTitle = computed(() => {
       : '创建角色';
 });
 
-const [Form, formApi] = useVbenForm({
-  layout: 'vertical',
-  schema: useSchema(),
-  showDefaultActions: false,
-});
-
-function resetForm() {
-  formApi.resetForm();
-  formApi.setValues(formData.value || {});
-}
-
 const [Modal, modalApi] = useVbenModal({
   async onConfirm() {
-    const { valid } = await formApi.validate();
-    if (valid) {
-      modalApi.lock();
-      const data = await formApi.getValues();
-      try {
-        await (formData.value?.id
-            ? updateRoleApi(data)
-            : createRoleApi(data));
-        modalApi.close();
-        emit('success');
-      } finally {
-        modalApi.lock(false);
-      }
-    }
+
   },
-  onOpenChange(isOpen) {
+  async onOpenChange(isOpen) {
     if (isOpen) {
       const data = modalApi.getData<any>();
       if (data) {
-        if (data.pid === 0) {
-          data.pid = undefined;
+        try {
+          modalApi.lock();
+          const [treeRes, aclRes] = await Promise.all([
+            getRoleAclsApi(data.id!),
+            getAclsByReleaseIdApi(data.id!),
+          ]);
+          const tree = ((treeRes as any) || []) as any[];
+          aclTreeData.value = tree;
+          assignLevels(tree);
+          const aclList = ((aclRes as any) || []) as any[];
+          const map = new Map<string, any>();
+          for (const item of aclList) {
+            if (item.moduleId) map.set(item.moduleId, item);
+          }
+          debugger;
+          existingAclMap.value = map;
+        } catch {
+          aclTreeData.value = [];
+          ElMessage.error('获取菜单权限失败');
+        } finally {
+          aclLoading.value = false;
+          modalApi.unlock();
         }
-        formData.value = data;
-        formApi.setValues(formData.value);
       }
     }
   },
 });
-
+function assignLevels(nodes: any[], level = 0) {
+  for (const node of nodes) {
+    (node as any)._level = level;
+    if (node.children?.length) {
+      assignLevels(node.children, level + 1);
+    }
+  }
+}
 function traversePvalues(nodes: any[]): any[] {
   const result: any[] = [];
   for (const node of nodes) {
@@ -149,7 +142,7 @@ function handlePvalueChange(data: any) {
 </script>
 
 <template>
-  <Modal :title="getTitle">
+  <Modal :title="getTitle" class="w-200 ">
     <div v-loading="aclLoading" class="acl-body max-h-[600px] overflow-y-auto">
       <div v-if="aclTreeData.length === 0 && !aclLoading" class="py-8 text-center text-gray-400">
         暂无菜单数据
@@ -176,8 +169,8 @@ function handlePvalueChange(data: any) {
             node-key="id"
             :default-expand-all="true"
         >
-          <template #default="{ data }: { data: any }">
-            <div class="grid grid-cols-[220px_100px_1fr] gap-2 items-center w-full min-w-0">
+          <template #default="{ data } = { data: null }">
+            <div v-if="data" class="grid grid-cols-[220px_100px_1fr] gap-2 items-center w-full min-w-0">
               <div class="flex gap-2 items-center min-w-0"
                    :style="{ paddingLeft: ((data as any)._level || 0) * 24 + 'px' }">
                 <ElIcon class="flex shrink-0 items-center text-base">
@@ -238,3 +231,10 @@ function handlePvalueChange(data: any) {
     </div>
   </Modal>
 </template>
+
+<style scoped>
+:deep(.el-tree-node__content) {
+  height: auto;
+  min-height: 32px;
+}
+</style>

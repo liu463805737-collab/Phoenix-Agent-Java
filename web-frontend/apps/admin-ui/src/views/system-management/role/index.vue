@@ -1,39 +1,9 @@
 <script lang="ts" setup>
-import type { FormInstance, FormRules } from 'element-plus';
-import type { Recordable } from '@vben/types';
+import type {FormInstance, FormRules} from 'element-plus';
+import {ElButton, ElMessage, ElMessageBox, ElTree,} from 'element-plus';
+import type {Recordable} from '@vben/types';
 
-import type { AclPvalueItem, AclRecord, AclTreeNode, PrivilegeRole } from '#/api';
-import {useVbenVxeGrid, VbenTableAction} from '#/adapter/vxe-table';
-import type { TableActionProps } from '@vben/common-ui';
-import { useColumns, useSearchFormSchema } from './data';
-import type {VxeGridProps} from '#/adapter/vxe-table';
-import {PerEnum} from "#/enums/perEnum";
-import Form from './form.vue';
-import AssignMenu from './assign-menu.vue';
-import { computed, onMounted, reactive, ref } from 'vue';
-import type {VbenFormProps} from '@vben/common-ui';
-
-import { Page, useVbenModal } from '@vben/common-ui';
-import { IconifyIcon } from '@vben/icons';
-import { useVbenForm } from '#/adapter/form';
-
-import {
-  ElButton,
-  ElCard,
-  ElCheckbox,
-  ElDialog,
-  ElForm,
-  ElFormItem,
-  ElIcon,
-  ElInput,
-  ElMessage,
-  ElMessageBox,
-  ElPagination,
-  ElTable,
-  ElTableColumn,
-  ElTree,
-} from 'element-plus';
-
+import type {AclPvalueItem, AclRecord, AclTreeNode, PrivilegeRole} from '#/api';
 import {
   createRoleApi,
   deleteRoleApi,
@@ -44,6 +14,16 @@ import {
   saveModuleAclApi,
   updateRoleApi,
 } from '#/api';
+import type {VxeGridProps} from '#/adapter/vxe-table';
+import {useVbenVxeGrid, VbenTableAction} from '#/adapter/vxe-table';
+import type {VbenFormProps} from '@vben/common-ui';
+import {Page, useVbenModal} from '@vben/common-ui';
+import {useColumns, useSearchFormSchema} from './data';
+import Form from './form.vue';
+import AssignMenu from './assign-menu.vue';
+import {computed, onMounted, reactive, ref} from 'vue';
+import {useVbenForm} from '#/adapter/form';
+
 const PerPrefix = "Role:";
 
 const loading = ref(false);
@@ -262,7 +242,7 @@ async function handleDelete(id: string, name: string) {
 
 async function handleAssignMenu(row: PrivilegeRole) {
 
-  assignMenuModalApi.setData().open(row);
+  assignMenuModalApi.setData(row).open();
 
   return;
   currentRole.value = row;

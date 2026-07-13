@@ -2,10 +2,12 @@ package com.phoenix.privilege.controller;
 
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.util.StrUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.phoenix.privilege.dto.PrivilegePvalueDTO;
+import com.phoenix.privilege.dto.query.PrivilegePvalueQuery;
 import com.phoenix.privilege.entity.PrivilegePvalue;
 import com.phoenix.privilege.entity.PrivilegeUser;
 import com.phoenix.privilege.service.IPrivilegePvalueService;
@@ -28,13 +30,12 @@ public class PrivilegePvalueController {
 
 	private final IPrivilegePvalueService privilegePvalueService;
 
-	@GetMapping("/page")
-	public ReturnVo<Page<PrivilegePvalueVO>> page(@RequestParam(defaultValue = "1") long page,
-			@RequestParam(defaultValue = "10") long size, PrivilegePvalueDTO dto) {
+	@PostMapping("/page")
+	public ReturnVo<Page<PrivilegePvalueVO>> page(@RequestBody PrivilegePvalueQuery query) {
 		QueryWrapper qw = QueryWrapper.create()
-			.like(PrivilegePvalue::getName, dto.getName(), dto.getName() != null)
+			.like(PrivilegePvalue::getName, query.getName(), StrUtil.isNotBlank(query.getName()))
 			.orderBy(PrivilegePvalue::getPosition, true);
-		Page<PrivilegePvalue> entityPage = privilegePvalueService.page(new Page<>(page, size), qw);
+		Page<PrivilegePvalue> entityPage = privilegePvalueService.page(new Page<>(query.getPage(), query.getSize()), qw);
 		Page<PrivilegePvalueVO> voPage = new Page<>(entityPage.getPageNumber(), entityPage.getPageSize(),
 				entityPage.getTotalRow());
 		voPage.setRecords(entityPage.getRecords()
