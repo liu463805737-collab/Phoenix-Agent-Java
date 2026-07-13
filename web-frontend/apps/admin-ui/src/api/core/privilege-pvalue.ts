@@ -13,15 +13,13 @@ export interface PrivilegePvalue {
 }
 
 export async function getPvaluePageApi(
-  page: number,
-  size: number,
   params?: Record<string, any>,
 ) {
-  return requestClient.get<PageResult<PrivilegePvalue>>(
+  return requestClient.post<PageResult<PrivilegePvalue>>(
     '/privilege/pvalue/page',
+    params,
     {
-      params: { page, size, ...params },
-      responseReturn: 'body',
+      responseReturn: 'data',
     },
   );
 }
