@@ -20,6 +20,10 @@
     <dependencies>
         <dependency>
             <groupId>io.agentscope</groupId>
+            <artifactId>agentscope-extensions-model-openai</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.agentscope</groupId>
             <artifactId>agentscope-extensions-skill-postgresql-repository</artifactId>
         </dependency>
         <dependency>

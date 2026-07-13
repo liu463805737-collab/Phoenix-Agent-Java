@@ -25,7 +25,7 @@ import redis.clients.jedis.JedisPooled;
 public class HarnessConfig {
 
     @Bean
-    public DistributedStore distributedStore(DataRedisProperties dataRedisProperties) {
+    public RedisDistributedStore distributedStore(DataRedisProperties dataRedisProperties) {
         String url = "redis://" + dataRedisProperties.getHost() + ":" + dataRedisProperties.getPort();
         return RedisDistributedStore.fromJedis(
                 new JedisPooled(url), "phoenix:session:");
