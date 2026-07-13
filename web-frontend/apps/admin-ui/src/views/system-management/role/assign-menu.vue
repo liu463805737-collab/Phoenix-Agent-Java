@@ -1,38 +1,12 @@
 <script lang="ts" setup>
-import { computed, ref } from 'vue';
+import {computed, ref} from 'vue';
 
-import { useVbenModal } from '@vben/common-ui';
-import {
-  createRoleApi,
-  deleteRoleApi,
-  getAclsByReleaseIdApi,
-  getRoleAclsApi,
-  getRolePageApi,
-  saveAllAclApi,
-  saveModuleAclApi,
-  updateRoleApi,
-} from '#/api';
+import {useVbenModal} from '@vben/common-ui';
+import {getAclsByReleaseIdApi, getRoleAclsApi, saveAllAclApi, saveModuleAclApi,} from '#/api';
+import {IconifyIcon} from '@vben/icons';
 
-import { useVbenForm } from '#/adapter/form';
-import { IconifyIcon } from '@vben/icons';
+import {ElCheckbox, ElIcon, ElMessage, ElTree,} from 'element-plus';
 
-import {
-  ElButton,
-  ElCard,
-  ElCheckbox,
-  ElDialog,
-  ElForm,
-  ElFormItem,
-  ElIcon,
-  ElInput,
-  ElMessage,
-  ElMessageBox,
-  ElPagination,
-  ElTable,
-  ElTableColumn,
-  ElTree,
-} from 'element-plus';
-import { useSchema } from './data';
 const aclLoading = ref(false);
 const aclTreeData = ref<any[]>([]);
 const existingAclMap = ref(new Map<string, any>());
@@ -45,42 +19,16 @@ const getTitle = computed(() => {
       : '创建角色';
 });
 
-const [Form, formApi] = useVbenForm({
-  layout: 'vertical',
-  schema: useSchema(),
-  showDefaultActions: false,
-});
-
-
-function resetForm() {
-  formApi.resetForm();
-  formApi.setValues(formData.value || {});
-}
-
 const [Modal, modalApi] = useVbenModal({
   async onConfirm() {
-    const { valid } = await formApi.validate();
-    if (valid) {
-      modalApi.lock();
-      const data = await formApi.getValues();
-      try {
-        await (formData.value?.id
-            ? updateRoleApi(data)
-            : createRoleApi(data));
-        modalApi.close();
-        emit('success');
-      } finally {
-        modalApi.lock(false);
-      }
-    }
+
   },
   async onOpenChange(isOpen) {
     if (isOpen) {
-      debugger
       const data = modalApi.getData<any>();
-      debugger;
       if (data) {
         try {
+          modalApi.lock();
           const [treeRes, aclRes] = await Promise.all([
             getRoleAclsApi(data.id!),
             getAclsByReleaseIdApi(data.id!),
@@ -100,6 +48,7 @@ const [Modal, modalApi] = useVbenModal({
           ElMessage.error('获取菜单权限失败');
         } finally {
           aclLoading.value = false;
+          modalApi.unlock();
         }
       }
     }
@@ -198,7 +147,7 @@ function handlePvalueChange(data: any) {
       <div v-if="aclTreeData.length === 0 && !aclLoading" class="py-8 text-center text-gray-400">
         暂无菜单数据
       </div>
-      <div v-else class="[&_.el-tree-node__content]:h-auto">
+      <div v-else>
         <div
             class="grid grid-cols-[220px_100px_1fr] items-center px-2 py-2 pl-6 mb-1 text-xs font-semibold text-gray-500 border-b border-gray-200">
           <div>菜单名称</div>
@@ -282,3 +231,10 @@ function handlePvalueChange(data: any) {
     </div>
   </Modal>
 </template>
+
+<style scoped>
+:deep(.el-tree-node__content) {
+  height: auto;
+  min-height: 32px;
+}
+</style>
