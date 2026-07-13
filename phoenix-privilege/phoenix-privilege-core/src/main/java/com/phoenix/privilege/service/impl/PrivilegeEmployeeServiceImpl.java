@@ -270,7 +270,7 @@ public class PrivilegeEmployeeServiceImpl extends ServiceImpl<PrivilegeEmployeeM
 				yield CollUtil.isNotEmpty(deptIds) ? String.valueOf(deptIds.get(0)) : null;
 			}
 			case FEISHU -> {
-				List<String> deptIds = user.getJSONArray("department_ids").toList(String.class);
+				List<String> deptIds = user.getJSONArray("departments").toList(String.class);
 				yield CollUtil.isNotEmpty(deptIds) ? deptIds.get(0) : null;
 			}
 			case WEIXIN -> {

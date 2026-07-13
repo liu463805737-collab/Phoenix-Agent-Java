@@ -1307,6 +1307,7 @@ CREATE TABLE "public"."tbl_privilege_company" (
   "idm_company_id" varchar(64) COLLATE "pg_catalog"."default",
   "short_name" varchar(120) COLLATE "pg_catalog"."default",
   "code" varchar(32) COLLATE "pg_catalog"."default",
+  "third_id" varchar(255) COLLATE "pg_catalog"."default",
   "descr" varchar(200) COLLATE "pg_catalog"."default",
   "status" int4 DEFAULT 1,
   "create_by" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
@@ -1314,7 +1315,7 @@ CREATE TABLE "public"."tbl_privilege_company" (
   "update_by" varchar(32) COLLATE "pg_catalog"."default",
   "update_time" timestamp(6),
   "del_flag" int4 NOT NULL DEFAULT 0,
-  "sort" int2
+  "sort" int2 DEFAULT 0
 )
 ;
 ALTER TABLE "public"."tbl_privilege_company" OWNER TO "phoenix";
@@ -1324,6 +1325,7 @@ COMMENT ON COLUMN "public"."tbl_privilege_company"."ename" IS '公司英文名�
 COMMENT ON COLUMN "public"."tbl_privilege_company"."idm_company_id" IS 'idm公司id';
 COMMENT ON COLUMN "public"."tbl_privilege_company"."short_name" IS '公司简称';
 COMMENT ON COLUMN "public"."tbl_privilege_company"."code" IS '公司code';
+COMMENT ON COLUMN "public"."tbl_privilege_company"."third_id" IS '三方平台ID';
 COMMENT ON COLUMN "public"."tbl_privilege_company"."descr" IS '描述';
 COMMENT ON COLUMN "public"."tbl_privilege_company"."status" IS '状态 1启用 0禁用';
 COMMENT ON COLUMN "public"."tbl_privilege_company"."create_by" IS '创建人';
@@ -1342,7 +1344,7 @@ CREATE TABLE "public"."tbl_privilege_department" (
   "id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
   "company_id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
   "name" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
-  "code" varchar(20) COLLATE "pg_catalog"."default" NOT NULL,
+  "code" varchar(20) COLLATE "pg_catalog"."default",
   "note" varchar(80) COLLATE "pg_catalog"."default",
   "pid" varchar(64) COLLATE "pg_catalog"."default",
   "order_no" int4,
@@ -1354,7 +1356,8 @@ CREATE TABLE "public"."tbl_privilege_department" (
   "leader" int4 NOT NULL DEFAULT 0,
   "department_type" int4 NOT NULL,
   "status" int2 DEFAULT 0,
-  "nature" int2 DEFAULT 0
+  "nature" int2 DEFAULT 0,
+  "third_id" varchar(255) COLLATE "pg_catalog"."default"
 )
 ;
 ALTER TABLE "public"."tbl_privilege_department" OWNER TO "phoenix";
@@ -1362,6 +1365,7 @@ COMMENT ON COLUMN "public"."tbl_privilege_department"."id" IS '主键';
 COMMENT ON COLUMN "public"."tbl_privilege_department"."company_id" IS '公司id';
 COMMENT ON COLUMN "public"."tbl_privilege_department"."name" IS '名称';
 COMMENT ON COLUMN "public"."tbl_privilege_department"."code" IS '编号';
+COMMENT ON COLUMN "public"."tbl_privilege_department"."third_id" IS '三方平台ID';
 COMMENT ON COLUMN "public"."tbl_privilege_department"."note" IS '备注';
 COMMENT ON COLUMN "public"."tbl_privilege_department"."pid" IS '父id';
 COMMENT ON COLUMN "public"."tbl_privilege_department"."order_no" IS '排序号';
@@ -1426,13 +1430,14 @@ CREATE TABLE "public"."tbl_privilege_employee" (
   "dept_id" varchar(255) COLLATE "pg_catalog"."default",
   "dept_name" varchar(255) COLLATE "pg_catalog"."default",
   "sex" int4,
-  "status" int4 DEFAULT 3,
+  "status" int4 DEFAULT 1,
   "enable_flag" int4 DEFAULT 3,
   "service_date" timestamp(6),
   "leave_date" timestamp(6),
   "third_union_id" varchar(255) COLLATE "pg_catalog"."default",
   "third_open_id" varchar(255) COLLATE "pg_catalog"."default",
   "third_user_id" varchar(255) COLLATE "pg_catalog"."default",
+  "avatar_url" varchar(255) COLLATE "pg_catalog"."default",
   "del_flag" int2 NOT NULL DEFAULT 0,
   "create_by" varchar(32) COLLATE "pg_catalog"."default",
   "create_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
@@ -1457,13 +1462,14 @@ COMMENT ON COLUMN "public"."tbl_privilege_employee"."company_name" IS '公司名
 COMMENT ON COLUMN "public"."tbl_privilege_employee"."dept_id" IS '部门id';
 COMMENT ON COLUMN "public"."tbl_privilege_employee"."dept_name" IS '部门名称';
 COMMENT ON COLUMN "public"."tbl_privilege_employee"."sex" IS '0：保密 1：男 2：女 3：其他';
-COMMENT ON COLUMN "public"."tbl_privilege_employee"."status" IS '2离职3在职';
+COMMENT ON COLUMN "public"."tbl_privilege_employee"."status" IS '0离职1在职';
 COMMENT ON COLUMN "public"."tbl_privilege_employee"."enable_flag" IS '是否禁用';
 COMMENT ON COLUMN "public"."tbl_privilege_employee"."service_date" IS '入职时间';
 COMMENT ON COLUMN "public"."tbl_privilege_employee"."leave_date" IS '离职时间';
 COMMENT ON COLUMN "public"."tbl_privilege_employee"."third_union_id" IS '三方平台union_id';
 COMMENT ON COLUMN "public"."tbl_privilege_employee"."third_open_id" IS '三方平台open_id';
 COMMENT ON COLUMN "public"."tbl_privilege_employee"."third_user_id" IS '三方平台user_id';
+COMMENT ON COLUMN "public"."tbl_privilege_employee"."avatar_url" IS '头像URL';
 COMMENT ON COLUMN "public"."tbl_privilege_employee"."del_flag" IS '删除标识;0：未删除；1：删除';
 COMMENT ON COLUMN "public"."tbl_privilege_employee"."create_by" IS '创建人';
 COMMENT ON COLUMN "public"."tbl_privilege_employee"."create_time" IS '创建时间';

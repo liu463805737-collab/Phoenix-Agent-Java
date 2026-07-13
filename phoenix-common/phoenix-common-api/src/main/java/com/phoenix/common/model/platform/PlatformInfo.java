@@ -23,7 +23,7 @@ public class PlatformInfo extends BaseModel {
     /**
      * 启用状态 0 禁用 1为启用
      */
-    private String status= "0";
+    private String status;
     private String corpid;
     private String corpsecret;
     private String agentid;

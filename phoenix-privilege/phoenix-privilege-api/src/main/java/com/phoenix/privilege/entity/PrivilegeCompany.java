@@ -39,4 +39,7 @@ public class PrivilegeCompany extends BaseEntity {
 	/** 序号 */
 	private Integer sort;
 
+	/** 三方平台ID */
+	private String thirdId;
+
 }
