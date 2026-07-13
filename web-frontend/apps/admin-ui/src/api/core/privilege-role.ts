@@ -96,7 +96,7 @@ export async function getRoleAclsApi(roleId: string) {
     `/api/privilege/module/tree/acl`,
     {
       params: { roleId },
-      responseReturn: 'body',
+      responseReturn: 'data',
     },
   );
 }
@@ -104,7 +104,7 @@ export async function getRoleAclsApi(roleId: string) {
 export async function getAclsByReleaseIdApi(releaseId: string) {
   return requestClient.get<AclRecord[]>(
     `/api/privilege/acl/release/${releaseId}`,
-    { responseReturn: 'body' },
+    { responseReturn: 'data' },
   );
 }
 

@@ -262,7 +262,7 @@ async function handleDelete(id: string, name: string) {
 
 async function handleAssignMenu(row: PrivilegeRole) {
 
-  assignMenuModalApi.setData().open(row);
+  assignMenuModalApi.setData(row).open();
 
   return;
   currentRole.value = row;

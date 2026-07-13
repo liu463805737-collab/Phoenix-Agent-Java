@@ -14,10 +14,28 @@ import {
 } from '#/api';
 
 import { useVbenForm } from '#/adapter/form';
+import { IconifyIcon } from '@vben/icons';
 
+import {
+  ElButton,
+  ElCard,
+  ElCheckbox,
+  ElDialog,
+  ElForm,
+  ElFormItem,
+  ElIcon,
+  ElInput,
+  ElMessage,
+  ElMessageBox,
+  ElPagination,
+  ElTable,
+  ElTableColumn,
+  ElTree,
+} from 'element-plus';
 import { useSchema } from './data';
 const aclLoading = ref(false);
 const aclTreeData = ref<any[]>([]);
+const existingAclMap = ref(new Map<string, any>());
 
 const emit = defineEmits(['success']);
 const formData = ref<any>();
@@ -32,6 +50,7 @@ const [Form, formApi] = useVbenForm({
   schema: useSchema(),
   showDefaultActions: false,
 });
+
 
 function resetForm() {
   formApi.resetForm();
@@ -55,20 +74,45 @@ const [Modal, modalApi] = useVbenModal({
       }
     }
   },
-  onOpenChange(isOpen) {
+  async onOpenChange(isOpen) {
     if (isOpen) {
+      debugger
       const data = modalApi.getData<any>();
+      debugger;
       if (data) {
-        if (data.pid === 0) {
-          data.pid = undefined;
+        try {
+          const [treeRes, aclRes] = await Promise.all([
+            getRoleAclsApi(data.id!),
+            getAclsByReleaseIdApi(data.id!),
+          ]);
+          const tree = ((treeRes as any) || []) as any[];
+          aclTreeData.value = tree;
+          assignLevels(tree);
+          const aclList = ((aclRes as any) || []) as any[];
+          const map = new Map<string, any>();
+          for (const item of aclList) {
+            if (item.moduleId) map.set(item.moduleId, item);
+          }
+          debugger;
+          existingAclMap.value = map;
+        } catch {
+          aclTreeData.value = [];
+          ElMessage.error('获取菜单权限失败');
+        } finally {
+          aclLoading.value = false;
         }
-        formData.value = data;
-        formApi.setValues(formData.value);
       }
     }
   },
 });
-
+function assignLevels(nodes: any[], level = 0) {
+  for (const node of nodes) {
+    (node as any)._level = level;
+    if (node.children?.length) {
+      assignLevels(node.children, level + 1);
+    }
+  }
+}
 function traversePvalues(nodes: any[]): any[] {
   const result: any[] = [];
   for (const node of nodes) {
@@ -149,12 +193,12 @@ function handlePvalueChange(data: any) {
 </script>
 
 <template>
-  <Modal :title="getTitle">
+  <Modal :title="getTitle" class="w-200 ">
     <div v-loading="aclLoading" class="acl-body max-h-[600px] overflow-y-auto">
       <div v-if="aclTreeData.length === 0 && !aclLoading" class="py-8 text-center text-gray-400">
         暂无菜单数据
       </div>
-      <div v-else>
+      <div v-else class="[&_.el-tree-node__content]:h-auto">
         <div
             class="grid grid-cols-[220px_100px_1fr] items-center px-2 py-2 pl-6 mb-1 text-xs font-semibold text-gray-500 border-b border-gray-200">
           <div>菜单名称</div>
@@ -176,8 +220,8 @@ function handlePvalueChange(data: any) {
             node-key="id"
             :default-expand-all="true"
         >
-          <template #default="{ data }: { data: any }">
-            <div class="grid grid-cols-[220px_100px_1fr] gap-2 items-center w-full min-w-0">
+          <template #default="{ data } = { data: null }">
+            <div v-if="data" class="grid grid-cols-[220px_100px_1fr] gap-2 items-center w-full min-w-0">
               <div class="flex gap-2 items-center min-w-0"
                    :style="{ paddingLeft: ((data as any)._level || 0) * 24 + 'px' }">
                 <ElIcon class="flex shrink-0 items-center text-base">
