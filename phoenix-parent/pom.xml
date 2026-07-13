@@ -76,6 +76,16 @@
         <dependencies>
             <dependency>
                 <groupId>io.agentscope</groupId>
+                <artifactId>agentscope-extensions-skill-postgresql-repository</artifactId>
+                <version>${agentscope.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.agentscope</groupId>
+                <artifactId>agentscope-extensions-postgresql</artifactId>
+                <version>${agentscope.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.agentscope</groupId>
                 <artifactId>agentscope-extensions-rag-simple</artifactId>
                 <version>${agentscope.version}</version>
             </dependency>

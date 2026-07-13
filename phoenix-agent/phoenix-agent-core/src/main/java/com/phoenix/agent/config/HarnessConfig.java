@@ -9,6 +9,7 @@ import io.agentscope.core.embedding.dashscope.DashScopeTextEmbedding;
 import io.agentscope.core.rag.exception.VectorStoreException;
 import io.agentscope.core.rag.knowledge.SimpleKnowledge;
 import io.agentscope.core.rag.store.PgVectorStore;
+import io.agentscope.core.skill.repository.postgresql.PostgresSkillRepository;
 import io.agentscope.core.state.AgentStateStore;
 import io.agentscope.extensions.postgresql.state.PostgresAgentStateStore;
 import io.agentscope.extensions.redis.RedisDistributedStore;
@@ -30,26 +31,54 @@ public class HarnessConfig {
                 new JedisPooled(url), "phoenix:session:");
     }
 
+    @Bean
+    public PostgresSkillRepository postgresSkillRepository(HikariDataSource hikariDataSource) {
+        return PostgresSkillRepository.builder(hikariDataSource)
+                .schemaName("public")
+                .skillsTableName("tbl_harness_skills")
+                .resourcesTableName("tbl_harness_skill_resources")
+                .createIfNotExist(true)
+                .writeable(true)
+                .build();
+    }
+
+    /**
+     * 配置存放聊天记录
+     * @param hikariDataSource
+     * @return
+     */
     @Bean(name = "harnessPostgresAgentStateStore")
     public PostgresAgentStateStore postgresAgentStateStore(HikariDataSource hikariDataSource) {
         return PostgresAgentStateStore.builder(hikariDataSource)
                 .schemaName("public")
-                .tableName("tbl_vector_store_harness_state")
+                .tableName("tbl_harness_vector_store_state")
                 .createIfNotExist(true)
                 .build();
     }
 
+    /**
+     * 配置存放知识库
+     * @param dataSourceProperties
+     * @return
+     * @throws VectorStoreException
+     */
     @Bean(name = "harnessPgVectorStoreKnowledge")
     public PgVectorStore harnessPgVectorStore(DataSourceProperties dataSourceProperties) throws VectorStoreException {
         return PgVectorStore.builder().jdbcUrl(dataSourceProperties.getUrl())
                 .username(dataSourceProperties.getUsername())
                 .password(dataSourceProperties.getPassword())
                 .schema("public")
-                .tableName("tbl_vector_store_harness_knowledge")
+                .tableName("tbl_harness_vector_store_knowledge")
                 .dimensions(512)
                 .build();
     }
 
+    /**
+     * 配置简单知识库
+     * @param harnessPgVectorStore
+     * @param modelConfigDataService
+     * @return
+     */
     @Bean
     @DependsOn(value = "harnessPgVectorStoreKnowledge")
     public SimpleKnowledge simpleKnowledge(PgVectorStore harnessPgVectorStore, ModelConfigDataService modelConfigDataService) {
