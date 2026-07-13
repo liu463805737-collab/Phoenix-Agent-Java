@@ -3,11 +3,14 @@ package com.phoenix.agent.config;
 import com.phoenix.data.dto.ModelConfigDTO;
 import com.phoenix.data.enums.ModelType;
 import com.phoenix.data.service.aimodelconfig.ModelConfigDataService;
+import com.zaxxer.hikari.HikariDataSource;
 import io.agentscope.core.embedding.EmbeddingModel;
 import io.agentscope.core.embedding.dashscope.DashScopeTextEmbedding;
 import io.agentscope.core.rag.exception.VectorStoreException;
 import io.agentscope.core.rag.knowledge.SimpleKnowledge;
 import io.agentscope.core.rag.store.PgVectorStore;
+import io.agentscope.core.state.AgentStateStore;
+import io.agentscope.extensions.postgresql.state.PostgresAgentStateStore;
 import io.agentscope.extensions.redis.RedisDistributedStore;
 import io.agentscope.harness.agent.DistributedStore;
 import org.springframework.boot.data.redis.autoconfigure.DataRedisProperties;
@@ -25,6 +28,15 @@ public class HarnessConfig {
         String url = "redis://" + dataRedisProperties.getHost() + ":" + dataRedisProperties.getPort();
         return RedisDistributedStore.fromJedis(
                 new JedisPooled(url), "phoenix:session:");
+    }
+
+    @Bean(name = "harnessPostgresAgentStateStore")
+    public PostgresAgentStateStore postgresAgentStateStore(HikariDataSource hikariDataSource) {
+        return PostgresAgentStateStore.builder(hikariDataSource)
+                .schemaName("public")
+                .tableName("tbl_vector_store_harness_state")
+                .createIfNotExist(true)
+                .build();
     }
 
     @Bean(name = "harnessPgVectorStoreKnowledge")
