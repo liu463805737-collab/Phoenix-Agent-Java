@@ -35,8 +35,6 @@ public class LoginServiceImpl implements LoginService {
 
 	private final IPrivilegeLoginLogService privilegeLoginLogService;
 
-	private final CaptchaService captchaService;
-
 	private final IPrivilegeUserRoleService privilegeUserRoleService;
 
 	private final IPrivilegeModuleService privilegeModuleService;

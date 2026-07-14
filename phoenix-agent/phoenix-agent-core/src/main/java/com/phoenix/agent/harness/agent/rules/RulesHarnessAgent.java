@@ -1,32 +1,39 @@
 package com.phoenix.agent.harness.agent.rules;
 
+import com.phoenix.agent.harness.agent.AbstractHarnessAgent;
 import com.phoenix.agent.harness.middleware.StopOnAllDeniedMiddleware;
-import com.phoenix.agent.service.harness.HarnessModelRegistry;
-import io.agentscope.core.skill.repository.postgresql.PostgresSkillRepository;
 import io.agentscope.core.tool.Toolkit;
 import io.agentscope.core.tool.builtin.TodoTools;
-import io.agentscope.extensions.postgresql.state.PostgresAgentStateStore;
-import io.agentscope.extensions.redis.RedisDistributedStore;
 import io.agentscope.harness.agent.HarnessAgent;
 import io.agentscope.harness.agent.memory.compaction.CompactionConfig;
 import io.agentscope.harness.agent.memory.compaction.ToolResultEvictionConfig;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Paths;
 
 
 @Component
-@RequiredArgsConstructor
-public class RulesReactAgent {
-    private final HarnessModelRegistry harnessModelRegistry;
-    private final RedisDistributedStore redisDistributedStore;
-    private final PostgresAgentStateStore postgresAgentStateStore;
-    private final PostgresSkillRepository  postgresSkillRepository;
-    private final RulesRagTool rulesRagTool;
+public class RulesHarnessAgent extends AbstractHarnessAgent {
+    @Autowired
+    private RulesRagTool rulesRagTool;
+    @Override
+    public String getSn() {
+        return "RulesHarnessAgent";
+    }
 
+    @Override
+    public String getName() {
+        return "制度专家";
+    }
 
-    public HarnessAgent createReActAgent() {
+    @Override
+    public String getDescription() {
+        return "专业查询制度的专家";
+    }
+
+    @Override
+    public HarnessAgent createHarnessAgent() {
         Toolkit toolkit = new Toolkit();
         toolkit.registerTool(new TodoTools());
         toolkit.registerTool(rulesRagTool);
@@ -35,7 +42,7 @@ public class RulesReactAgent {
                 .sysPrompt("""
                         你是一个制度查询专家，你所有的查询结果都强依赖tool返回的结果，不可篡改。
                         """)
-                .model(harnessModelRegistry.getOpenAIChatModel())
+                .model(this.createChatModel())
                 .toolkit(toolkit)
                 .enablePlanMode(true)
                 .disableShellTool()
@@ -57,4 +64,5 @@ public class RulesReactAgent {
                 .build();
         return agent;
     }
+
 }
