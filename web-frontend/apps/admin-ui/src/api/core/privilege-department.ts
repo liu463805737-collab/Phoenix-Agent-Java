@@ -1,5 +1,4 @@
 import { requestClient } from '#/api/request';
-import type { PageResult } from '#/api/core/privilege-types';
 
 export interface PrivilegeDepartment {
   id?: string;
@@ -39,20 +38,6 @@ export interface DepartmentTreeVO {
   children?: DepartmentTreeVO[];
 }
 
-export async function getDepartmentPageApi(
-  page: number,
-  size: number,
-  params?: Record<string, any>,
-) {
-  return requestClient.get<PageResult<PrivilegeDepartment>>(
-    '/api/privilege/department/page',
-    {
-      params: { page, size, ...params },
-      responseReturn: 'body',
-    },
-  );
-}
-
 export async function getDepartmentApi(id: string) {
   return requestClient.get<PrivilegeDepartment>(
     `/api/privilege/department/${id}`,
@@ -73,6 +58,7 @@ export async function getDepartmentByCodeApi(code: string) {
     { responseReturn: 'body' },
   );
 }
+
 export async function getDeptTreeApi(companyId?: string) {
   return requestClient.get<DepartmentTreeVO[]>(
     '/api/privilege/department/tree',
@@ -82,6 +68,7 @@ export async function getDeptTreeApi(companyId?: string) {
     },
   );
 }
+
 export async function getDepartmentTreeApi(companyId?: string) {
   return requestClient.get<OrganizationTreeVO[]>(
     '/api/privilege/department/orgTree',
