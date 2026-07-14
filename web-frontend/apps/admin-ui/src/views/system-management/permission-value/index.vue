@@ -77,6 +77,27 @@ function onDelete(row: any) {
       refreshGrid();
     });
 }
+
+function getActions(row: any) {
+  return [
+    {
+      text: '编辑',
+      icon: 'lucide:edit',
+      onClick: () => onEdit(row),
+    },
+    {
+      text: '删除',
+      icon: 'lucide:trash-2',
+      danger: true,
+      popConfirm: {
+        title: `确定要删除【${row.name}】吗？`,
+        confirm: () => onDelete(row),
+        okText: '确定',
+        cancelText: '取消',
+      },
+    },
+  ];
+}
 </script>
 
 <template>
@@ -90,24 +111,7 @@ function onDelete(row: any) {
       <template #action="{ row }">
         <VbenTableAction
           align="center"
-          :actions="[
-            {
-              text: '编辑',
-              icon: 'lucide:edit',
-              onClick: () => onEdit(row),
-            },
-            {
-              text: '删除',
-              icon: 'lucide:trash-2',
-              danger: true,
-              popConfirm: {
-                title: `确定要删除【${row.name}】吗？`,
-                confirm: () => onDelete(row),
-                okText: '确定',
-                cancelText: '取消',
-              },
-            },
-          ]"
+          :actions="getActions(row)"
         />
       </template>
     </Grid>

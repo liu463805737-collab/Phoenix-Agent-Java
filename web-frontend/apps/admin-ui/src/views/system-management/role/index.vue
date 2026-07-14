@@ -402,6 +402,32 @@ function onDelete(row: SystemUserApi.SystemUser) {
       });
 }
 
+function getActions(row: any) {
+  return [
+    {
+      text: '分配权限',
+      icon: 'lucide:edit',
+      onClick: () => handleAssignMenu(row),
+    },
+    {
+      text: '编辑',
+      icon: 'lucide:edit',
+      onClick: () => onEdit(row),
+    },
+    {
+      text: '删除',
+      icon: 'lucide:trash-2',
+      danger: true,
+      popConfirm: {
+        title: `确定要删除【${row.name}】吗？`,
+        confirm: () => onDelete(row),
+        okText: '确定',
+        cancelText: '取消',
+      },
+    },
+  ];
+}
+
 onMounted(() => {
   // loadData();
 });
@@ -419,29 +445,7 @@ onMounted(() => {
       <template #action="{ row }">
         <VbenTableAction
             align="center"
-            :actions="[
-                {
-                  text: '分配权限',
-                  icon: 'lucide:edit',
-                  onClick: () => handleAssignMenu(row),
-                },
-                {
-                  text: '编辑',
-                  icon: 'lucide:edit',
-                  onClick: () => onEdit(row),
-                },
-                {
-                  text: '删除',
-                  icon: 'lucide:trash-2',
-                  danger: true,
-                  popConfirm: {
-                    title: `确定要删除【${row.name}】吗？`,
-                    confirm: () => onDelete(row),
-                    okText: '确定',
-                    cancelText: '取消',
-                  },
-                },
-              ]"
+            :actions="getActions(row)"
         />
       </template>
     </Grid>
