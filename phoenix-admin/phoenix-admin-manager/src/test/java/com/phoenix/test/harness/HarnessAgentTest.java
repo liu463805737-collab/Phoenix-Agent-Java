@@ -6,6 +6,7 @@ import com.phoenix.agent.harness.agent.rules.RulesReactAgent;
 import com.phoenix.agent.harness.request.HarnessRequest;
 import com.phoenix.agent.harness.send.HarnessSendMessage;
 import io.agentscope.core.event.AgentEvent;
+import io.agentscope.core.message.Msg;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,8 +27,8 @@ public class HarnessAgentTest {
     @Test
     public void testCallAgent() {
         HarnessRequest request = HarnessRequest.builder().userId("test1").sessionId(UUID.fastUUID().toString()).message("请帮我查询请假流程").build();
-        String content = harnessSendMessage.call(rulesReactAgent.createReActAgent(), request);
-        log.info("content:{}", content);
+        Msg msg = harnessSendMessage.call(rulesReactAgent.createReActAgent(), request);
+        log.info("content:{}", msg.getTextContent());
     }
 
     @Test

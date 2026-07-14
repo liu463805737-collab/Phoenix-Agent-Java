@@ -4,6 +4,7 @@ import com.phoenix.agent.harness.request.HarnessRequest;
 import com.phoenix.agent.harness.send.HarnessSendMessage;
 import io.agentscope.core.agent.RuntimeContext;
 import io.agentscope.core.event.AgentEvent;
+import io.agentscope.core.message.Msg;
 import io.agentscope.core.message.UserMessage;
 import io.agentscope.harness.agent.HarnessAgent;
 import org.springframework.stereotype.Component;
@@ -12,8 +13,8 @@ import reactor.core.publisher.Flux;
 @Component
 public class HarnessSendMessageImpl implements HarnessSendMessage {
     @Override
-    public String call(HarnessAgent agent, HarnessRequest request) {
-        return agent.call(buildUserMessage(request), buildRuntimeContext(request)).block().getTextContent();
+    public Msg call(HarnessAgent agent, HarnessRequest request) {
+        return agent.call(buildUserMessage(request), buildRuntimeContext(request)).block();
     }
 
     @Override

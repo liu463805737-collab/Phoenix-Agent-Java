@@ -104,14 +104,12 @@ public class ReportGeneratorNode extends AabstractNodeAction {
 		// Generate report streaming flux
 		Flux<ChatResponse> reportGenerationFlux = generateReport(userInput, plan, executionResults,
 				summaryAndRecommendations, agentId);
-
 		TextType reportTextType = TextType.MARK_DOWN;
-
-		// Use utility class to create streaming generator with content collection
 		Flux<GraphResponse<StreamingOutput>> generator = FluxUtil.createStreamingGeneratorWithMessages(this.getChName(), this.getClass(),
 				state, "开始生成报告...", "报告生成完成！", reportContent -> {
 					log.info("Generated report content: {}", reportContent);
 					Map<String, Object> result = new HashMap<>();
+
 					result.put(RESULT, reportContent);
 					result.put(SQL_EXECUTE_NODE_OUTPUT, null);
 					result.put(PLAN_CURRENT_STEP, null);
@@ -173,7 +171,58 @@ public class ReportGeneratorNode extends AabstractNodeAction {
 		String reportPrompt = PromptHelper.buildReportGeneratorPromptWithOptimization(userRequirementsAndPlan,
 				analysisStepsAndData, summaryAndRecommendations, optimizationConfigs, currDate);
 		log.debug("Report Node Prompt: \n {} \n", reportPrompt);
-		return llmService.callUser(reportPrompt);
+		return generateWithContinuation(reportPrompt, 0);
+	}
+
+	/**
+	 * 递归续写：检测到 finish_reason=length 时自动续写，直到完整或达到最大深度。
+	 *
+	 * @param prompt LLM 调用 prompt
+	 * @param depth 当前递归深度
+	 * @return 合并后的 LLM 响应流
+	 */
+	private Flux<ChatResponse> generateWithContinuation(String prompt, int depth) {
+		if (depth >= 5) {
+			log.warn("Report continuation reached max depth (5), report may still be incomplete");
+			return Flux.empty();
+		}
+
+		StringBuilder accumulated = new StringBuilder();
+		ChatResponse[] lastResponse = new ChatResponse[1];
+
+		Flux<ChatResponse> currentCall = llmService.callUser(prompt)
+			.doOnNext(r -> {
+				lastResponse[0] = r;
+				accumulated.append(ChatResponseUtil.getText(r));
+			});
+
+		return Flux.concat(
+				currentCall,
+				Flux.defer(() -> {
+					if (lastResponse[0] != null
+							&& lastResponse[0].getResult() != null
+							&& lastResponse[0].getResult().getMetadata() != null
+							&& "LENGTH".equals(lastResponse[0].getResult().getMetadata().getFinishReason())) {
+						log.warn("Report truncated by token limit, initiating continuation (depth={})", depth + 1);
+						String continuationPrompt = buildContinuationPrompt(accumulated.toString(), depth + 1);
+						return generateWithContinuation(continuationPrompt, depth + 1);
+					}
+					return Flux.empty();
+				}));
+	}
+
+	/**
+	 * 构建续写 prompt，携带最后一段已输出内容作为上下文。
+	 *
+	 * @param lastSegment 当前轮已输出的内容
+	 * @param continuationCount 第几次续写
+	 * @return 续写 prompt
+	 */
+	private String buildContinuationPrompt(String lastSegment, int continuationCount) {
+		String tail = (lastSegment != null && lastSegment.length() > 300)
+				? lastSegment.substring(lastSegment.length() - 300) : lastSegment;
+		return "报告内容因长度限制被截断（第" + continuationCount + "次续写），请直接从断点处继续生成，不要重复已经输出的内容。\n\n"
+				+ "已输出的最后内容（仅供参考，不要重复）：\n" + tail + "\n\n请继续：";
 	}
 
 	/**
