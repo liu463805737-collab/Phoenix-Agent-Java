@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Comparator;
 
 @RestController
-@RequestMapping("/privilege/company")
+@RequestMapping("/api/privilege/company")
 @RequiredArgsConstructor
 public class PrivilegeCompanyController {
 

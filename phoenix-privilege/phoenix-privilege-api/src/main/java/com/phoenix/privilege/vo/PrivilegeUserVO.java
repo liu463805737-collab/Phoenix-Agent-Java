@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.Date;
+import java.util.List;
 
 @Data
 @Builder
@@ -87,5 +88,10 @@ public class PrivilegeUserVO {
 
 	/** 人员禁用状态 1是0否 */
 	private Integer status;
+
+	/**
+	 * 用户角色列表
+	 */
+	private List<PrivilegeRoleVO> roles;
 
 }

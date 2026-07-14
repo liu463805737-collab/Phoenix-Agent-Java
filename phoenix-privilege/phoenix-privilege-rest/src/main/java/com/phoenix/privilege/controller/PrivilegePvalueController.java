@@ -24,7 +24,7 @@ import static com.phoenix.privilege.constant.CommonConstant.LOGIN_USER_INFO;
 
 @Slf4j
 @RestController
-@RequestMapping("/privilege/pvalue")
+@RequestMapping("/api/privilege/pvalue")
 @RequiredArgsConstructor
 public class PrivilegePvalueController {
 

@@ -18,11 +18,16 @@ import com.phoenix.privilege.mapper.PrivilegeUserMapper;
 import com.phoenix.privilege.service.IPrivilegeRoleService;
 import com.phoenix.privilege.service.IPrivilegeUserRoleService;
 import com.phoenix.privilege.service.IPrivilegeUserService;
+import com.phoenix.privilege.vo.PrivilegeRoleVO;
 import com.phoenix.privilege.vo.PrivilegeUserVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.function.Consumer;
 
@@ -149,8 +154,31 @@ public class PrivilegeUserServiceImpl extends ServiceImpl<PrivilegeUserMapper, P
 		Page<PrivilegeUser> entityPage = getMapper().paginate(page.getPageNumber(), page.getPageSize(), qw);
 		Page<PrivilegeUserVO> voPage = new Page<>(entityPage.getPageNumber(), entityPage.getPageSize(),
 				entityPage.getTotalRow());
-		voPage.setRecords(
-				entityPage.getRecords().stream().map(e -> BeanUtil.copyProperties(e, PrivilegeUserVO.class)).toList());
+		List<PrivilegeUser> records = entityPage.getRecords();
+		if (records.isEmpty()) {
+			voPage.setRecords(List.of());
+			return voPage;
+		}
+		List<String> userIds = records.stream().map(PrivilegeUser::getId).toList();
+		List<PrivilegeUserRole> userRoles = privilegeUserRoleService.list(
+				QueryWrapper.create().in(PrivilegeUserRole::getUserId, userIds));
+		List<String> roleIds = userRoles.stream().map(PrivilegeUserRole::getRoleId).distinct().toList();
+		Map<String, String> roleNameMap = new HashMap<>();
+		if (!roleIds.isEmpty()) {
+			roleNameMap = privilegeRoleService.listByIds(roleIds).stream()
+					.collect(HashMap::new, (m, r) -> m.put(r.getId(), r.getName()), HashMap::putAll);
+		}
+		Map<String, List<PrivilegeRoleVO>> userRolesMap = new HashMap<>();
+		for (PrivilegeUserRole ur : userRoles) {
+			userRolesMap.computeIfAbsent(ur.getUserId(), k -> new ArrayList<>())
+					.add(PrivilegeRoleVO.builder().id(ur.getRoleId()).name(roleNameMap.getOrDefault(ur.getRoleId(), "")).build());
+		}
+		List<PrivilegeUserVO> voList = records.stream().map(e -> {
+			PrivilegeUserVO vo = BeanUtil.copyProperties(e, PrivilegeUserVO.class);
+			vo.setRoles(userRolesMap.getOrDefault(e.getId(), List.of()));
+			return vo;
+		}).toList();
+		voPage.setRecords(voList);
 		return voPage;
 	}
 
