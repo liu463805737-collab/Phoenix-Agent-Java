@@ -322,7 +322,7 @@ const checkedRoleIds = ref<Set<string>>(new Set());
 async function loadRoles() {
   roleLoading.value = true;
   try {
-    const res = (await getRolePageApi(rolePage.value, rolePageSize.value, { validState: 1 })) as any;
+    const res = (await getRolePageApi({ page: rolePage.value, size: rolePageSize.value, validState: 1 })) as any;
     const pageResult = res?.data || res;
     roleList.value = pageResult?.records || [];
     roleTotal.value = pageResult?.totalRow || 0;
@@ -507,6 +507,13 @@ onMounted(() => {
                     (scope.row as PrivilegeUser).status === 0 ? '启用' : '禁用'
                   }}
                 </ElTag>
+              </template>
+            </ElTableColumn>
+            <ElTableColumn label="角色" width="180">
+              <template #default="scope">
+                <span>{{
+                  ((scope.row as PrivilegeUser).roles || []).map(r => r.name).join('、')
+                }}</span>
               </template>
             </ElTableColumn>
             <ElTableColumn prop="createTime" label="创建时间" width="180" />

@@ -169,11 +169,11 @@ const existingAclMap = ref(new Map<string, AclRecord>());
 async function loadData(params: Record<string, any> = {}) {
   loading.value = true;
   try {
-    const res = (await getRolePageApi(
-      page.value,
-      pageSize.value,
-      params,
-    )) as any;
+    const res = (await getRolePageApi({
+      page: page.value,
+      size: pageSize.value,
+      ...params,
+    })) as any;
     const pageResult = res?.data || res;
     tableData.value = pageResult?.records || [];
     total.value = pageResult?.totalRow || 0;
