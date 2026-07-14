@@ -6,7 +6,7 @@ import com.phoenix.data.service.aimodelconfig.ModelConfigDataService;
 import io.agentscope.core.embedding.EmbeddingModel;
 import io.agentscope.core.embedding.dashscope.DashScopeTextEmbedding;
 import io.agentscope.extensions.model.openai.OpenAIChatModel;
-import io.agentscope.extensions.model.openai.formatter.OpenAIChatFormatter;
+import io.agentscope.extensions.model.openai.formatter.DeepSeekFormatter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -39,7 +39,7 @@ public class HarnessModelRegistry {
                                     .modelName(config.getModelName())
                                     .baseUrl(config.getBaseUrl())
                                     .stream(true)
-                                    .formatter(new OpenAIChatFormatter())
+                                    .formatter(new DeepSeekFormatter())
                                     .build();
                         }
                     } catch (Exception e) {

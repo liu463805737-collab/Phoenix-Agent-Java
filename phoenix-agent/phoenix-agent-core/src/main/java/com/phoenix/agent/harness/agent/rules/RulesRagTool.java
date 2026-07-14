@@ -1,4 +1,4 @@
-package com.phoenix.agent.harness.agent;
+package com.phoenix.agent.harness.agent.rules;
 
 import cn.hutool.core.collection.CollUtil;
 import com.phoenix.data.dto.search.AgentSearchRequest;
@@ -26,11 +26,12 @@ public class RulesRagTool {
     @Autowired
     private AgentVectorStoreService agentVectorStoreService;
 
-    @Tool(name = "getRagInfo", description = "根据用户的自然语言生成的关键词获取向量列表，如果查询到数据就不需要再次调用了")
-    public String getRagInfo(@ToolParam(name = "query", description = "查询向量的关键词") String query) {
-        String[] splits = query.split(" ");
+    @Tool(name = "getRagInfo", description = "根据用户的自然语言生成的关键词获取向量列表，如果查询到数据就不需要再次调用了",readOnly = true,
+    concurrencySafe = true)
+    public String getRagInfo(@ToolParam(name = "query", description = "查询向量的关键词") List<String> query) {
+//        String[] splits = query.split(" ");
         List<Document> documents = new ArrayList<>();
-        for (String split : splits) {
+        for (String split : query) {
             AgentSearchRequest searchRequest = AgentSearchRequest.builder().query(split).docVectorType(AGENT_KNOWLEDGE).agentId(18+"").topK(10).similarityThreshold(0.65).build();
             List<Document> ds = agentVectorStoreService.search(searchRequest);
             documents.addAll(ds);

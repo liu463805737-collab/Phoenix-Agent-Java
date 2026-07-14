@@ -1,5 +1,6 @@
-package com.phoenix.agent.harness.agent;
+package com.phoenix.agent.harness.agent.rules;
 
+import com.phoenix.agent.harness.middleware.StopOnAllDeniedMiddleware;
 import com.phoenix.agent.service.harness.HarnessModelRegistry;
 import io.agentscope.core.skill.repository.postgresql.PostgresSkillRepository;
 import io.agentscope.core.tool.Toolkit;
@@ -24,6 +25,7 @@ public class RulesReactAgent {
     private final PostgresSkillRepository  postgresSkillRepository;
     private final RulesRagTool rulesRagTool;
 
+
     public HarnessAgent createReActAgent() {
         Toolkit toolkit = new Toolkit();
         toolkit.registerTool(new TodoTools());
@@ -36,11 +38,13 @@ public class RulesReactAgent {
                 .model(harnessModelRegistry.getOpenAIChatModel())
                 .toolkit(toolkit)
                 .enablePlanMode(true)
+                .disableShellTool()
                 .stateStore(postgresAgentStateStore)
                 .distributedStore(redisDistributedStore)
                 .skillRepository(postgresSkillRepository)
                 .workspace(Paths.get(".agentscope/workspace"))
                 .enablePendingToolRecovery(true)
+                .middleware(new StopOnAllDeniedMiddleware())
                 .compaction(CompactionConfig.builder().triggerMessages(50)      // 50 条触发摘要压缩
                         .truncateArgs(CompactionConfig.TruncateArgsConfig.builder()
                                 .maxArgLength(2000)
