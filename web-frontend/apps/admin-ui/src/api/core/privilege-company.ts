@@ -13,46 +13,42 @@ export interface PrivilegeCompany {
 }
 
 export async function getCompanyPageApi(
-  page: number,
-  size: number,
   params?: Record<string, any>,
 ) {
-  return requestClient.get<PageResult<PrivilegeCompany>>(
-    '/api/privilege/company/page',
-    {
-      params: { page, size, ...params },
-      responseReturn: 'body',
-    },
+  return requestClient.post<PageResult<PrivilegeCompany>>(
+    '/privilege/company/page',
+    params,
+    { responseReturn: 'data' },
   );
 }
 
 export async function getCompanyApi(id: number) {
-  return requestClient.get<PrivilegeCompany>(`/api/privilege/company/${id}`, {
+  return requestClient.get<PrivilegeCompany>(`/privilege/company/${id}`, {
     responseReturn: 'body',
   });
 }
 
 export async function getCompanyByCodeApi(code: string) {
   return requestClient.get<PrivilegeCompany>(
-    `/api/privilege/company/code/${code}`,
+    `/privilege/company/code/${code}`,
     { responseReturn: 'body' },
   );
 }
 
 export async function createCompanyApi(data: Record<string, any>) {
-  return requestClient.post('/api/privilege/company', data, {
+  return requestClient.post('/privilege/company', data, {
     responseReturn: 'body',
   });
 }
 
 export async function updateCompanyApi(data: Record<string, any>) {
-  return requestClient.put('/api/privilege/company', data, {
+  return requestClient.put('/privilege/company', data, {
     responseReturn: 'body',
   });
 }
 
 export async function deleteCompanyApi(id: number) {
-  return requestClient.delete(`/api/privilege/company/${id}`, {
+  return requestClient.delete(`/privilege/company/${id}`, {
     responseReturn: 'body',
   });
 }

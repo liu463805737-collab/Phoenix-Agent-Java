@@ -6,6 +6,7 @@ import cn.hutool.core.util.StrUtil;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.phoenix.privilege.dto.PrivilegeCompanyDTO;
+import com.phoenix.privilege.dto.query.PrivilegeCompanyQuery;
 import com.phoenix.privilege.entity.PrivilegeCompany;
 import com.phoenix.privilege.service.IPrivilegeCompanyService;
 import com.phoenix.privilege.vo.PrivilegeCompanyVO;
@@ -16,31 +17,29 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Comparator;
 
 @RestController
-@RequestMapping("/api/privilege/company")
+@RequestMapping("/privilege/company")
 @RequiredArgsConstructor
 public class PrivilegeCompanyController {
 
-	private final IPrivilegeCompanyService privilegeCompanyService;
+    private final IPrivilegeCompanyService privilegeCompanyService;
 
-	@GetMapping("/page")
-	public ReturnVo<Page<PrivilegeCompanyVO>> page(@RequestParam(defaultValue = "1") long page,
-			@RequestParam(defaultValue = "10") long size, PrivilegeCompanyDTO dto) {
-		QueryWrapper qw = QueryWrapper.create()
-			.like(PrivilegeCompany::getCname, dto.getCname(), StrUtil.isNotBlank(dto.getCname()))
-			.like(PrivilegeCompany::getShortName, dto.getShortName(), StrUtil.isNotBlank(dto.getShortName()))
-			.eq(PrivilegeCompany::getCode, dto.getCode(), StrUtil.isNotBlank(dto.getCode()))
-			.eq(PrivilegeCompany::getStatus, dto.getStatus(), dto.getStatus() != null)
-			.orderBy(PrivilegeCompany::getCreateTime, false);
-		Page<PrivilegeCompany> entityPage = privilegeCompanyService.page(new Page<>(page, size), qw);
-		Page<PrivilegeCompanyVO> voPage = new Page<>(entityPage.getPageNumber(), entityPage.getPageSize(),
-				entityPage.getTotalRow());
-		voPage.setRecords(entityPage.getRecords()
-			.stream()
-			.map(e -> BeanUtil.copyProperties(e, PrivilegeCompanyVO.class))
-				.sorted(Comparator.comparing(PrivilegeCompanyVO::getSort))
-			.toList());
-		return ReturnVo.ok(voPage);
-	}
+    @PostMapping("/page")
+    public ReturnVo<Page<PrivilegeCompanyVO>> page(@RequestBody PrivilegeCompanyQuery query) {
+        QueryWrapper qw = QueryWrapper.create()
+            .like(PrivilegeCompany::getCname, query.getCname(), StrUtil.isNotBlank(query.getCname()))
+            .like(PrivilegeCompany::getShortName, query.getShortName(), StrUtil.isNotBlank(query.getShortName()))
+            .eq(PrivilegeCompany::getCode, query.getCode(), StrUtil.isNotBlank(query.getCode()))
+            .orderBy(PrivilegeCompany::getCreateTime, false);
+        Page<PrivilegeCompany> entityPage = privilegeCompanyService.page(new Page<>(query.getPage(), query.getSize()), qw);
+        Page<PrivilegeCompanyVO> voPage = new Page<>(entityPage.getPageNumber(), entityPage.getPageSize(),
+                entityPage.getTotalRow());
+        voPage.setRecords(entityPage.getRecords()
+            .stream()
+            .map(e -> BeanUtil.copyProperties(e, PrivilegeCompanyVO.class))
+                .sorted(Comparator.comparing(PrivilegeCompanyVO::getSort))
+            .toList());
+        return ReturnVo.ok(voPage);
+    }
 
 	@GetMapping("/{id}")
 	public ReturnVo<PrivilegeCompanyVO> getById(@PathVariable Long id) {
