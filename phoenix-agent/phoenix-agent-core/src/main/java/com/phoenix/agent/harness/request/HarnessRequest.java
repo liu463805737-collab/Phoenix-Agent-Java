@@ -9,6 +9,7 @@ import java.io.Serializable;
 @Data
 @Builder
 public class HarnessRequest implements Serializable {
+    @NotBlank
     private String userId;
     @NotBlank
     private String sessionId;
