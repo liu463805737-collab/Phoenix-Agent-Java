@@ -68,7 +68,7 @@ export function useColumns(): VxeTableGridColumns {
       fixed: 'right',
       slots: { default: 'action' },
       title: '操作',
-      width: 200,
+      width: 240,
     },
   ];
 }
@@ -124,6 +124,7 @@ export function useSchema(): VbenFormSchema[] {
       component: 'RadioGroup',
       fieldName: 'status',
       label: '状态',
+      defaultValue: 0,
       componentProps: {
         options: [
           { label: '启用', value: 0 },
@@ -135,6 +136,7 @@ export function useSchema(): VbenFormSchema[] {
       component: 'RadioGroup',
       fieldName: 'nature',
       label: '部门性质',
+      defaultValue: 0,
       componentProps: {
         options: [
           { label: '部门', value: 0 },
