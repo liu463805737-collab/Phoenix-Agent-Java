@@ -23,6 +23,7 @@ import com.phoenix.platform.model.front.AccountGroupInfo;
 import com.phoenix.platform.model.front.AccountInfo;
 import com.phoenix.platform.model.front.GroupAgentInfo;
 import com.phoenix.platform.model.front.GroupInfo;
+import com.phoenix.common.vo.front.UserGroupVO;
 import com.phoenix.platform.service.front.AccountGroupInfoService;
 import com.phoenix.platform.service.front.AccountInfoService;
 import com.phoenix.platform.service.front.GroupAgentInfoService;
@@ -37,6 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static com.phoenix.platform.constant.PlatformConstant.ACCOUNT_LOGIN;
 
@@ -89,7 +91,37 @@ public class AccountInfoServiceImpl extends ServiceImpl<AccountInfoMapper, Accou
                     .or(AccountInfo::getPhone)
                     .like(keyword));
         }
-		return this.page(page, qw);
+		Page<AccountInfo> result = this.page(page, qw);
+		List<AccountInfo> records = result.getRecords();
+		if (CollUtil.isNotEmpty(records)) {
+			List<String> accountIds = records.stream().map(AccountInfo::getId).collect(Collectors.toList());
+			List<AccountGroupInfo> agList = accountGroupInfoService.list(
+				QueryWrapper.create().in(AccountGroupInfo::getAccountId, accountIds));
+			if (CollUtil.isNotEmpty(agList)) {
+				Map<String, List<AccountGroupInfo>> groupMap = agList.stream()
+					.collect(Collectors.groupingBy(AccountGroupInfo::getAccountId));
+				List<String> groupIds = agList.stream()
+					.map(AccountGroupInfo::getGroupId).distinct().collect(Collectors.toList());
+				Map<String, GroupInfo> groupInfoMap = groupInfoService.listByIds(groupIds).stream()
+					.collect(Collectors.toMap(GroupInfo::getId, g -> g));
+				records.forEach(account -> {
+					List<AccountGroupInfo> accountGroups = groupMap.get(account.getId());
+					if (CollUtil.isNotEmpty(accountGroups)) {
+						account.setGroups(accountGroups.stream()
+							.map(ag -> {
+								GroupInfo gi = groupInfoMap.get(ag.getGroupId());
+								return UserGroupVO.builder()
+									.groupId(ag.getGroupId())
+									.groupName(ag.getGroupName())
+									.description(gi != null ? gi.getDescription() : null)
+									.build();
+							})
+							.collect(Collectors.toList()));
+					}
+				});
+			}
+		}
+		return result;
 	}
 
     @Override

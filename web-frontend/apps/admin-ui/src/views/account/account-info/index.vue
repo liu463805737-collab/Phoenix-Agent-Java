@@ -1,16 +1,12 @@
 <script lang="ts" setup>
 import type { FormInstance, FormRules } from 'element-plus';
 
-import DeptTreeSidebar from '#/components/dept/DeptTreeSidebar.vue';
-import DepartmentSelector from '#/components/dept/DepartmentSelector.vue';
-import EmployeeSelector from '#/components/dept/EmployeeSelector.vue';
 import type { DepartmentTreeVO, GroupInfo, OrganizationTreeVO, PlatformAccountGroupInfo, PlatformAccountInfo } from '#/api';
 
 import { nextTick, onMounted, reactive, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
 import { IconifyIcon } from '@vben/icons';
-import { useVbenForm } from '#/adapter/form';
 
 import {
   ElButton,
@@ -30,16 +26,20 @@ import {
   ElTag,
 } from 'element-plus';
 
+import { useVbenForm } from '#/adapter/form';
 import {
   createAccountGroupInfoApi,
   createAccountInfoApi,
-  deleteAccountInfoApi,
   deleteAccountGroupInfoByGroupAndAccountApi,
+  deleteAccountInfoApi,
   getAccountGroupInfoByAccountApi,
   getAccountInfoPageApi,
   getGroupInfoPageApi,
   updateAccountInfoApi,
 } from '#/api';
+import DepartmentSelector from '#/components/dept/DepartmentSelector.vue';
+import DeptTreeSidebar from '#/components/dept/DeptTreeSidebar.vue';
+import EmployeeSelector from '#/components/dept/EmployeeSelector.vue';
 
 const loading = ref(false);
 const tableData = ref<PlatformAccountInfo[]>([]);
@@ -417,6 +417,16 @@ onMounted(() => {
                       : '禁用'
                   }}
                 </ElTag>
+              </template>
+            </ElTableColumn>
+            <ElTableColumn label="所属组" min-width="160" resizable>
+              <template #default="scope">
+                {{
+                  ((scope.row as PlatformAccountInfo).groups ?? [])
+                    .map(g => g.groupName)
+                    .filter(Boolean)
+                    .join('、') || '-'
+                }}
               </template>
             </ElTableColumn>
             <ElTableColumn prop="createTime" label="创建时间" width="180" resizable />

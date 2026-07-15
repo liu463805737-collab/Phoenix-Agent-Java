@@ -2,6 +2,11 @@ import type { PageResult } from '#/api/core/privilege-types';
 
 import { requestClient } from '#/api/request';
 
+export interface UserGroupVO {
+  groupId?: string;
+  groupName?: string;
+}
+
 export interface PlatformAccountInfo {
   id?: string;
   code?: string;
@@ -18,6 +23,7 @@ export interface PlatformAccountInfo {
   deptId?: string;
   deptName?: string;
   thirdPartyId?: string;
+  groups?: UserGroupVO[];
   createTime?: string;
   create?: string;
   updateTime?: string;
