@@ -94,6 +94,9 @@ public class AccountInfoServiceImpl extends ServiceImpl<AccountInfoMapper, Accou
 		Page<AccountInfo> result = this.page(page, qw);
 		List<AccountInfo> records = result.getRecords();
 		if (CollUtil.isNotEmpty(records)) {
+			records.forEach(r -> r.setPassword(null));
+		}
+		if (CollUtil.isNotEmpty(records)) {
 			List<String> accountIds = records.stream().map(AccountInfo::getId).collect(Collectors.toList());
 			List<AccountGroupInfo> agList = accountGroupInfoService.list(
 				QueryWrapper.create().in(AccountGroupInfo::getAccountId, accountIds));

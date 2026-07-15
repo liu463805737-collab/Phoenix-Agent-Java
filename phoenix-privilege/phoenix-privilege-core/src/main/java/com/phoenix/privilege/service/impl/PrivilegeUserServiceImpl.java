@@ -175,6 +175,7 @@ public class PrivilegeUserServiceImpl extends ServiceImpl<PrivilegeUserMapper, P
 		}
 		List<PrivilegeUserVO> voList = records.stream().map(e -> {
 			PrivilegeUserVO vo = BeanUtil.copyProperties(e, PrivilegeUserVO.class);
+			vo.setPassword(null);
 			vo.setRoles(userRolesMap.getOrDefault(e.getId(), List.of()));
 			return vo;
 		}).toList();

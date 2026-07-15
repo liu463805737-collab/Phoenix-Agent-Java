@@ -43,7 +43,10 @@ public class AccountInfo extends BaseModel {
     private String phone;
     /** 头像地址 */
     private String avatarUrl;
-    /** 性别 */
+    /**
+     * 性别
+     * @see com.phoenix.common.enm.GenderEnm
+     */
     private String gender;
     /** 状态 0-禁用 1-启用 */
     private String status;
