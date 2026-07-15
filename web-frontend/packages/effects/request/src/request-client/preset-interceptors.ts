@@ -112,7 +112,6 @@ export const authenticateResponseInterceptor = ({
 export const errorMessageResponseInterceptor = (
   makeErrorMessage?: MakeErrorMessageFn,
 ): ResponseInterceptorConfig => {
-  debugger;
   return {
     rejected: (error: any) => {
       if (axios.isCancel(error)) {

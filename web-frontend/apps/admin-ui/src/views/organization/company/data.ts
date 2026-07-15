@@ -58,9 +58,10 @@ export function useSchema(): VbenFormSchema[] {
       componentProps: { min: 0, max: 999 },
     },
     {
-      component: 'Select',
+      component: 'RadioGroup',
       fieldName: 'status',
       label: '状态',
+      defaultValue: 1,
       componentProps: {
         options: [
           { label: '启用', value: 1 },

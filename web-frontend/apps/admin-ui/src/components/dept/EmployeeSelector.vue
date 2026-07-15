@@ -129,9 +129,6 @@ onMounted(() => {
       @click="openDialog"
       @clear="handleClear"
     >
-      <template #prepend>
-        <ElIcon><IconifyIcon icon="lucide:user" /></ElIcon>
-      </template>
       <template #append>
         <ElButton @click.stop="openDialog">选择</ElButton>
       </template>
@@ -144,6 +141,7 @@ onMounted(() => {
       :close-on-click-modal="false"
       class="emp-dialog"
       top="8vh"
+      append-to-body
     >
       <div class="emp-dialog-body">
         <div class="emp-search-bar">

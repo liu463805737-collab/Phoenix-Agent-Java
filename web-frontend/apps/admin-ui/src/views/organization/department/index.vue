@@ -260,7 +260,7 @@ onMounted(() => {
         </ElTag>
       </template>
       <template #action="{ row }">
-        <VbenTableAction :actions="getActions(row)" />
+        <VbenTableAction align="center" :actions="getActions(row)" />
       </template>
     </Grid>
   </ColPage>

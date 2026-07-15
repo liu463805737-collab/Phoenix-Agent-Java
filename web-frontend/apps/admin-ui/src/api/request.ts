@@ -48,7 +48,6 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
     console.warn('Access token or refresh token is invalid or expired. ');
     const accessStore = useAccessStore();
     const authStore = useAuthStore();
-    debugger;
     localStorage.removeItem('phoenix-token');
     accessStore.setAccessToken(null);
     if (
@@ -88,7 +87,6 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
     },
   });
 
-  debugger;
   // 处理返回的响应数据格式
   client.addResponseInterceptor(
     defaultResponseInterceptor({
