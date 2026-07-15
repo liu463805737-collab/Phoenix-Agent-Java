@@ -85,16 +85,7 @@ function pick(id: string) {
             <span class="agent-row__desc">{{ a.description }}</span>
           </span>
           <span v-if="a.id === currentAgentId" class="agent-row__check">
-            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
-              <path
-                d="m3.5 8.5 3 3 6-7"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
+            <van-icon name="success" />
           </span>
         </button>
         <div v-if="visible.length === 0" class="picker__empty">暂无智能体</div>
@@ -145,7 +136,7 @@ function pick(id: string) {
 .agent-row {
   display: flex;
   gap: 12px;
-  align-items: flex-start;
+  align-items: center;
   width: 100%;
   padding: 12px;
   text-align: left;

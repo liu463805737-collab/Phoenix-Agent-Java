@@ -85,7 +85,7 @@ function handleKeydown(event: KeyboardEvent) {
 .composer__shell {
   display: flex;
   gap: 8px;
-  align-items: flex-end;
+  align-items: center;
   padding: 8px 8px 8px 16px;
   background: var(--m-bg-elevated);
   border: 1px solid var(--m-border);

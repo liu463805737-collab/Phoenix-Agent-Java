@@ -197,16 +197,7 @@ function handleMe() {
       <button type="button" class="drawer__user" @click="handleMe">
         <span class="drawer__user-avatar">{{ avatarChar }}</span>
         <span class="drawer__user-name">{{ displayName }}</span>
-        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
-          <path
-            d="m6 4 4 4-4 4"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.4"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
+        <van-icon name="ellipsis" />
       </button>
     </div>
 
@@ -359,11 +350,11 @@ function handleMe() {
   display: flex;
   gap: 10px;
   align-items: center;
-  padding: 10px 12px;
-  margin: 8px 12px 4px;
+  padding: 6px 6px;
+  margin: 4px 12px 4px;
   cursor: pointer;
-  background: var(--m-bg-elevated);
-  border: 1px solid var(--m-border-soft);
+  background: transparent;
+  border: 0;
   border-radius: 12px;
 }
 
