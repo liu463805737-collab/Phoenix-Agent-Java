@@ -50,6 +50,7 @@ public class RulesHarnessAgent extends AbstractHarnessAgent {
                 .stateStore(postgresAgentStateStore)
                 .skillRepository(postgresSkillRepository)
                 .filesystem(new RemoteFilesystemSpec(redisStore).isolationScope(IsolationScope.USER))
+                .memory(this.getDefaultModelConfig())
 //                .workspace(Paths.get(".agentscope/workspace"))
                 .enablePendingToolRecovery(true)
                 .middleware(new StopOnAllDeniedMiddleware())
