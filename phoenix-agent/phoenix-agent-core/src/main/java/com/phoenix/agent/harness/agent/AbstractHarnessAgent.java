@@ -8,10 +8,13 @@ import com.phoenix.data.service.agent.AgentService;
 import io.agentscope.core.skill.repository.postgresql.PostgresSkillRepository;
 import io.agentscope.extensions.model.openai.OpenAIChatModel;
 import io.agentscope.extensions.postgresql.state.PostgresAgentStateStore;
+import io.agentscope.extensions.postgresql.store.PostgresBaseStore;
 import io.agentscope.extensions.redis.RedisDistributedStore;
+import io.agentscope.extensions.redis.store.RedisStore;
 import io.agentscope.harness.agent.HarnessAgent;
 import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 /**
  * 智能体抽象类
@@ -29,6 +32,9 @@ public abstract class AbstractHarnessAgent implements SmartInitializingSingleton
     protected PostgresAgentStateStore postgresAgentStateStore;
     @Autowired
     protected PostgresSkillRepository postgresSkillRepository;
+    @Autowired
+    @Qualifier("harnessRedisStore")
+    protected RedisStore  redisStore;
 
     /**
      * 创建ChatModel

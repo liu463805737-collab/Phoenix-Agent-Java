@@ -5,12 +5,12 @@ import com.phoenix.agent.harness.middleware.StopOnAllDeniedMiddleware;
 import io.agentscope.core.tool.Toolkit;
 import io.agentscope.core.tool.builtin.TodoTools;
 import io.agentscope.harness.agent.HarnessAgent;
+import io.agentscope.harness.agent.IsolationScope;
+import io.agentscope.harness.agent.filesystem.spec.RemoteFilesystemSpec;
 import io.agentscope.harness.agent.memory.compaction.CompactionConfig;
 import io.agentscope.harness.agent.memory.compaction.ToolResultEvictionConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import java.nio.file.Paths;
 
 
 @Component
@@ -46,10 +46,11 @@ public class RulesHarnessAgent extends AbstractHarnessAgent {
                 .toolkit(toolkit)
                 .enablePlanMode(true)
                 .disableShellTool()
-                .stateStore(postgresAgentStateStore)
                 .distributedStore(redisDistributedStore)
+                .stateStore(postgresAgentStateStore)
                 .skillRepository(postgresSkillRepository)
-                .workspace(Paths.get(".agentscope/workspace"))
+                .filesystem(new RemoteFilesystemSpec(redisStore).isolationScope(IsolationScope.USER))
+//                .workspace(Paths.get(".agentscope/workspace"))
                 .enablePendingToolRecovery(true)
                 .middleware(new StopOnAllDeniedMiddleware())
                 .compaction(CompactionConfig.builder().triggerMessages(50)      // 50 条触发摘要压缩

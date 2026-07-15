@@ -10,26 +10,35 @@ import io.agentscope.core.rag.exception.VectorStoreException;
 import io.agentscope.core.rag.knowledge.SimpleKnowledge;
 import io.agentscope.core.rag.store.PgVectorStore;
 import io.agentscope.core.skill.repository.postgresql.PostgresSkillRepository;
-import io.agentscope.core.state.AgentStateStore;
 import io.agentscope.extensions.postgresql.state.PostgresAgentStateStore;
 import io.agentscope.extensions.redis.RedisDistributedStore;
-import io.agentscope.harness.agent.DistributedStore;
+import io.agentscope.extensions.redis.store.RedisStore;
 import org.springframework.boot.data.redis.autoconfigure.DataRedisProperties;
 import org.springframework.boot.jdbc.autoconfigure.DataSourceProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
+import org.springframework.util.StringUtils;
 import redis.clients.jedis.JedisPooled;
+import redis.clients.jedis.UnifiedJedis;
 
 @Configuration
 public class HarnessConfig {
 
     @Bean
     public RedisDistributedStore distributedStore(DataRedisProperties dataRedisProperties) {
-        String url = "redis://" + dataRedisProperties.getHost() + ":" + dataRedisProperties.getPort();
+        String url = this.buildRedisUrl(dataRedisProperties);
         return RedisDistributedStore.fromJedis(
                 new JedisPooled(url), "phoenix:session:");
     }
+
+    @Bean(name = "harnessRedisStore")
+    public RedisStore redisStore(DataRedisProperties dataRedisProperties) {
+        String url = this.buildRedisUrl(dataRedisProperties);
+        UnifiedJedis redisClient = new UnifiedJedis(url);
+        return new RedisStore(redisClient, "phoenix:agentscope:store:");
+    }
+
 
     @Bean
     public PostgresSkillRepository postgresSkillRepository(HikariDataSource hikariDataSource) {
@@ -44,6 +53,7 @@ public class HarnessConfig {
 
     /**
      * 配置存放聊天记录
+     *
      * @param hikariDataSource
      * @return
      */
@@ -51,13 +61,14 @@ public class HarnessConfig {
     public PostgresAgentStateStore postgresAgentStateStore(HikariDataSource hikariDataSource) {
         return PostgresAgentStateStore.builder(hikariDataSource)
                 .schemaName("public")
-                .tableName("tbl_harness_vector_store_state")
+                .tableName("tbl_harness_store_state")
                 .createIfNotExist(true)
                 .build();
     }
 
     /**
      * 配置存放知识库
+     *
      * @param dataSourceProperties
      * @return
      * @throws VectorStoreException
@@ -75,6 +86,7 @@ public class HarnessConfig {
 
     /**
      * 配置简单知识库
+     *
      * @param harnessPgVectorStore
      * @param modelConfigDataService
      * @return
@@ -92,5 +104,17 @@ public class HarnessConfig {
                 .embeddingModel(embeddings)
                 .embeddingStore(harnessPgVectorStore)
                 .build();
+    }
+
+    private String buildRedisUrl(DataRedisProperties dataRedisProperties) {
+        StringBuilder uri = new StringBuilder("redis://");
+        if (StringUtils.hasText(dataRedisProperties.getPassword())) {
+            uri.append(":").append(dataRedisProperties.getPassword()).append("@");
+        }
+        uri.append(dataRedisProperties.getHost()).append(":").append(dataRedisProperties.getPort());
+        if (dataRedisProperties.getDatabase() > 0) {
+            uri.append("/").append(dataRedisProperties.getDatabase());
+        }
+        return uri.toString();
     }
 }
