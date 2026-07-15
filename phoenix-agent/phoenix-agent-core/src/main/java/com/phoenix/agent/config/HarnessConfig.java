@@ -4,7 +4,6 @@ import com.phoenix.data.dto.ModelConfigDTO;
 import com.phoenix.data.enums.ModelType;
 import com.phoenix.data.service.aimodelconfig.ModelConfigDataService;
 import com.zaxxer.hikari.HikariDataSource;
-import io.agentscope.core.agent.config.ModelConfig;
 import io.agentscope.core.embedding.EmbeddingModel;
 import io.agentscope.core.embedding.dashscope.DashScopeTextEmbedding;
 import io.agentscope.core.rag.exception.VectorStoreException;
@@ -14,7 +13,6 @@ import io.agentscope.core.skill.repository.postgresql.PostgresSkillRepository;
 import io.agentscope.extensions.postgresql.state.PostgresAgentStateStore;
 import io.agentscope.extensions.redis.RedisDistributedStore;
 import io.agentscope.extensions.redis.store.RedisStore;
-import io.agentscope.harness.agent.memory.MemoryConfig;
 import org.springframework.boot.data.redis.autoconfigure.DataRedisProperties;
 import org.springframework.boot.jdbc.autoconfigure.DataSourceProperties;
 import org.springframework.context.annotation.Bean;
@@ -23,8 +21,6 @@ import org.springframework.context.annotation.DependsOn;
 import org.springframework.util.StringUtils;
 import redis.clients.jedis.JedisPooled;
 import redis.clients.jedis.UnifiedJedis;
-
-import java.time.Duration;
 
 @Configuration
 public class HarnessConfig {

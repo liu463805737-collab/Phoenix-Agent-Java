@@ -38,7 +38,7 @@ public class RulesHarnessAgent extends AbstractHarnessAgent {
         toolkit.registerTool(new TodoTools());
         toolkit.registerTool(rulesRagTool);
         HarnessAgent agent = HarnessAgent.builder()
-                .name("Assistant")
+                .name(getSn())
                 .sysPrompt("""
                         你是一个制度查询专家，你所有的查询结果都强依赖tool返回的结果，不可篡改。
                         """)

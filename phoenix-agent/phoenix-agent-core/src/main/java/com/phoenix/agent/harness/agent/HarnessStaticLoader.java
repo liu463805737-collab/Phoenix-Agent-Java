@@ -1,6 +1,5 @@
 package com.phoenix.agent.harness.agent;
 
-import com.alibaba.cloud.ai.graph.agent.Agent;
 import io.agentscope.harness.agent.HarnessAgent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
