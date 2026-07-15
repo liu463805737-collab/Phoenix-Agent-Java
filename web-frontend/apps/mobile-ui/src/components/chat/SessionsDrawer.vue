@@ -146,34 +146,19 @@ function handleMe() {
   <van-popup
     :show="props.show"
     position="left"
-    :style="{ width: '84%', height: '100%' }"
+    :style="{ width: '70%', height: '100%' }"
     :overlay="true"
     @update:show="(v: boolean) => emit('update:show', v)"
   >
     <div class="drawer">
       <div class="drawer__top">
         <button type="button" class="drawer__new" @click="handleNew">
-          <span class="drawer__new-icon">+</span>
-          新建对话
+          <van-icon class="drawer__new-icon" name="plus" />
+          <span>新建对话</span>
         </button>
 
         <label class="drawer__search">
-          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
-            <circle
-              cx="7"
-              cy="7"
-              r="4.5"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.4"
-            />
-            <path
-              d="m10.5 10.5 3 3"
-              stroke="currentColor"
-              stroke-width="1.4"
-              stroke-linecap="round"
-            />
-          </svg>
+          <van-icon name="search" />
           <input
             v-model="keyword"
             class="drawer__search-input"
@@ -257,20 +242,23 @@ function handleMe() {
   display: flex;
   gap: 8px;
   align-items: center;
-  height: 40px;
-  padding: 0 14px;
+  height: 36px;
+  padding: 0 12px;
   font-size: 14px;
   color: var(--m-text-primary);
   cursor: pointer;
   background: var(--m-bg-elevated);
   border: 1px solid var(--m-border);
   border-radius: 10px;
+  line-height: 1;
 }
 
 .drawer__new-icon {
   font-size: 16px;
   line-height: 1;
   color: var(--m-brand-primary);
+  display: flex;
+  align-items: center;
 }
 
 .drawer__search {
@@ -278,11 +266,11 @@ function handleMe() {
   display: flex;
   align-items: center;
   height: 36px;
-  padding: 0 12px 0 32px;
+  padding: 0 12px 0 12px;
   color: var(--m-text-muted);
   background: var(--m-bg-elevated);
   border: 1px solid var(--m-border);
-  border-radius: 10px;
+  border-radius: 36px;
 }
 
 .drawer__search > svg {

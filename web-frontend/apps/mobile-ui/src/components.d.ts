@@ -14,6 +14,7 @@ declare module 'vue' {
     RouterView: typeof import('vue-router')['RouterView']
     SessionsDrawer: typeof import('./components/chat/SessionsDrawer.vue')['default']
     VanActionSheet: typeof import('vant/es')['ActionSheet']
+    VanIcon: typeof import('vant/es')['Icon']
     VanPopup: typeof import('vant/es')['Popup']
   }
 }

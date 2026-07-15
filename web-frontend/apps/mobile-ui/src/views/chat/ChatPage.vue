@@ -164,132 +164,135 @@ async function handleRegenerate(idx: number) {
 </script>
 
 <template>
-  <div class="chat-page">
-    <header class="chat-nav">
-      <button
-        type="button"
-        class="chat-nav__btn"
-        aria-label="历史"
-        @click="drawerOpen = true"
-      >
-        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-          <path
-            d="M4 7h16M4 12h16M4 17h10"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.8"
-            stroke-linecap="round"
-          />
-        </svg>
-      </button>
-
-      <button
-        type="button"
-        class="chat-nav__title"
-        aria-label="切换智能体"
-        @click="pickerOpen = true"
-      >
-        <span>{{ currentAgent?.name ?? '智能体' }}</span>
-        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
-          <path
-            d="m4 6 4 4 4-4"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.6"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
-      </button>
-
-      <button
-        type="button"
-        class="chat-nav__btn"
-        aria-label="新建对话"
-        @click="handleNewChat"
-      >
-        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-          <path
-            d="M12 5v14M5 12h14"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.8"
-            stroke-linecap="round"
-          />
-        </svg>
-      </button>
-    </header>
-
-    <div ref="scrollRef" class="chat-page__scroll">
-      <div v-if="!hasMessages" class="empty-state">
-        <div class="empty-state__avatar">
-          <img
-            v-if="currentAgent?.avatar && !avatarError && (currentAgent.avatar.startsWith('/') || currentAgent.avatar.startsWith('http'))"
-            :src="currentAgent.avatar"
-            :alt="currentAgent.name || '智能体'"
-            class="empty-state__avatar-img"
-            @error="avatarError = true"
-          />
-          <span v-else>{{ currentAgent?.name ? [...currentAgent.name][0] : '智' }}</span>
-        </div>
-        <div class="empty-state__title">{{ greetingTitle }}</div>
-        <div class="empty-state__sub">
-          {{ currentAgent?.description ?? '挑一个智能体或直接发问' }}
-        </div>
-        <div class="empty-state__suggest">
-          <button
-            v-for="(s, i) in SUGGESTIONS"
-            :key="i"
+  <div>
+    <div class="chat-page" :class="{'slide-with-drawer': drawerOpen}" >
+      <header class="chat-nav">
+        <button
             type="button"
-            class="suggest-chip"
-            @click="handleSuggest(s)"
-          >
-            {{ s }}
-          </button>
+            class="chat-nav__btn"
+            aria-label="历史"
+            @click="drawerOpen = true"
+        >
+          <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true">
+            <path
+                d="M4 7h16M4 12h16M4 17h10"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+            />
+          </svg>
+        </button>
+
+        <button
+            type="button"
+            class="chat-nav__title"
+            aria-label="切换智能体"
+            @click="pickerOpen = true"
+        >
+          <span>{{ currentAgent?.name ?? '智能体' }}</span>
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+            <path
+                d="m4 6 4 4 4-4"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+
+        <button
+            type="button"
+            class="chat-nav__btn"
+            aria-label="新建对话"
+            @click="handleNewChat"
+        >
+          <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true">
+            <path
+                d="M12 5v14M5 12h14"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+            />
+          </svg>
+        </button>
+      </header>
+
+      <div ref="scrollRef" class="chat-page__scroll">
+        <div v-if="!hasMessages" class="empty-state">
+          <div class="empty-state__avatar">
+            <img
+                v-if="currentAgent?.avatar && !avatarError && (currentAgent.avatar.startsWith('/') || currentAgent.avatar.startsWith('http'))"
+                :src="currentAgent.avatar"
+                :alt="currentAgent.name || '智能体'"
+                class="empty-state__avatar-img"
+                @error="avatarError = true"
+            />
+            <span v-else>{{ currentAgent?.name ? [...currentAgent.name][0] : '智' }}</span>
+          </div>
+          <div class="empty-state__title">{{ greetingTitle }}</div>
+          <div class="empty-state__sub">
+            {{ currentAgent?.description ?? '挑一个智能体或直接发问' }}
+          </div>
+          <div class="empty-state__suggest">
+            <button
+                v-for="(s, i) in SUGGESTIONS"
+                :key="i"
+                type="button"
+                class="suggest-chip"
+                @click="handleSuggest(s)"
+            >
+              {{ s }}
+            </button>
+          </div>
+        </div>
+
+        <div v-else class="chat-page__inner">
+          <ChatBubble
+              v-for="(msg, idx) in activeMessages"
+              :key="msg.id"
+              :role="msg.role"
+              :content="msg.content"
+              :message-type="msg.messageType ?? 'text'"
+              :bot-avatar="currentAgent?.avatar || '智'"
+              @longpress="handleLongPress(idx)"
+              @copy="handleCopy(msg.content)"
+              @regenerate="handleRegenerate(idx)"
+          />
+          <ChatBubble
+              v-if="sending"
+              role="assistant"
+              :bot-avatar="currentAgent?.avatar || '智'"
+              typing
+          />
         </div>
       </div>
 
-      <div v-else class="chat-page__inner">
-        <ChatBubble
-          v-for="(msg, idx) in activeMessages"
-          :key="msg.id"
-          :role="msg.role"
-          :content="msg.content"
-          :message-type="msg.messageType ?? 'text'"
-          :bot-avatar="currentAgent?.avatar || '智'"
-          @longpress="handleLongPress(idx)"
-          @copy="handleCopy(msg.content)"
-          @regenerate="handleRegenerate(idx)"
-        />
-        <ChatBubble
-          v-if="sending"
-          role="assistant"
-          :bot-avatar="currentAgent?.avatar || '智'"
-          typing
-        />
+      <div class="chat-page__composer">
+        <ChatComposer :disabled="sending" @submit="handleSend" />
       </div>
-    </div>
 
-    <div class="chat-page__composer">
-      <ChatComposer :disabled="sending" @submit="handleSend" />
     </div>
 
     <SessionsDrawer
-      v-model:show="drawerOpen"
-      @select="handleSelectSession"
-      @new-chat="handleNewChat"
-      @goto-me="router.push('/me')"
+        v-model:show="drawerOpen"
+        @select="handleSelectSession"
+        @new-chat="handleNewChat"
+        @goto-me="router.push('/me')"
     />
 
     <AgentPickerSheet v-model:show="pickerOpen" @picked="handlePickAgent" />
 
     <van-action-sheet
-      v-model:show="bubbleMenu.state.show"
-      :actions="bubbleMenu.state.actions"
-      :cancel-text="bubbleMenu.state.cancelText"
-      close-on-click-action
-      @select="bubbleMenu.onSelect"
-      @cancel="bubbleMenu.onCancel"
+        v-model:show="bubbleMenu.state.show"
+        :actions="bubbleMenu.state.actions"
+        :cancel-text="bubbleMenu.state.cancelText"
+        close-on-click-action
+        @select="bubbleMenu.onSelect"
+        @cancel="bubbleMenu.onCancel"
     />
   </div>
 </template>
@@ -300,6 +303,7 @@ async function handleRegenerate(idx: number) {
   flex-direction: column;
   height: 100dvh;
   background: var(--m-bg);
+  transition: transform var(--van-duration-base) ease-out;
 }
 
 .chat-nav {
@@ -446,5 +450,10 @@ async function handleRegenerate(idx: number) {
 .suggest-chip:active {
   background: var(--m-brand-primary-soft);
   border-color: rgb(47 107 255 / 40%);
+}
+
+.slide-with-drawer {
+  /* 位移距离应与抽屉宽度一致，此处为 80% */
+  transform: translateX(70%);
 }
 </style>
