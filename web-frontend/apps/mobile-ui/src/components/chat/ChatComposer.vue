@@ -101,7 +101,6 @@ function handleKeydown(event: KeyboardEvent) {
   flex: 1 1 auto;
   min-height: 24px;
   max-height: 140px;
-  padding: 6px 0;
   font-size: 16px;
   line-height: 1.5;
   color: var(--m-text-primary);

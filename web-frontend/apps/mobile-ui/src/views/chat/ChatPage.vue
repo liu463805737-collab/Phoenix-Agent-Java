@@ -190,17 +190,8 @@ async function handleRegenerate(idx: number) {
             aria-label="切换智能体"
             @click="pickerOpen = true"
         >
-          <span>{{ currentAgent?.name ?? '智能体' }}</span>
-          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
-            <path
-                d="m4 6 4 4 4-4"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.6"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-            />
-          </svg>
+          <span style="line-height: 1;">{{ currentAgent?.name ?? '智能体' }}</span>
+          <van-icon name="arrow-down" />
         </button>
 
         <button
