@@ -1,25 +1,106 @@
 import { z } from '#/adapter/form';
 import type { VbenFormSchema } from '#/adapter/form';
+import type { VxeTableGridColumns } from '#/adapter/vxe-table';
+
+export function useSearchFormSchema(): VbenFormSchema[] {
+  return [
+    {
+      fieldName: 'keyword',
+      component: 'Input',
+      label: '关键字',
+      labelWidth: 60,
+      componentProps: {
+        placeholder: '请输入名称/编码',
+        allowClear: true,
+      },
+    },
+  ];
+}
+
+export function useColumns(): VxeTableGridColumns {
+  return [
+    {
+      title: '名称',
+      field: 'name',
+      minWidth: 200,
+      align: 'left',
+      resizable: true,
+      treeNode: true,
+    },
+    {
+      title: '编码',
+      field: 'code',
+      width: 120,
+      align: 'left',
+      resizable: true,
+    },
+    {
+      title: '上级部门',
+      field: 'parentName',
+      width: 140,
+      align: 'left',
+    },
+    {
+      title: '排序',
+      field: 'orderNo',
+      width: 70,
+    },
+    {
+      title: '状态',
+      field: 'status',
+      width: 80,
+      slots: { default: 'statusSlot' },
+    },
+    {
+      title: '部门性质',
+      field: 'nature',
+      width: 100,
+      slots: { default: 'natureSlot' },
+    },
+    {
+      title: '创建时间',
+      field: 'createTime',
+      width: 180,
+    },
+    {
+      align: 'center',
+      field: 'operation',
+      fixed: 'right',
+      slots: { default: 'action' },
+      title: '操作',
+      width: 200,
+    },
+  ];
+}
 
 export function useSchema(): VbenFormSchema[] {
   return [
     {
       component: 'Input',
       fieldName: 'id',
-      hidden: true,
       label: 'id',
+      dependencies: {
+        triggerFields: [''],
+        show: false,
+      },
     },
     {
       component: 'Input',
       fieldName: 'companyId',
-      hidden: true,
       label: 'companyId',
+      dependencies: {
+        triggerFields: [''],
+        show: false,
+      },
     },
     {
       component: 'Input',
       fieldName: 'pid',
-      hidden: true,
       label: 'pid',
+      dependencies: {
+        triggerFields: [''],
+        show: false,
+      },
     },
     {
       component: 'Input',

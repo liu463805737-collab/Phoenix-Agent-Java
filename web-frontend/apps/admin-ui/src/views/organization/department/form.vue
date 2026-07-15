@@ -3,6 +3,7 @@ import { computed, nextTick, ref } from 'vue';
 
 import { useVbenModal } from '@vben/common-ui';
 import { IconifyIcon } from '@vben/icons';
+
 import {
   createDepartmentApi,
   updateDepartmentApi,
@@ -22,9 +23,7 @@ const pidDialogVisible = ref(false);
 const pidTreeRef = ref();
 
 const getTitle = computed(() => {
-  return formData.value?.id
-    ? '编辑部门'
-    : '新增部门';
+  return formData.value?.id ? '编辑部门' : '新增部门';
 });
 
 const [Form, formApi] = useVbenForm({
@@ -113,7 +112,6 @@ const [Modal, modalApi] = useVbenModal({
       title="选择上级部门"
       width="480px"
       :close-on-click-modal="false"
-      class="pid-dialog"
       append-to-body
     >
       <div class="pid-tree-container">
@@ -128,10 +126,10 @@ const [Modal, modalApi] = useVbenModal({
         >
           <template #default="{ node }">
             <div class="pid-node">
-              <ElIcon class="pid-node-icon">
+              <ElIcon>
                 <IconifyIcon icon="lucide:folder-tree" />
               </ElIcon>
-              <span class="pid-node-label">{{ node.label }}</span>
+              <span>{{ node.label }}</span>
             </div>
           </template>
         </ElTree>
@@ -147,66 +145,10 @@ const [Modal, modalApi] = useVbenModal({
 
 .pid-trigger :deep(.el-input__wrapper) {
   cursor: pointer;
-  border-radius: 8px 0 0 8px;
 }
 
 .pid-trigger :deep(.el-input__inner) {
   cursor: pointer;
-}
-
-.pid-trigger :deep(.el-input-group__prepend) {
-  background: transparent;
-  border: none;
-  padding: 0 0 0 12px;
-  color: hsl(var(--muted-foreground));
-  font-size: 15px;
-}
-
-.pid-trigger :deep(.el-input-group__append) {
-  background: hsl(var(--primary));
-  border-color: hsl(var(--primary));
-  border-radius: 0 8px 8px 0;
-  padding: 0 16px;
-}
-
-.pid-trigger :deep(.el-input-group__append .el-button) {
-  color: hsl(var(--primary-foreground));
-  border: none;
-  background: transparent;
-  font-size: 13px;
-  margin: 0;
-  padding: 0;
-}
-
-.pid-dialog :deep(.el-dialog) {
-  overflow: hidden;
-  border-radius: 14px;
-  box-shadow: 0 20px 60px rgb(0 0 0 / 12%);
-}
-
-.pid-dialog :deep(.el-dialog__header) {
-  padding: 20px 24px 0;
-  margin: 0;
-}
-
-.pid-dialog :deep(.el-dialog__title) {
-  font-size: 16px;
-  font-weight: 600;
-  color: hsl(var(--foreground));
-}
-
-.pid-dialog :deep(.el-dialog__headerbtn) {
-  top: 20px;
-  right: 20px;
-}
-
-.pid-dialog :deep(.el-dialog__headerbtn .el-dialog__close) {
-  font-size: 16px;
-  color: hsl(var(--muted-foreground));
-}
-
-.pid-dialog :deep(.el-dialog__body) {
-  padding: 16px 24px;
 }
 
 .pid-tree-container {
@@ -214,53 +156,9 @@ const [Modal, modalApi] = useVbenModal({
   overflow-y: auto;
 }
 
-.pid-tree-container::-webkit-scrollbar {
-  width: 4px;
-}
-
-.pid-tree-container::-webkit-scrollbar-thumb {
-  background: hsl(var(--border));
-  border-radius: 2px;
-}
-
-.pid-tree-container :deep(.el-tree-node__content) {
-  height: 36px;
-  padding: 0 8px;
-  border-radius: 6px;
-  transition: background 0.15s;
-}
-
-.pid-tree-container :deep(.el-tree-node__content:hover) {
-  background: hsl(var(--accent));
-}
-
-.pid-tree-container :deep(.el-tree-node.is-current > .el-tree-node__content) {
-  background: hsl(var(--primary) / 10%);
-}
-
 .pid-node {
   display: flex;
   gap: 6px;
   align-items: center;
-  width: 100%;
-}
-
-.pid-node-icon {
-  flex-shrink: 0;
-  font-size: 15px;
-  color: hsl(var(--primary) / 65%);
-}
-
-.pid-node-label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 13px;
-  color: hsl(var(--foreground));
-  white-space: nowrap;
-}
-
-.pid-tree-container :deep(.el-tree-node.is-current > .el-tree-node__content .pid-node-label) {
-  font-weight: 500;
-  color: hsl(var(--primary));
 }
 </style>
