@@ -1,14 +1,18 @@
 package com.phoenix.platform.model.front;
 
+import com.mybatisflex.annotation.Column;
 import com.mybatisflex.annotation.Id;
 import com.mybatisflex.annotation.KeyType;
 import com.mybatisflex.annotation.Table;
 import com.mybatisflex.core.keygen.KeyGenerators;
 import com.phoenix.common.model.BaseModel;
+import com.phoenix.common.vo.front.UserGroupVO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.List;
 
 /**
  * 前台账号信息表
@@ -49,4 +53,8 @@ public class AccountInfo extends BaseModel {
     private String deptId;
     /** 部门名称 */
     private String deptName;
+
+    /** 关联的用户组列表 */
+    @Column(ignore = true)
+    private List<UserGroupVO> groups;
 }
