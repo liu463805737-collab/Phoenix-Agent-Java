@@ -1,36 +1,29 @@
 <script lang="ts" setup>
 import { onMounted, ref } from 'vue';
 
-import { Page, useVbenModal } from '@vben/common-ui';
+import { ColPage, useVbenModal } from '@vben/common-ui';
 import { IconifyIcon } from '@vben/icons';
 
-import {
-  ElButton,
-  ElCard,
-  ElEmpty,
-  ElIcon,
-  ElMessage,
-  ElMessageBox,
-  ElTable,
-  ElTableColumn,
-  ElTag,
-} from 'element-plus';
+import { useVbenVxeGrid, VbenTableAction } from '#/adapter/vxe-table';
+import type { VxeGridProps } from '#/adapter/vxe-table';
+import type { VbenFormProps } from '@vben/common-ui';
+
+import { ElButton, ElEmpty, ElIcon, ElMessage, ElTag } from 'element-plus';
 
 import {
   deleteDepartmentApi,
   getCompanyPageApi,
   getDeptTreeApi,
   type PrivilegeCompany,
-  type PrivilegeDepartment,
 } from '#/api';
 
 import Form from './form.vue';
+import { useColumns, useSearchFormSchema } from './data';
 
-const companiesLoading = ref(false);
-const deptLoading = ref(false);
+const currentNode = ref<PrivilegeCompany | null>(null);
 const companies = ref<PrivilegeCompany[]>([]);
-const tableData = ref<PrivilegeDepartment[]>([]);
-const selectedCompany = ref<PrivilegeCompany | null>(null);
+const companiesLoading = ref(false);
+const fullTreeData = ref<any[]>([]);
 
 async function loadCompanies() {
   companiesLoading.value = true;
@@ -39,7 +32,7 @@ async function loadCompanies() {
     const pageResult = res?.data || res;
     companies.value = pageResult?.records || [];
     if (companies.value.length > 0) {
-      selectCompany(companies.value[0]);
+      handleSelect(companies.value[0]);
     }
   } catch {
     companies.value = [];
@@ -48,35 +41,84 @@ async function loadCompanies() {
   }
 }
 
-async function loadDepartments() {
-  if (!selectedCompany.value?.id) {
-    tableData.value = [];
-    return;
-  }
-  deptLoading.value = true;
-  try {
-    const res = (await getDeptTreeApi(selectedCompany.value.id)) as any;
-    tableData.value = res?.data || res || [];
-  } catch {
-    tableData.value = [];
-  } finally {
-    deptLoading.value = false;
-  }
+function handleSelect(company?: PrivilegeCompany) {
+  if (!company) return;
+  currentNode.value = company;
+  gridApi.query();
 }
 
-function selectCompany(company: PrivilegeCompany) {
-  selectedCompany.value = company;
-  loadDepartments();
-}
+const formOptions: VbenFormProps = {
+  showCollapseButton: false,
+  submitOnEnter: true,
+  commonConfig: {
+    labelWidth: 60,
+  },
+  wrapperClass: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3',
+  actionWrapperClass: 'pl-2 !justify-end md:!justify-start',
+  actionPosition: 'left',
+  actionLayout: 'inline',
+  schema: useSearchFormSchema(),
+};
+
+const gridOptions: VxeGridProps = {
+  pagerConfig: {
+    enabled: false,
+  },
+  treeConfig: {
+    rowField: 'id',
+    children: 'children',
+  },
+  columns: useColumns(),
+  columnConfig: { resizable: true },
+  height: 'auto',
+  keepSource: true,
+  border: false,
+  stripe: true,
+  showOverflow: true,
+  proxyConfig: {
+    ajax: {
+      query: async ({ page: _page }, formValues) => {
+        const companyId = currentNode.value?.id;
+        if (!companyId) return { records: [] };
+        const res = (await getDeptTreeApi(companyId)) as any;
+        const data = res?.data || res || [];
+        const treeData = Array.isArray(data) ? data : [];
+        fullTreeData.value = treeData;
+        const keyword = formValues?.keyword?.trim();
+        if (!keyword) return { records: treeData };
+        const kw = keyword.toLowerCase();
+        function filterTree(nodes: any[]): any[] {
+          return nodes.reduce((acc: any[], node) => {
+            const selfMatch =
+              (node.name?.toLowerCase() || '').includes(kw) ||
+              (node.code?.toLowerCase() || '').includes(kw);
+            const filteredChildren = node.children ? filterTree(node.children) : [];
+            if (selfMatch || filteredChildren.length > 0) {
+              acc.push({ ...node, children: filteredChildren.length > 0 ? filteredChildren : (selfMatch ? node.children : []) });
+            }
+            return acc;
+          }, []);
+        }
+        return { records: filterTree(treeData) };
+      },
+    },
+  },
+};
+
+const [Grid, gridApi] = useVbenVxeGrid({ formOptions, gridOptions });
+const [FormModal, formModalApi] = useVbenModal({
+  connectedComponent: Form,
+  destroyOnClose: true,
+});
 
 function onCreate() {
-  if (!selectedCompany.value) {
+  if (!currentNode.value) {
     ElMessage.warning('请先选择一家公司');
     return;
   }
   formModalApi.setData({
-    row: { companyId: selectedCompany.value.id },
-    tree: tableData.value,
+    row: { companyId: currentNode.value.id },
+    tree: fullTreeData.value,
     parentName: '',
   }).open();
 }
@@ -84,7 +126,7 @@ function onCreate() {
 function onEdit(row: any) {
   formModalApi.setData({
     row: { ...row },
-    tree: tableData.value,
+    tree: fullTreeData.value,
     parentName: row.parentName || '',
   }).open();
 }
@@ -92,30 +134,27 @@ function onEdit(row: any) {
 function handleAddChild(row: any) {
   formModalApi.setData({
     row: {
-      companyId: selectedCompany.value?.id,
+      companyId: currentNode.value?.id,
       pid: row.id,
     },
-    tree: tableData.value,
+    tree: fullTreeData.value,
     parentName: row.name || '',
   }).open();
 }
 
 function onDelete(row: any) {
-  ElMessageBox.confirm(
-    `确定要删除部门 "${row.name}" 吗？此操作不可恢复。`,
-    '删除确认',
-    {
-      confirmButtonText: '确定删除',
-      cancelButtonText: '取消',
-      confirmButtonType: 'danger',
-    },
-  ).then(() => {
-    deleteDepartmentApi(row.id)
-      .then(() => {
-        ElMessage.success('部门删除成功');
-        loadDepartments();
-      });
-  }).catch(() => {});
+  if (row.children && row.children.length > 0) {
+    ElMessage.warning('有子节点，不能删除！');
+    return;
+  }
+  deleteDepartmentApi(row.id).then(() => {
+    ElMessage.success('删除成功');
+    gridApi.query();
+  });
+}
+
+function refreshGrid() {
+  gridApi.query();
 }
 
 function getActions(row: any) {
@@ -144,319 +183,86 @@ function getActions(row: any) {
   ];
 }
 
-function refreshGrid() {
-  loadDepartments();
-}
-
-const [FormModal, formModalApi] = useVbenModal({
-  connectedComponent: Form,
-  destroyOnClose: true,
-});
-
 onMounted(() => {
   loadCompanies();
 });
 </script>
 
 <template>
-  <Page auto-content-height>
-    <FormModal @success="refreshGrid" />
-    <div class="page-container">
-      <div class="split-layout">
-        <div class="left-panel">
-          <ElCard
-            class="company-card"
-            :body-style="{ padding: '0' }"
-            :loading="companiesLoading"
-          >
-            <template #header>
-              <div class="card-header">
-                <ElIcon><IconifyIcon icon="lucide:building" /></ElIcon>
-                <span>公司列表</span>
-              </div>
-            </template>
-            <div
-              v-if="companies.length === 0 && !companiesLoading"
-              class="empty-list"
-            >
-              <ElEmpty description="暂无公司" />
-            </div>
-            <div v-else class="company-list">
-              <div
-                v-for="company in companies"
-                :key="company.id"
-                class="company-item"
-                :class="{ active: selectedCompany?.id === company.id }"
-                @click="selectCompany(company)"
-              >
-                <div class="company-name">
-                  <ElIcon><IconifyIcon icon="lucide:building-2" /></ElIcon>
-                  <span>{{ company.cname }}</span>
-                </div>
-                <div class="company-meta">
-                  <ElTag size="small" type="info">
-                    {{ company.code }}
-                  </ElTag>
-                  <ElTag
-                    size="small"
-                    :type="company.status === 1 ? 'success' : 'danger'"
-                  >
-                    {{ company.status === 1 ? '启用' : '禁用' }}
-                  </ElTag>
-                </div>
-              </div>
-            </div>
-          </ElCard>
+  <ColPage
+    :left-max-width="50"
+    :left-min-width="10"
+    :left-width="15"
+    :split-handle="false"
+    :split-line="false"
+    :resizable="true"
+    :left-collapsible="false"
+    auto-content-height
+  >
+    <template #left>
+      <div class="flex h-full flex-col rounded-lg border bg-card">
+        <div class="flex items-center gap-2 border-b border-border px-4 py-3 text-sm font-semibold">
+          <ElIcon><IconifyIcon icon="lucide:building" /></ElIcon>
+          <span>公司列表</span>
         </div>
-
-        <div class="right-panel">
-          <ElCard class="dept-card" :body-style="{ padding: '20px' }">
-            <template #header>
-              <div class="card-header">
-                <ElIcon><IconifyIcon icon="lucide:network" /></ElIcon>
-                <span>
-                  {{
-                    selectedCompany
-                      ? `部门管理 - ${selectedCompany.cname}`
-                      : '部门管理'
-                  }}
-                </span>
-              </div>
-            </template>
-
-            <div v-if="!selectedCompany" class="no-company-tip">
-              <ElEmpty description="请从左侧选择一家公司">
-                <template #image>
-                  <ElIcon size="60">
-                    <IconifyIcon icon="lucide:building-2" />
-                  </ElIcon>
-                </template>
-              </ElEmpty>
+        <div v-if="companies.length === 0 && !companiesLoading" class="py-8">
+          <ElEmpty description="暂无公司" />
+        </div>
+        <div v-if="companiesLoading" class="py-8">
+          <div class="text-center text-sm text-muted-foreground">加载中...</div>
+        </div>
+        <div v-else class="flex-1 overflow-y-auto">
+          <div
+            v-for="company in companies"
+            :key="company.id"
+            :class="[
+              'cursor-pointer border-b border-border px-4 py-3 transition-colors hover:bg-accent',
+              currentNode?.id === company.id ? 'border-l-4 border-l-primary bg-accent' : '',
+            ]"
+            @click="handleSelect(company)"
+          >
+            <div class="flex items-center gap-2 font-medium text-foreground">
+              <ElIcon><IconifyIcon icon="lucide:building-2" /></ElIcon>
+              <span>{{ company.cname }}</span>
             </div>
-
-            <div v-else class="dept-content">
-              <div class="table-toolbar">
-                <ElButton type="primary" @click="onCreate">
-                  <ElIcon><IconifyIcon icon="lucide:plus" /></ElIcon>
-                  新增
-                </ElButton>
-                <ElButton @click="loadDepartments">
-                  <ElIcon><IconifyIcon icon="lucide:refresh-cw" /></ElIcon>
-                  刷新
-                </ElButton>
-              </div>
-
-              <ElTable
-                :data="tableData"
-                style="width: 100%; height: 100%"
-                stripe
-                v-loading="deptLoading"
-                empty-text="暂无部门数据"
-                row-key="id"
-                default-expand-all
-                :tree-props="{
-                  children: 'children',
-                  hasChildren: 'hasChildren',
-                }"
+            <div class="flex gap-2 pl-7 pt-1">
+              <ElTag size="small" type="info">{{ company.code }}</ElTag>
+              <ElTag
+                size="small"
+                :type="company.status === 1 ? 'success' : 'danger'"
               >
-                <ElTableColumn prop="name" label="部门名称" min-width="180" />
-                <ElTableColumn prop="code" label="部门编码" width="140" />
-                <ElTableColumn prop="parentName" label="上级部门" width="140" />
-                <ElTableColumn prop="orderNo" label="排序" width="70" />
-                <ElTableColumn prop="status" label="状态" width="80">
-                  <template #default="scope">
-                    <ElTag
-                      :type="scope.row.status === 0 ? 'success' : 'danger'"
-                      size="small"
-                    >
-                      {{ scope.row.status === 0 ? '启用' : '禁用' }}
-                    </ElTag>
-                  </template>
-                </ElTableColumn>
-                <ElTableColumn prop="nature" label="部门性质" width="80">
-                  <template #default="scope">
-                    <ElTag
-                      :type="scope.row.nature === 0 ? 'primary' : 'warning'"
-                      size="small"
-                    >
-                      {{ scope.row.nature === 0 ? '部门' : '组' }}
-                    </ElTag>
-                  </template>
-                </ElTableColumn>
-                <ElTableColumn label="创建时间" width="165">
-                  <template #default="scope">
-                    {{ scope.row.createTime?.replace('T', ' ')?.slice(0, 16) }}
-                  </template>
-                </ElTableColumn>
-                <ElTableColumn label="操作" width="200" fixed="right">
-                  <template #default="scope">
-                    <div class="action-btns">
-                      <ElButton
-                        type="primary"
-                        size="small"
-                        @click="handleAddChild(scope.row as PrivilegeDepartment)"
-                      >
-                        新增
-                      </ElButton>
-                      <ElButton
-                        type="warning"
-                        size="small"
-                        @click="onEdit(scope.row as PrivilegeDepartment)"
-                      >
-                        编辑
-                      </ElButton>
-                      <ElButton
-                        type="danger"
-                        size="small"
-                        @click="
-                          onDelete(scope.row as PrivilegeDepartment)
-                        "
-                      >
-                        删除
-                      </ElButton>
-                    </div>
-                  </template>
-                </ElTableColumn>
-              </ElTable>
+                {{ company.status === 1 ? '启用' : '禁用' }}
+              </ElTag>
             </div>
-          </ElCard>
+          </div>
         </div>
       </div>
-    </div>
-  </Page>
+    </template>
+    <FormModal @success="refreshGrid" />
+    <Grid table-title="部门管理">
+      <template #toolbar-tools>
+        <ElButton type="primary" @click="onCreate">新增</ElButton>
+      </template>
+      <template #statusSlot="{ row }">
+        <ElTag
+          :type="row.status === 0 ? 'success' : 'danger'"
+          size="small"
+        >
+          {{ row.status === 0 ? '启用' : '禁用' }}
+        </ElTag>
+      </template>
+      <template #natureSlot="{ row }">
+        <ElTag
+          :type="row.nature === 0 ? 'primary' : 'warning'"
+          size="small"
+        >
+          {{ row.nature === 0 ? '部门' : '组' }}
+        </ElTag>
+      </template>
+      <template #action="{ row }">
+        <VbenTableAction :actions="getActions(row)" />
+      </template>
+    </Grid>
+  </ColPage>
 </template>
 
-<style scoped>
-.page-container {
-  @apply bg-background-deep;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-.split-layout {
-  display: flex;
-  flex: 1;
-  gap: 1rem;
-  overflow: hidden;
-}
-
-.left-panel {
-  display: flex;
-  flex-shrink: 0;
-  flex-direction: column;
-  width: 240px;
-}
-
-.right-panel {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.company-card {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  border-radius: 12px;
-}
-
-.company-card :deep(.el-card__body) {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.dept-card {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  border-radius: 12px;
-}
-
-.dept-card :deep(.el-card__body) {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.dept-content {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.dept-content .el-table {
-  flex: 1;
-}
-
-.card-header {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  font-size: 0.95rem;
-  font-weight: 600;
-}
-
-.company-list {
-  flex: 1;
-  overflow-y: auto;
-}
-
-.company-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 12px 16px;
-  cursor: pointer;
-  border-bottom: 1px solid #f0f0f0;
-  transition: background 0.2s;
-}
-
-.company-item:hover {
-  background: #f5f7fa;
-}
-
-.company-item.active {
-  background: #ecf5ff;
-  border-left: 3px solid #409eff;
-}
-
-.company-name {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  font-weight: 500;
-  color: #1f2937;
-}
-
-.company-meta {
-  display: flex;
-  gap: 0.5rem;
-  padding-left: 1.6rem;
-}
-
-.empty-list {
-  padding: 2rem 0;
-}
-
-.no-company-tip {
-  padding: 3rem 0;
-}
-
-.table-toolbar {
-  display: flex;
-  flex-shrink: 0;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-}
-
-.action-btns {
-  display: flex;
-  gap: 0.5rem;
-}
-</style>
