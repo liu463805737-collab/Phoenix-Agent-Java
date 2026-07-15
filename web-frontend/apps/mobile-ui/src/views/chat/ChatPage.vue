@@ -8,7 +8,7 @@ import {
   useChatStore,
 } from '@phoenix/chat-shared';
 import { getAgentSessionsApi } from '../../services/chat';
-import { showToast } from 'vant';
+import { showToast, showSuccessToast } from 'vant';
 
 import { useActionMenu } from '../../components/useActionMenu';
 import ChatBubble from '../../components/chat/ChatBubble.vue';
@@ -131,7 +131,7 @@ async function handleLongPress(idx: number) {
     if (msg) {
       try {
         await navigator.clipboard.writeText(msg.content);
-        showToast({ message: '已复制', position: 'bottom' });
+        showSuccessToast({ message: '已复制', position: 'bottom' });
       } catch {
         /* ignore */
       }
@@ -148,7 +148,7 @@ async function handleLongPress(idx: number) {
 async function handleCopy(content: string) {
   try {
     await navigator.clipboard.writeText(content);
-    showToast({ message: '已复制', position: 'bottom' });
+    showSuccessToast({ message: '已复制', position: 'bottom' });
   } catch {
     /* ignore */
   }

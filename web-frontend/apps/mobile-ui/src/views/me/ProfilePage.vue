@@ -30,6 +30,7 @@ async function handleLogout() {
     await showConfirmDialog({
       title: '退出登录',
       message: '确认要退出当前账号吗？',
+      width: '70%',
     });
     chat.reset();
     await auth.logout();
