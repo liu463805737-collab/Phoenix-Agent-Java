@@ -9,6 +9,8 @@ import {
 
 import 'vant/lib/index.css';
 import './styles/global.scss';
+import 'vant/es/popup/style';
+import 'vant/es/toast/style';
 
 import App from './App.vue';
 import router from './router';

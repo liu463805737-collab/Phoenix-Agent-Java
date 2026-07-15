@@ -131,7 +131,7 @@ async function handleLongPress(idx: number) {
     if (msg) {
       try {
         await navigator.clipboard.writeText(msg.content);
-        showSuccessToast({ message: '已复制', position: 'bottom' });
+        showSuccessToast({ message: '已复制' });
       } catch {
         /* ignore */
       }
@@ -148,7 +148,7 @@ async function handleLongPress(idx: number) {
 async function handleCopy(content: string) {
   try {
     await navigator.clipboard.writeText(content);
-    showSuccessToast({ message: '已复制', position: 'bottom' });
+    showSuccessToast({ message: '已复制' });
   } catch {
     /* ignore */
   }

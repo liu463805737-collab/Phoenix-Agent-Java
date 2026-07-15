@@ -103,7 +103,7 @@ function clearTimer() {
             aria-label="复制"
             @click="emit('copy')"
           >
-            <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
               <rect
                 x="8"
                 y="8"
@@ -130,7 +130,7 @@ function clearTimer() {
             aria-label="重新生成"
             @click="emit('regenerate')"
           >
-            <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
               <path
                 d="M4 12a8 8 0 0 1 13.66-5.66M20 12a8 8 0 0 1-13.66 5.66"
                 fill="none"

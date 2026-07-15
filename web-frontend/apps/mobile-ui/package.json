@@ -21,7 +21,7 @@
     "highlight.js": "11.11.1",
     "marked": "12.0.2",
     "pinia": "catalog:",
-    "vant": "^4.9.14",
+    "vant": "^4.9.22",
     "vue": "catalog:",
     "vue-router": "catalog:"
   },
