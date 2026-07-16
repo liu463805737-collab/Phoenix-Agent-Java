@@ -5,7 +5,6 @@ import com.phoenix.agent.harness.request.HarnessRequest;
 import io.agentscope.core.event.AgentEvent;
 import io.agentscope.core.message.Msg;
 import io.agentscope.harness.agent.HarnessAgent;
-import org.springframework.http.ResponseEntity;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -38,5 +37,5 @@ public interface HarnessSendMessage {
      * @param request 参数
      * @return
      */
-    Flux<? extends Object> confirm(String sn, ConfirmRequest request);
+    Flux<AgentEvent> confirmStream(String sn, ConfirmRequest request);
 }

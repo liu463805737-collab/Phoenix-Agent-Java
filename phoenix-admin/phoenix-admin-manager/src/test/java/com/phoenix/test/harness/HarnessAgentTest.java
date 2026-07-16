@@ -15,8 +15,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.ResponseEntity;
-import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -32,7 +30,7 @@ public class HarnessAgentTest {
     private HitlCacheService hitlCacheService;
 
     @Test
-    public void testHuman2(){
+    public void testHuman2() {
         /**
          * 第一次发起的时候
          */
@@ -46,7 +44,7 @@ public class HarnessAgentTest {
                         hitlCacheService.savePendingConfirm(sessionId, confirmEvent);
                     } else {
                         if (event instanceof TextBlockDeltaEvent textBlockDeltaEvent) {
-                            System.out.println("-----"+textBlockDeltaEvent.getDelta());
+                            System.out.println("-----" + textBlockDeltaEvent.getDelta());
                         }
                     }
                 })
@@ -59,9 +57,9 @@ public class HarnessAgentTest {
         confirmRequest.setUserId(userId);
         confirmRequest.setSessionId(sessionId);
         confirmRequest.setAllowed(true);
-        harnessSendMessage.confirm("HumanInTheLoop", confirmRequest).doOnNext(event -> {
+        harnessSendMessage.confirmStream("HumanInTheLoop", confirmRequest).doOnNext(event -> {
             if (event instanceof TextBlockDeltaEvent textBlockDeltaEvent) {
-                System.out.println("++++++++++++++"+textBlockDeltaEvent.getDelta());
+                System.out.println("++++++++++++++" + textBlockDeltaEvent.getDelta());
             }
         }).blockLast();
 
@@ -117,8 +115,8 @@ public class HarnessAgentTest {
         StepVerifier.create(agentEventFlux)
                 .recordWith(ArrayList::new)  // 记录所有事件
                 .thenConsumeWhile(event -> {
-                    if (event instanceof TextBlockDeltaEvent delta){
-                        log.info("返回的内容：{}",delta.getDelta());
+                    if (event instanceof TextBlockDeltaEvent delta) {
+                        log.info("返回的内容：{}", delta.getDelta());
                     }
                     return true;
                 })
@@ -139,8 +137,8 @@ public class HarnessAgentTest {
         StepVerifier.create(agentEventFlux)
                 .recordWith(ArrayList::new)  // 记录所有事件
                 .thenConsumeWhile(event -> {
-                    if (event instanceof TextBlockDeltaEvent delta){
-                        log.info("返回的内容：{}",delta.getDelta());
+                    if (event instanceof TextBlockDeltaEvent delta) {
+                        log.info("返回的内容：{}", delta.getDelta());
                     }
                     return true;
                 })
