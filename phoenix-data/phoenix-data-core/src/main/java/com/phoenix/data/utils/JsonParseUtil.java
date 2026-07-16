@@ -1,9 +1,7 @@
 package com.phoenix.data.utils;
 
-import com.phoenix.data.prompt.PromptConstant;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.phoenix.data.prompt.PromptConstant;
 import com.phoenix.data.util.JsonUtil;
 import com.phoenix.data.util.MarkdownParserUtil;
 import lombok.AllArgsConstructor;
@@ -13,6 +11,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import reactor.core.publisher.Flux;
 import com.phoenix.data.service.llm.LlmService;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.Map;
 /**

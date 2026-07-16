@@ -1,10 +1,10 @@
 package com.phoenix.data.dto.planner;
 
-import com.phoenix.data.constant.Constant;
-import com.phoenix.data.util.JsonUtil;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.phoenix.data.constant.Constant;
+import com.phoenix.data.util.JsonUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -48,13 +48,8 @@ public class Plan {
 		Plan plan = new Plan();
 		plan.setThoughtProcess("根据问题生成SQL");
 		plan.setExecutionPlan(List.of(step));
-		try {
-			NL2SQL_PLAN_JSON = JsonUtil.getObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(plan);
-		}
-		catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
-	}
+        NL2SQL_PLAN_JSON = JsonUtil.getObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(plan);
+    }
 
 	/**
 	 * 获取 NL2SQL 模式的默认执行计划 JSON

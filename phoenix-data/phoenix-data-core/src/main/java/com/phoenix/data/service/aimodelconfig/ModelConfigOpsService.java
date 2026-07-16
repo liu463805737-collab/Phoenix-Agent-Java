@@ -4,8 +4,6 @@ import com.phoenix.data.dto.ModelConfigDTO;
 import com.phoenix.data.entity.ModelConfig;
 import com.phoenix.data.enums.ModelType;
 import com.phoenix.data.util.JsonUtil;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ChatModel;
@@ -13,6 +11,8 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * 模型配置运维服务，提供配置的热切换、激活及连接测试功能。
@@ -108,7 +108,7 @@ public class ModelConfigOpsService {
 			try {
 				log.error("Failed to test model connection. Config: {}", objectMapper.writeValueAsString(config), e);
 			}
-			catch (JsonProcessingException e1) {
+			catch (JacksonException e1) {
 				log.error("Failed to convert config to JSON. Config: {}", config, e1);
 			}
 			// 重新抛出异常，让 Controller 捕获并展示给前端

@@ -25,8 +25,6 @@ import redis.clients.jedis.UnifiedJedis;
 @Configuration
 public class HarnessConfig {
     
-
-
     @Bean
     public RedisDistributedStore distributedStore(DataRedisProperties dataRedisProperties) {
         String url = this.buildRedisUrl(dataRedisProperties);

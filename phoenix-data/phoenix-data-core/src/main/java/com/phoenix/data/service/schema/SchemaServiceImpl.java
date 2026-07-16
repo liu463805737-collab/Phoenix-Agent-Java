@@ -17,7 +17,6 @@ import com.phoenix.data.properties.DataAgentProperties;
 import com.phoenix.data.service.vectorstore.AgentVectorStoreService;
 import com.phoenix.data.service.vectorstore.DynamicFilterService;
 import com.phoenix.data.util.JsonUtil;
-import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
@@ -30,6 +29,7 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
+import tools.jackson.core.type.TypeReference;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;

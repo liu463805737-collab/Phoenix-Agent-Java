@@ -1,6 +1,7 @@
 package com.phoenix.data.util;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * JSON工具类，提供ObjectMapper单例

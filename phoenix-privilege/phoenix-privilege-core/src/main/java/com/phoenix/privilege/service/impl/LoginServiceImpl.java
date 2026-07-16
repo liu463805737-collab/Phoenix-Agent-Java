@@ -3,7 +3,6 @@ package com.phoenix.privilege.service.impl;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.crypto.SecureUtil;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phoenix.privilege.constant.LoginConstant;
 import com.phoenix.privilege.dto.LoginInfoDTO;
 import com.phoenix.privilege.entity.*;
@@ -18,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.*;
 import java.util.stream.Collectors;

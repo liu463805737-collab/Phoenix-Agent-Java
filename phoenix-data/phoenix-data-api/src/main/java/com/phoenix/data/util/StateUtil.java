@@ -2,9 +2,9 @@ package com.phoenix.data.util;
 
 import com.phoenix.data.dto.prompt.QueryEnhanceOutputDTO;
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.document.Document;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.HashMap;
 import java.util.List;

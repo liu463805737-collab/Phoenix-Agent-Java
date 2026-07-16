@@ -8,12 +8,11 @@ import com.phoenix.data.connector.DbQueryParameter;
 import com.phoenix.data.connector.accessor.Accessor;
 import com.phoenix.data.connector.accessor.AccessorFactory;
 import com.phoenix.data.util.SqlUtil;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -132,7 +131,7 @@ public class TableMetadataService {
 		try {
 			columnInfoBO.setSamples(objectMapper.writeValueAsString(sampleColumnValue));
 		}
-		catch (JsonProcessingException e) {
+		catch (Exception e) {
 			log.error("Failed to convert sample data {} to JSON: {}, set default empty", sampleColumnValue,
 					e.getMessage());
 			columnInfoBO.setSamples("[]");
