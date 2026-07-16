@@ -8,12 +8,15 @@ import { useVbenVxeGrid, VbenTableAction } from '#/adapter/vxe-table';
 import type { VxeGridProps } from '#/adapter/vxe-table';
 import type { VbenFormProps } from '@vben/common-ui';
 
-import { ElButton, ElEmpty, ElIcon, ElMessage, ElTag } from 'element-plus';
+import { ElButton, ElEmpty, ElIcon, ElMessage, ElMessageBox, ElTag } from 'element-plus';
 
 import {
   deleteDepartmentApi,
   getCompanyPageApi,
   getDeptTreeApi,
+  syncAllApi,
+  syncDepartmentsApi,
+  syncSubDepartmentsApi,
   type PrivilegeCompany,
 } from '#/api';
 
@@ -153,6 +156,55 @@ function onDelete(row: any) {
   });
 }
 
+async function handleSyncDepartments() {
+  if (!currentNode.value) {
+    ElMessage.warning('请先选择一家公司');
+    return;
+  }
+  try {
+    await ElMessageBox.confirm('确定要全链同步部门数据吗？此操作将从三方平台拉取最新部门数据。', '同步确认', {
+      confirmButtonText: '确定同步',
+      cancelButtonText: '取消',
+      type: 'warning',
+    });
+    await syncDepartmentsApi();
+    ElMessage.success('全链同步部门成功');
+    gridApi.query();
+  } catch {
+    // cancelled or error
+  }
+}
+
+async function handleSyncAll() {
+  try {
+    await ElMessageBox.confirm('确定要全量同步部门和人员数据吗？此操作将从三方平台拉取所有部门及人员数据。', '同步确认', {
+      confirmButtonText: '确定同步',
+      cancelButtonText: '取消',
+      type: 'warning',
+    });
+    await syncAllApi();
+    ElMessage.success('全量同步部门和人员成功');
+    gridApi.query();
+  } catch {
+    // cancelled or error
+  }
+}
+
+async function handleSyncSubDept(row: any) {
+  try {
+    await ElMessageBox.confirm(`确定要同步【${row.name}】的下级部门吗？`, '同步确认', {
+      confirmButtonText: '确定同步',
+      cancelButtonText: '取消',
+      type: 'warning',
+    });
+    await syncSubDepartmentsApi(row.id);
+    ElMessage.success('同步下级部门成功');
+    gridApi.query();
+  } catch {
+    // cancelled or error
+  }
+}
+
 function refreshGrid() {
   gridApi.query();
 }
@@ -168,6 +220,16 @@ function getActions(row: any) {
       text: '编辑',
       icon: 'lucide:edit',
       onClick: () => onEdit(row),
+    },
+    {
+      text: '同步下级',
+      icon: 'lucide:refresh-cw',
+      popConfirm: {
+        title: `确定同步【${row.name}】的下级部门？`,
+        confirm: () => handleSyncSubDept(row),
+        okText: '确定',
+        cancelText: '取消',
+      },
     },
     {
       text: '删除',
@@ -241,6 +303,14 @@ onMounted(() => {
     <FormModal @success="refreshGrid" />
     <Grid table-title="部门管理">
       <template #toolbar-tools>
+        <ElButton @click="handleSyncDepartments">
+          <ElIcon><IconifyIcon icon="lucide:refresh-cw" /></ElIcon>
+          全链同步部门
+        </ElButton>
+        <ElButton @click="handleSyncAll">
+          <ElIcon><IconifyIcon icon="lucide:refresh-cw" /></ElIcon>
+          全量同步部门和人员
+        </ElButton>
         <ElButton type="primary" @click="onCreate">新增</ElButton>
       </template>
       <template #statusSlot="{ row }">

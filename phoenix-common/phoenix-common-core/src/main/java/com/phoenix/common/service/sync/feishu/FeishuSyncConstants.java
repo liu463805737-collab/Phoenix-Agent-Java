@@ -12,4 +12,6 @@ public interface FeishuSyncConstants {
 
 	String USER_GET_URL = BASE_URL + "/contact/v3/users/";
 
+	String TENANT_QUERY_URL = BASE_URL + "/tenant/v2/tenant/query";
+
 }

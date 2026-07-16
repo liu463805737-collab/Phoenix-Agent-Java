@@ -7,11 +7,14 @@ import { useVbenVxeGrid, VbenTableAction } from '#/adapter/vxe-table';
 import type { VxeGridProps } from '#/adapter/vxe-table';
 import type { VbenFormProps } from '@vben/common-ui';
 
-import { ElButton, ElMessage, ElMessageBox, ElTag } from 'element-plus';
+import { ElButton, ElIcon, ElMessage, ElMessageBox, ElTag } from 'element-plus';
+import { IconifyIcon } from '@vben/icons';
 
 import {
   deleteEmployeeApi,
   getEmployeePageApi,
+  syncUserApi,
+  syncUsersByDeptApi,
 } from '#/api';
 import DeptTreeSidebar from '#/components/dept/DeptTreeSidebar.vue';
 
@@ -99,8 +102,57 @@ function onDelete(row: any) {
     .catch(() => {});
 }
 
+async function handleSyncUsersByDept() {
+  if (!selectedDeptId.value) {
+    ElMessage.warning('请先在左侧选择部门');
+    return;
+  }
+  try {
+    await ElMessageBox.confirm('确定要同步该部门下的人员数据吗？此操作将从三方平台拉取最新人员数据。', '同步确认', {
+      confirmButtonText: '确定同步',
+      cancelButtonText: '取消',
+      type: 'warning',
+    });
+    await syncUsersByDeptApi(selectedDeptId.value);
+    ElMessage.success('同步部门人员成功');
+    gridApi.query();
+  } catch {
+    // cancelled or error
+  }
+}
+
+async function handleSyncUser(row: any) {
+  const userId = row.thirdUserId || row.id;
+  if (!userId) {
+    ElMessage.warning('缺少用户标识，无法同步');
+    return;
+  }
+  try {
+    await ElMessageBox.confirm(`确定要同步【${row.empName}】的个人信息吗？`, '同步确认', {
+      confirmButtonText: '确定同步',
+      cancelButtonText: '取消',
+      type: 'warning',
+    });
+    await syncUserApi(userId);
+    ElMessage.success('同步个人信息成功');
+    gridApi.query();
+  } catch {
+    // cancelled or error
+  }
+}
+
 function getActions(row: any) {
   return [
+    {
+      text: '同步信息',
+      icon: 'lucide:refresh-cw',
+      popConfirm: {
+        title: `确定同步【${row.empName}】的个人信息？`,
+        confirm: () => handleSyncUser(row),
+        okText: '确定',
+        cancelText: '取消',
+      },
+    },
     {
       text: '编辑',
       icon: 'lucide:edit',
@@ -146,6 +198,10 @@ function refreshGrid() {
     <FormModal @success="refreshGrid" />
     <Grid table-title="人员管理">
       <template #toolbar-tools>
+        <ElButton :disabled="!selectedDeptId" @click="handleSyncUsersByDept">
+          <ElIcon><IconifyIcon icon="lucide:refresh-cw" /></ElIcon>
+          同步指定部门下的人员
+        </ElButton>
         <ElButton type="primary" @click="onCreate">新增</ElButton>
       </template>
       <template #statusSlot="{ row }">

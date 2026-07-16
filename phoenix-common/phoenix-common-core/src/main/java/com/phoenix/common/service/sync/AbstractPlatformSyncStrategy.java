@@ -1,5 +1,6 @@
 package com.phoenix.common.service.sync;
 
+import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
@@ -9,6 +10,8 @@ import com.phoenix.common.model.dto.SyncDeptDTO;
 import com.phoenix.common.model.dto.SyncUserDTO;
 import lombok.extern.slf4j.Slf4j;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -111,32 +114,37 @@ public abstract class AbstractPlatformSyncStrategy implements PlatformSyncStrate
 
 	/** 新增或更新公司记录（按cname + third_id判断是否存在） */
 	private String upsertCompany(SyncDeptDTO dto) {
+		String loginId = (String) StpUtil.getLoginId();
+		String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 		String existId = queryPrivilegeCompanyId(dto.getName(), dto.getSn());
 		if (existId != null) {
-			Db.updateBySql("UPDATE tbl_privilege_company SET cname = ?, third_id = ?, status = 1 WHERE id = ?",
-					dto.getName(), dto.getSn(), existId);
+			Db.updateBySql(
+					"UPDATE tbl_privilege_company SET cname = ?, third_id = ?, status = 1, update_by = ?, update_time = ? WHERE id = ?",
+					dto.getName(), dto.getSn(), loginId, now, existId);
 			return existId;
 		}
 		String id = IdUtil.getSnowflakeNextIdStr();
 		Db.insertBySql(
-				"INSERT INTO tbl_privilege_company (id, cname, third_id, status, sort, del_flag) VALUES (?, ?, ?, 1, 0, 0)",
-				id, dto.getName(), dto.getSn());
+				"INSERT INTO tbl_privilege_company (id, cname, third_id, status, sort, del_flag, create_by, create_time) VALUES (?, ?, ?, 1, 0, 0, ?, ?)",
+				id, dto.getName(), dto.getSn(), loginId, now);
 		return id;
 	}
 
 	/** 新增或更新部门记录（按third_id判断是否存在） */
 	private String upsertDepartment(SyncDeptDTO dto, String companyId, String parentLocalId) {
+		String loginId = (String) StpUtil.getLoginId();
+		String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 		String existId = queryPrivilegeDeptId(dto.getSn());
 		if (existId != null) {
 			Db.updateBySql(
-					"UPDATE tbl_privilege_department SET name = ?, company_id = ?, pid = ?, third_id = ?, department_type = 1, status = 0 WHERE id = ?",
-					dto.getName(), companyId, parentLocalId, dto.getSn(), existId);
+					"UPDATE tbl_privilege_department SET name = ?, company_id = ?, pid = ?, third_id = ?, department_type = 1, status = 0, update_by = ?, update_time = ? WHERE id = ?",
+					dto.getName(), companyId, parentLocalId, dto.getSn(), loginId, now, existId);
 			return existId;
 		}
 		String id = IdUtil.getSnowflakeNextIdStr();
 		Db.insertBySql(
-				"INSERT INTO tbl_privilege_department (id, company_id, name, pid, third_id, department_type, status, del_flag) VALUES (?, ?, ?, ?, ?, 1, 0, 0)",
-				id, companyId, dto.getName(), parentLocalId, dto.getSn());
+				"INSERT INTO tbl_privilege_department (id, company_id, name, pid, third_id, department_type, status, del_flag, create_by, create_time) VALUES (?, ?, ?, ?, ?, 1, 0, 0, ?, ?)",
+				id, companyId, dto.getName(), parentLocalId, dto.getSn(), loginId, now);
 		return id;
 	}
 
@@ -320,22 +328,25 @@ public abstract class AbstractPlatformSyncStrategy implements PlatformSyncStrate
 		String companyName = localRefs[2];
 		String localDeptName = localRefs[3];
 
+		String loginId = (String) StpUtil.getLoginId();
+		String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 		String existId = queryEmployeeIdByThirdUserId(dto.getThirdUserId());
 		boolean created = false;
 		if (existId != null) {
 			Db.updateBySql(
-					"UPDATE tbl_privilege_employee SET emp_name = ?, mobile = ?, email = ?, avatar_url = ?, company_id = ?, company_name = ?, dept_id = ?, dept_name = ?, third_open_id = ?, third_union_id = ?, status = ? WHERE id = ?",
+					"UPDATE tbl_privilege_employee SET emp_name = ?, mobile = ?, email = ?, avatar_url = ?, company_id = ?, company_name = ?, dept_id = ?, dept_name = ?, third_open_id = ?, third_union_id = ?, status = ?, update_by = ?, update_time = ? WHERE id = ?",
 					dto.getRealName(), dto.getPhone(), dto.getEmail(), dto.getAvatarUrl(), companyId, companyName,
 					localDeptId, localDeptName, dto.getThirdOpenId(), dto.getThirdUnionId(),
-					dto.getStatus() != null ? dto.getStatus() : 1, existId);
+					dto.getStatus() != null ? dto.getStatus() : 1, loginId, now, existId);
 		}
 		else {
 			String employeeId = IdUtil.getSnowflakeNextIdStr();
 			Db.insertBySql(
-					"INSERT INTO tbl_privilege_employee (id, emp_code, emp_name, mobile, email, avatar_url, company_id, company_name, dept_id, dept_name, third_user_id, third_open_id, third_union_id, status, enable_flag, del_flag) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0)",
+					"INSERT INTO tbl_privilege_employee (id, emp_code, emp_name, mobile, email, avatar_url, company_id, company_name, dept_id, dept_name, third_user_id, third_open_id, third_union_id, status, enable_flag, del_flag, create_by, create_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0, ?, ?)",
 					employeeId, dto.getThirdUserId(), dto.getRealName(), dto.getPhone(), dto.getEmail(),
 					dto.getAvatarUrl(), companyId, companyName, localDeptId, localDeptName, dto.getThirdUserId(),
-					dto.getThirdOpenId(), dto.getThirdUnionId(), dto.getStatus() != null ? dto.getStatus() : 1);
+					dto.getThirdOpenId(), dto.getThirdUnionId(), dto.getStatus() != null ? dto.getStatus() : 1,
+					loginId, now);
 			existId = employeeId;
 			created = true;
 		}

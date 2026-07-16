@@ -12,6 +12,7 @@ export interface PrivilegeEmployee {
   deptName?: string;
   status?: number;
   enableFlag?: number;
+  thirdUserId?: string;
   createTime?: string;
   updateTime?: string;
 }
