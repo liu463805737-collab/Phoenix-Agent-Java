@@ -8,6 +8,7 @@ import com.phoenix.agent.harness.service.HitlCacheService;
 import io.agentscope.core.agent.RuntimeContext;
 import io.agentscope.core.event.AgentEvent;
 import io.agentscope.core.event.ConfirmResult;
+import io.agentscope.core.event.CustomEvent;
 import io.agentscope.core.event.RequireUserConfirmEvent;
 import io.agentscope.core.message.Msg;
 import io.agentscope.core.message.UserMessage;
@@ -20,6 +21,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -47,11 +49,14 @@ public class HarnessSendMessageImpl implements HarnessSendMessage {
     }
 
     @Override
-    public Flux<? extends Object> confirm(String sn, ConfirmRequest request) {
+    public Flux<AgentEvent> confirmStream(String sn, ConfirmRequest request) {
         // 1. 从 Redis 中获取挂起的上下文
         RequireUserConfirmEvent pendingConfirm = hitlCacheService.getAndRemovePendingConfirm(request.getSessionId());
         if (pendingConfirm == null) {
-            return Flux.just("确认已过期或未找到任务");
+            Map<String, Object> context = new HashMap<>();
+            context.put("confirm", "确认已过期或未找到任务");
+            AgentEvent agentEvent = new CustomEvent("confirm",context);
+            return Flux.just(agentEvent);
         }
         // 2. 构造确认结果
         ConfirmResult result = new ConfirmResult(
