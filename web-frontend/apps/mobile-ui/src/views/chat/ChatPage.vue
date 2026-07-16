@@ -123,8 +123,9 @@ async function handlePickAgent(agentId: string) {
     await router.replace({ query: { agentId } });
     const list = await getAgentSessionsApi(agentId);
     chat.sessions = list;
-    if (list.length > 0) {
-      await chat.switchSession(list[0]!.id);
+    const latest = list[0];
+    if (latest && latest.title === '新会话') {
+      await chat.switchSession(latest.id);
     } else {
       await chat.createSession(agentId);
     }
