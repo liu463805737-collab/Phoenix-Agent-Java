@@ -8,7 +8,7 @@ import {
   useChatStore,
 } from '@phoenix/chat-shared';
 import { getAgentSessionsApi } from '../../services/chat';
-import { showToast, showSuccessToast } from 'vant';
+import { showToast, showSuccessToast, showFailToast } from 'vant';
 
 import { useActionMenu } from '../../components/useActionMenu';
 import ChatBubble from '../../components/chat/ChatBubble.vue';
@@ -38,6 +38,7 @@ const SUGGESTIONS = [
   '给我推荐一条北京周末的城市漫步路线',
 ];
 
+const hasAgent = computed(() => !!currentAgent.value);
 const hasMessages = computed(() => activeMessages.value.length > 0);
 const greetingTitle = computed(
   () => `有什么可以帮你的，${currentAgent.value?.name ?? '我'}？`,
@@ -90,10 +91,12 @@ async function handleSend(content: string) {
 }
 
 async function handleNewChat() {
-  const agentId = currentAgent.value?.id ?? agentStore.agents[0]?.id;
-  if (!agentId) return;
-  await router.replace({ query: { agentId } });
-  await chat.createSession(agentId);
+  if (!currentAgent.value) {
+    showFailToast('请先选择智能体！');
+    return;
+  }
+  await router.replace({ query: { agentId: currentAgent.value.id } });
+  await chat.createSession(currentAgent.value.id);
 }
 
 async function handlePickAgent(agentId: string) {
@@ -190,7 +193,7 @@ async function handleRegenerate(idx: number) {
             aria-label="切换智能体"
             @click="pickerOpen = true"
         >
-          <span style="line-height: 1;">{{ currentAgent?.name ?? '智能体' }}</span>
+          <span style="line-height: 1;">{{ currentAgent?.name ?? '选择智能体' }}</span>
           <van-icon name="arrow-down" />
         </button>
 
@@ -200,69 +203,71 @@ async function handleRegenerate(idx: number) {
             aria-label="新建对话"
             @click="handleNewChat"
         >
-          <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true">
-            <path
-                d="M12 5v14M5 12h14"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-            />
-          </svg>
+          <van-icon size="24" name="plus" />
         </button>
       </header>
 
       <div ref="scrollRef" class="chat-page__scroll">
-        <div v-if="!hasMessages" class="empty-state">
-          <div class="empty-state__avatar">
-            <img
-                v-if="currentAgent?.avatar && !avatarError && (currentAgent.avatar.startsWith('/') || currentAgent.avatar.startsWith('http'))"
-                :src="currentAgent.avatar"
-                :alt="currentAgent.name || '智能体'"
-                class="empty-state__avatar-img"
-                @error="avatarError = true"
-            />
-            <span v-else>{{ currentAgent?.name ? [...currentAgent.name][0] : '智' }}</span>
+        <div v-if="!hasAgent" class="no-agent-state">
+          <div class="no-agent-state__brand">
+            <img src="/imgs/logo.png" alt="Phoenix" class="no-agent-state__logo" />
+            <span class="no-agent-state__app-name">Phoenix智能体助手</span>
           </div>
-          <div class="empty-state__title">{{ greetingTitle }}</div>
-          <div class="empty-state__sub">
-            {{ currentAgent?.description ?? '挑一个智能体或直接发问' }}
-          </div>
-          <div class="empty-state__suggest">
-            <button
-                v-for="(s, i) in SUGGESTIONS"
-                :key="i"
-                type="button"
-                class="suggest-chip"
-                @click="handleSuggest(s)"
-            >
-              {{ s }}
-            </button>
-          </div>
+          <span class="select-agent-trigger" @click="pickerOpen = true">请选择智能体开始对话</span>
         </div>
 
-        <div v-else class="chat-page__inner">
-          <ChatBubble
-              v-for="(msg, idx) in activeMessages"
-              :key="msg.id"
-              :role="msg.role"
-              :content="msg.content"
-              :message-type="msg.messageType ?? 'text'"
-              :bot-avatar="currentAgent?.avatar || '智'"
-              @longpress="handleLongPress(idx)"
-              @copy="handleCopy(msg.content)"
-              @regenerate="handleRegenerate(idx)"
-          />
-          <ChatBubble
-              v-if="sending"
-              role="assistant"
-              :bot-avatar="currentAgent?.avatar || '智'"
-              typing
-          />
-        </div>
+        <template v-else>
+          <div v-if="!hasMessages" class="empty-state">
+            <div class="empty-state__avatar">
+              <img
+                  v-if="currentAgent?.avatar && !avatarError && (currentAgent.avatar.startsWith('/') || currentAgent.avatar.startsWith('http'))"
+                  :src="currentAgent.avatar"
+                  :alt="currentAgent.name || '智能体'"
+                  class="empty-state__avatar-img"
+                  @error="avatarError = true"
+              />
+              <span v-else>{{ currentAgent?.name ? [...currentAgent.name][0] : '智' }}</span>
+            </div>
+            <div class="empty-state__title">{{ greetingTitle }}</div>
+            <div class="empty-state__sub">
+              {{ currentAgent?.description ?? '挑一个智能体或直接发问' }}
+            </div>
+            <div class="empty-state__suggest">
+              <button
+                  v-for="(s, i) in SUGGESTIONS"
+                  :key="i"
+                  type="button"
+                  class="suggest-chip"
+                  @click="handleSuggest(s)"
+              >
+                {{ s }}
+              </button>
+            </div>
+          </div>
+
+          <div v-else class="chat-page__inner">
+            <ChatBubble
+                v-for="(msg, idx) in activeMessages"
+                :key="msg.id"
+                :role="msg.role"
+                :content="msg.content"
+                :message-type="msg.messageType ?? 'text'"
+                :bot-avatar="currentAgent?.avatar || '智'"
+                @longpress="handleLongPress(idx)"
+                @copy="handleCopy(msg.content)"
+                @regenerate="handleRegenerate(idx)"
+            />
+            <ChatBubble
+                v-if="sending"
+                role="assistant"
+                :bot-avatar="currentAgent?.avatar || '智'"
+                typing
+            />
+          </div>
+        </template>
       </div>
 
-      <div class="chat-page__composer">
+      <div v-if="hasAgent" class="chat-page__composer">
         <ChatComposer :disabled="sending" @submit="handleSend" />
       </div>
 
@@ -441,6 +446,47 @@ async function handleRegenerate(idx: number) {
 .suggest-chip:active {
   background: var(--m-brand-primary-soft);
   border-color: rgb(47 107 255 / 40%);
+}
+
+.no-agent-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  min-height: 100%;
+  padding: 32px 20px;
+}
+
+.no-agent-state__brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.no-agent-state__logo {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+}
+
+.no-agent-state__app-name {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--m-text-primary);
+}
+
+.select-agent-trigger {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--m-brand-primary);
+  cursor: pointer;
+  padding: 8px 16px;
+}
+
+.select-agent-trigger:active {
+  opacity: 0.7;
 }
 
 .slide-with-drawer {
