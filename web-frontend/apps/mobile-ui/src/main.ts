@@ -1,23 +1,23 @@
 import { createApp } from 'vue';
-import { createPinia } from 'pinia';
+
 import {
   configureAuthStorage,
   useAgentStore,
   useAuthStore,
   useChatStore,
 } from '@phoenix/chat-shared';
-
-import 'vant/lib/index.css';
-import './styles/global.scss';
+import { createPinia } from 'pinia';
 import 'vant/es/popup/style';
 import 'vant/es/toast/style';
 
 import App from './App.vue';
 import router from './router';
-
 import { realAgentTransport } from './services/agentTransport';
 import { realAuthTransport } from './services/authTransport';
 import { realChatTransport } from './services/chatTransport';
+
+import 'vant/lib/index.css';
+import './styles/global.scss';
 
 configureAuthStorage({ storageKey: 'mobile-ui' });
 
