@@ -8,7 +8,7 @@ import {
   useChatStore,
 } from '@phoenix/chat-shared';
 import { getAgentSessionsApi } from '../../services/chat';
-import { showSuccessToast, showFailToast } from 'vant';
+import { showFailToast, showLoadingToast, showSuccessToast } from 'vant';
 
 import { useActionMenu } from '../../components/useActionMenu';
 import ChatBubble from '../../components/chat/ChatBubble.vue';
@@ -113,25 +113,43 @@ async function handleNewChat() {
 }
 
 async function handlePickAgent(agentId: string) {
-  agentStore.setActiveAgent(agentId);
-  await router.replace({ query: { agentId } });
-  const list = await getAgentSessionsApi(agentId);
-  chat.sessions = list;
-  if (list.length > 0) {
-    await chat.switchSession(list[0]!.id);
-  } else {
-    await chat.createSession(agentId);
+  const toast = showLoadingToast({
+    message: '切换中...',
+    duration: 0,
+    forbidClick: true,
+  });
+  try {
+    agentStore.setActiveAgent(agentId);
+    await router.replace({ query: { agentId } });
+    const list = await getAgentSessionsApi(agentId);
+    chat.sessions = list;
+    if (list.length > 0) {
+      await chat.switchSession(list[0]!.id);
+    } else {
+      await chat.createSession(agentId);
+    }
+  } finally {
+    toast.close();
   }
 }
 
 async function handleSelectSession(id: string) {
-  const session = chat.sessions.find((s) => s.id === id);
-  const agentId = session?.agentId ?? currentAgent.value?.id;
-  if (agentId) {
-    agentStore.setActiveAgent(agentId);
-    await router.replace({ query: { agentId } });
+  const toast = showLoadingToast({
+    message: '加载中...',
+    duration: 0,
+    forbidClick: true,
+  });
+  try {
+    const session = chat.sessions.find((s) => s.id === id);
+    const agentId = session?.agentId ?? currentAgent.value?.id;
+    if (agentId) {
+      agentStore.setActiveAgent(agentId);
+      await router.replace({ query: { agentId } });
+    }
+    await chat.switchSession(id);
+  } finally {
+    toast.close();
   }
-  await chat.switchSession(id);
 }
 
 function handleSuggest(text: string) {
