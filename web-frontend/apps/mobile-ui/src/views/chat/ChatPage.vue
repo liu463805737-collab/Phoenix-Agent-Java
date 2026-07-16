@@ -8,7 +8,7 @@ import {
   useChatStore,
 } from '@phoenix/chat-shared';
 import { getAgentSessionsApi } from '../../services/chat';
-import { showToast, showSuccessToast, showFailToast } from 'vant';
+import { showSuccessToast, showFailToast } from 'vant';
 
 import { useActionMenu } from '../../components/useActionMenu';
 import ChatBubble from '../../components/chat/ChatBubble.vue';
@@ -87,12 +87,25 @@ async function ensureSession() {
 async function handleSend(content: string) {
   const id = await ensureSession();
   if (!id) return;
-  await chat.send(content);
+  try {
+    await chat.send(content);
+  } catch {
+    // 发送失败由 store 内部处理，这里防止未捕获的 rejection
+  }
 }
 
 async function handleNewChat() {
   if (!currentAgent.value) {
     showFailToast('请先选择智能体！');
+    return;
+  }
+  const agentSessions = sessions.value.filter(
+    (s) => s.agentId === currentAgent.value!.id,
+  );
+  const latest = agentSessions[0];
+  if (latest && latest.title === '新会话') {
+    await chat.switchSession(latest.id);
+    await router.replace({ query: { agentId: currentAgent.value.id } });
     return;
   }
   await router.replace({ query: { agentId: currentAgent.value.id } });

@@ -142,6 +142,10 @@ export const useChatStore = defineStore('phoenix-chat-shared/chat', () => {
 
     sending.value = true;
     abortController = new AbortController();
+    const sendTimeout = setTimeout(
+      () => abortController?.abort(),
+      60_000,
+    );
     try {
       const currentSession = sessions.value.find((s) => s.id === sessionId);
       const reply = await transport.send(
@@ -154,6 +158,7 @@ export const useChatStore = defineStore('phoenix-chat-shared/chat', () => {
           onNodeMessage(nodeMsg);
         },
       );
+      clearTimeout(sendTimeout);
       if (abortController?.signal.aborted) return;
 
       // 将占位消息（报告文本流）替换为最终回复
@@ -200,6 +205,7 @@ export const useChatStore = defineStore('phoenix-chat-shared/chat', () => {
       if (err?.name === 'AbortError') return;
       throw err;
     } finally {
+      clearTimeout(sendTimeout);
       sending.value = false;
       abortController = null;
     }

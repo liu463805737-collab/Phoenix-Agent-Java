@@ -210,16 +210,16 @@ function clearTimer() {
   }
 
   &__content {
-    font-size: 15px;
-    line-height: 1.65;
+    font-size: 14px;
+    line-height: 1.5;
     color: var(--m-text-primary);
     word-break: break-word;
 
     &--user {
       max-width: 78%;
       padding: 10px 14px;
-      font-size: 15px;
-      line-height: 1.55;
+      font-size: 14px;
+      line-height: 1.5;
       color: var(--m-bubble-user-fg);
       background: var(--m-bubble-user-bg);
       border-radius: var(--m-radius-bubble);
@@ -234,7 +234,7 @@ function clearTimer() {
       display: inline-flex;
       gap: 5px;
       align-items: center;
-      padding: 6px 0;
+      padding: 12px 0;
     }
   }
 
