@@ -3,7 +3,7 @@ package com.phoenix.agent.harness.send.impl;
 import com.phoenix.agent.harness.agent.HarnessStaticLoader;
 import com.phoenix.agent.harness.request.ConfirmRequest;
 import com.phoenix.agent.harness.request.HarnessRequest;
-import com.phoenix.agent.harness.send.HarnessSendMessage;
+import com.phoenix.agent.harness.send.HarnessChatService;
 import com.phoenix.agent.harness.service.HitlCacheService;
 import io.agentscope.core.agent.RuntimeContext;
 import io.agentscope.core.event.AgentEvent;
@@ -14,21 +14,17 @@ import io.agentscope.core.message.Msg;
 import io.agentscope.core.message.UserMessage;
 import io.agentscope.harness.agent.HarnessAgent;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.Sinks;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 @RequiredArgsConstructor
-public class HarnessSendMessageImpl implements HarnessSendMessage {
+public class HarnessChatServiceImpl implements HarnessChatService {
     private final HarnessStaticLoader harnessStaticLoader;
     private final HitlCacheService hitlCacheService;
     @Override

@@ -8,7 +8,7 @@ import io.agentscope.harness.agent.HarnessAgent;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-public interface HarnessSendMessage {
+public interface HarnessChatService {
     /**
      * 发送消息堵塞式返回
      * @param sn sn

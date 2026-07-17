@@ -1,10 +1,11 @@
 package com.phoenix.test.harness;
 
 import cn.hutool.core.lang.UUID;
+import cn.hutool.core.thread.ThreadUtil;
 import com.phoenix.admin.PhoenixAgentApplication;
 import com.phoenix.agent.harness.request.ConfirmRequest;
 import com.phoenix.agent.harness.request.HarnessRequest;
-import com.phoenix.agent.harness.send.HarnessSendMessage;
+import com.phoenix.agent.harness.send.HarnessChatService;
 import com.phoenix.agent.harness.service.HitlCacheService;
 import io.agentscope.core.event.AgentEvent;
 import io.agentscope.core.event.ConfirmResult;
@@ -25,7 +26,7 @@ import java.util.ArrayList;
 @SpringBootTest(classes = PhoenixAgentApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class HarnessAgentTest {
     @Autowired
-    private HarnessSendMessage harnessSendMessage;
+    private HarnessChatService harnessChatService;
     @Autowired
     private HitlCacheService hitlCacheService;
 
@@ -36,9 +37,9 @@ public class HarnessAgentTest {
          */
         String sessionId = UUID.randomUUID().toString();
         String userId = "test2";
-        HarnessRequest request = HarnessRequest.builder().userId(userId).sessionId(sessionId).message("给订单 123 退款 100 元").build();
+        HarnessRequest request = HarnessRequest.builder().userId(userId).sessionId(sessionId).message("给订单号 123 退款 100 元").build();
         System.out.println("=== 测试2：退款（触发人工确认） ===");
-        harnessSendMessage.stream("HumanInTheLoop", request)// 核心：在事件流中拦截确认事件，并注入确认结果
+        harnessChatService.stream("HumanInTheLoop", request)// 核心：在事件流中拦截确认事件，并注入确认结果
                 .doOnNext(event -> {
                     if (event instanceof RequireUserConfirmEvent confirmEvent) {
                         hitlCacheService.savePendingConfirm(sessionId, confirmEvent);
@@ -57,11 +58,13 @@ public class HarnessAgentTest {
         confirmRequest.setUserId(userId);
         confirmRequest.setSessionId(sessionId);
         confirmRequest.setAllowed(true);
-        harnessSendMessage.confirmStream("HumanInTheLoop", confirmRequest).doOnNext(event -> {
+        harnessChatService.confirmStream("HumanInTheLoop", confirmRequest).doOnNext(event -> {
             if (event instanceof TextBlockDeltaEvent textBlockDeltaEvent) {
                 System.out.println("++++++++++++++" + textBlockDeltaEvent.getDelta());
             }
-        }).blockLast();
+        }).subscribe();
+
+        ThreadUtil.safeSleep(100000);
 
     }
 
@@ -86,7 +89,7 @@ public class HarnessAgentTest {
         sessionId = UUID.randomUUID().toString();
         request = HarnessRequest.builder().userId(userId).sessionId(sessionId).message("给订单 123 退款 100 元").build();
         System.out.println("=== 测试2：退款（触发人工确认） ===");
-        harnessSendMessage.stream("HumanInTheLoop", request)// 核心：在事件流中拦截确认事件，并注入确认结果
+        harnessChatService.stream("HumanInTheLoop", request)// 核心：在事件流中拦截确认事件，并注入确认结果
                 .handle((event, sink) -> {
                     if (event instanceof RequireUserConfirmEvent confirmEvent) {
                         System.out.println("后台拦截到确认请求，自动批准...");
@@ -111,7 +114,7 @@ public class HarnessAgentTest {
         sessionId = UUID.randomUUID().toString();
         request = HarnessRequest.builder().userId(userId).sessionId(sessionId).message("删掉 orders 表").build();
         System.out.println("=== 测试3：删表（直接拒绝） ===");
-        Flux<AgentEvent> agentEventFlux = harnessSendMessage.stream("HumanInTheLoop", request);
+        Flux<AgentEvent> agentEventFlux = harnessChatService.stream("HumanInTheLoop", request);
         StepVerifier.create(agentEventFlux)
                 .recordWith(ArrayList::new)  // 记录所有事件
                 .thenConsumeWhile(event -> {
@@ -126,14 +129,14 @@ public class HarnessAgentTest {
     @Test
     public void testCallAgent() {
         HarnessRequest request = HarnessRequest.builder().userId("test1").sessionId(UUID.fastUUID().toString()).message("请帮我查询请假流程").build();
-        Mono<Msg> msgMono = harnessSendMessage.call("RulesHarnessAgent", request);
+        Mono<Msg> msgMono = harnessChatService.call("RulesHarnessAgent", request);
         log.info("content:{}", msgMono.block().getTextContent());
     }
 
     @Test
     public void testStreamAgent() {
         HarnessRequest request = HarnessRequest.builder().userId("test1").sessionId(UUID.fastUUID().toString()).message("请帮我查询请假流程").build();
-        Flux<AgentEvent> agentEventFlux = harnessSendMessage.stream("RulesHarnessAgent", request);
+        Flux<AgentEvent> agentEventFlux = harnessChatService.stream("RulesHarnessAgent", request);
         StepVerifier.create(agentEventFlux)
                 .recordWith(ArrayList::new)  // 记录所有事件
                 .thenConsumeWhile(event -> {
