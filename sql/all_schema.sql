@@ -1056,6 +1056,7 @@ CREATE TABLE "public"."tbl_platform_account_info" (
   "gender" varchar(10) COLLATE "pg_catalog"."default" DEFAULT NULL::character varying,
   "status" varchar(10) COLLATE "pg_catalog"."default" DEFAULT '1'::character varying,
   "third_party_id" varchar(255) COLLATE "pg_catalog"."default" DEFAULT NULL::character varying,
+  "employee_id" varchar(64) COLLATE "pg_catalog"."default" DEFAULT NULL::character varying,
   "create_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
   "creator" varchar(255) COLLATE "pg_catalog"."default" DEFAULT NULL::character varying,
   "update_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
@@ -1079,6 +1080,7 @@ COMMENT ON COLUMN "public"."tbl_platform_account_info"."avatar_url" IS '头像�
 COMMENT ON COLUMN "public"."tbl_platform_account_info"."gender" IS '性别';
 COMMENT ON COLUMN "public"."tbl_platform_account_info"."status" IS '状态 0-禁用 1-启用';
 COMMENT ON COLUMN "public"."tbl_platform_account_info"."third_party_id" IS '第三方平台ID';
+COMMENT ON COLUMN "public"."tbl_platform_account_info"."employee_id" IS '关联员工ID';
 COMMENT ON COLUMN "public"."tbl_platform_account_info"."create_time" IS '创建时间';
 COMMENT ON COLUMN "public"."tbl_platform_account_info"."creator" IS '创建人';
 COMMENT ON COLUMN "public"."tbl_platform_account_info"."update_time" IS '更新时间';
@@ -1114,37 +1116,7 @@ COMMENT ON COLUMN "public"."tbl_platform_account_tenant_info"."updator" IS '更�
 COMMENT ON COLUMN "public"."tbl_platform_account_tenant_info"."del_flag" IS '删除标识 0-已删除 1-未删除';
 COMMENT ON TABLE "public"."tbl_platform_account_tenant_info" IS '用户租户关联表';
 
--- ----------------------------
--- Table structure for tbl_platform_dingtalk
--- ----------------------------
-DROP TABLE IF EXISTS "public"."tbl_platform_dingtalk";
-CREATE TABLE "public"."tbl_platform_dingtalk" (
-  "id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
-  "user_code" varchar(100) COLLATE "pg_catalog"."default" DEFAULT NULL::character varying,
-  "user_name" varchar(100) COLLATE "pg_catalog"."default" DEFAULT NULL::character varying,
-  "userid" varchar(100) COLLATE "pg_catalog"."default" DEFAULT NULL::character varying,
-  "unionid" varchar(100) COLLATE "pg_catalog"."default" DEFAULT NULL::character varying,
-  "avatar" varchar(500) COLLATE "pg_catalog"."default" DEFAULT NULL::character varying,
-  "create_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
-  "creator" varchar(255) COLLATE "pg_catalog"."default" DEFAULT NULL::character varying,
-  "update_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
-  "updator" varchar(255) COLLATE "pg_catalog"."default" DEFAULT NULL::character varying,
-  "del_flag" int2 DEFAULT 1
-)
-;
-ALTER TABLE "public"."tbl_platform_dingtalk" OWNER TO "phoenix";
-COMMENT ON COLUMN "public"."tbl_platform_dingtalk"."id" IS '主键（雪花算法ID）';
-COMMENT ON COLUMN "public"."tbl_platform_dingtalk"."user_code" IS '用户编码';
-COMMENT ON COLUMN "public"."tbl_platform_dingtalk"."user_name" IS '用户名称';
-COMMENT ON COLUMN "public"."tbl_platform_dingtalk"."userid" IS '钉钉用户ID';
-COMMENT ON COLUMN "public"."tbl_platform_dingtalk"."unionid" IS '钉钉唯一标识';
-COMMENT ON COLUMN "public"."tbl_platform_dingtalk"."avatar" IS '头像地址';
-COMMENT ON COLUMN "public"."tbl_platform_dingtalk"."create_time" IS '创建时间';
-COMMENT ON COLUMN "public"."tbl_platform_dingtalk"."creator" IS '创建人';
-COMMENT ON COLUMN "public"."tbl_platform_dingtalk"."update_time" IS '更新时间';
-COMMENT ON COLUMN "public"."tbl_platform_dingtalk"."updator" IS '更新人';
-COMMENT ON COLUMN "public"."tbl_platform_dingtalk"."del_flag" IS '删除标识 0-已删除 1-未删除';
-COMMENT ON TABLE "public"."tbl_platform_dingtalk" IS '钉钉用户信息表';
+
 
 -- ----------------------------
 -- Table structure for tbl_platform_group_agent_info
@@ -3980,11 +3952,6 @@ ALTER TABLE "public"."tbl_platform_account_info" ADD CONSTRAINT "tbl_phoenix_pla
 -- Primary Key structure for table tbl_platform_account_tenant_info
 -- ----------------------------
 ALTER TABLE "public"."tbl_platform_account_tenant_info" ADD CONSTRAINT "tbl_platform_user_tenant_info_pkey" PRIMARY KEY ("id");
-
--- ----------------------------
--- Primary Key structure for table tbl_platform_dingtalk
--- ----------------------------
-ALTER TABLE "public"."tbl_platform_dingtalk" ADD CONSTRAINT "tbl_platform_dingtalk_pkey" PRIMARY KEY ("id");
 
 -- ----------------------------
 -- Primary Key structure for table tbl_platform_group_agent_info

@@ -1,6 +1,7 @@
-import { z } from '#/adapter/form';
 import type { VbenFormSchema } from '#/adapter/form';
 import type { VxeTableGridColumns } from '#/adapter/vxe-table';
+
+import { z } from '#/adapter/form';
 
 export function useSearchFormSchema(): VbenFormSchema[] {
   return [
@@ -78,6 +79,33 @@ export function useSchema(): VbenFormSchema[] {
       component: 'Input',
       fieldName: 'deptName',
       label: 'deptName',
+      dependencies: {
+        triggerFields: [''],
+        show: false,
+      },
+    },
+    {
+      component: 'Input',
+      fieldName: 'deptId',
+      label: 'deptId',
+      dependencies: {
+        triggerFields: [''],
+        show: false,
+      },
+    },
+    {
+      component: 'Input',
+      fieldName: 'employeeId',
+      label: 'employeeId',
+      dependencies: {
+        triggerFields: [''],
+        show: false,
+      },
+    },
+    {
+      component: 'Input',
+      fieldName: 'thirdPartyId',
+      label: 'thirdPartyId',
       dependencies: {
         triggerFields: [''],
         show: false,

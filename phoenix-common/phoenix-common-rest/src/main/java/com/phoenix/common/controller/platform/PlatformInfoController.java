@@ -51,4 +51,13 @@ public class PlatformInfoController {
         return ReturnVo.ok(platformInfoService.removeById(id));
     }
 
+    /**
+     * 获取启动的三方应用
+     * @return
+     */
+    @GetMapping("/getEnabledPlatform")
+    public ReturnVo<PlatformInfo> getEnabled(){
+        return ReturnVo.ok(platformInfoService.getEnabled());
+    }
+
 }

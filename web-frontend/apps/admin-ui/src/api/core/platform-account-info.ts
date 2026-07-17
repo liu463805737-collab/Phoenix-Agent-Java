@@ -23,6 +23,7 @@ export interface PlatformAccountInfo {
   deptId?: string;
   deptName?: string;
   thirdPartyId?: string;
+  employeeId?: string;
   groups?: UserGroupVO[];
   createTime?: string;
   create?: string;

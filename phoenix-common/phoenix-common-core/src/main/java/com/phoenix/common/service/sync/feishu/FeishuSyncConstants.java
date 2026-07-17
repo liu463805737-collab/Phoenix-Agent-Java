@@ -14,4 +14,6 @@ public interface FeishuSyncConstants {
 
 	String TENANT_QUERY_URL = BASE_URL + "/tenant/v2/tenant/query";
 
+	String OAUTH_ACCESS_TOKEN_URL = BASE_URL + "/authen/v1/oauth_access_token";
+
 }

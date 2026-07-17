@@ -12,11 +12,14 @@ import com.mybatisflex.core.query.QueryChain;
 import com.mybatisflex.core.query.QueryWrapper;
 
 import com.mybatisflex.spring.service.impl.ServiceImpl;
+import com.phoenix.common.model.platform.PlatformInfo;
+import com.phoenix.common.service.platform.PlatformInfoService;
 import com.phoenix.data.entity.Agent;
 import com.phoenix.data.enums.AgentStatusEnm;
 import com.phoenix.data.service.agent.AgentService;
 import com.phoenix.platform.constant.PlatformConstant;
 import com.phoenix.platform.dto.front.AccountLoginDTO;
+import com.phoenix.platform.dto.front.ThirdPartyLoginDTO;
 import com.phoenix.platform.dto.front.UpdatePwdDTO;
 import com.phoenix.platform.mapper.front.AccountInfoMapper;
 import com.phoenix.platform.model.front.AccountGroupInfo;
@@ -28,11 +31,13 @@ import com.phoenix.platform.service.front.AccountGroupInfoService;
 import com.phoenix.platform.service.front.AccountInfoService;
 import com.phoenix.platform.service.front.GroupAgentInfoService;
 import com.phoenix.platform.service.front.GroupInfoService;
+import com.phoenix.platform.service.thirdparty.ThirdPartyLoginFactory;
+import com.phoenix.platform.service.thirdparty.ThirdPartyLoginStrategy;
 import com.phoenix.common.vo.front.LoginVO;
 import com.phoenix.privilege.constant.LoginConstant;
-import com.phoenix.privilege.entity.PrivilegeEmployee;
 import com.phoenix.tools.vo.ReturnVo;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,6 +46,8 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static com.phoenix.platform.constant.PlatformConstant.ACCOUNT_LOGIN;
+
+@Slf4j
 
 /**
  * 前台账号信息服务实现
@@ -53,6 +60,8 @@ public class AccountInfoServiceImpl extends ServiceImpl<AccountInfoMapper, Accou
     private final GroupInfoService groupInfoService;
     private final GroupAgentInfoService groupAgentInfoService;
     private final AgentService agentService;
+    private final PlatformInfoService platformInfoService;
+    private final ThirdPartyLoginFactory thirdPartyLoginFactory;
 
     @Override
     public List<Agent> getMyAgents() {
@@ -204,6 +213,62 @@ public class AccountInfoServiceImpl extends ServiceImpl<AccountInfoMapper, Accou
         if (!hashedPassword.equals(account.getPassword())) {
             return ReturnVo.fail("用户名或密码错误");
         }
+        StpUtil.login(account.getId());
+        List<GroupInfo> groupInfos = groupInfoService.getByLoginId(account.getId());
+        List<LoginVO.LoginGroupVO> groupVOS = new ArrayList<>();
+        if (CollUtil.isNotEmpty(groupInfos)) {
+            groupInfos.forEach(groupInfo -> {
+                LoginVO.LoginGroupVO groupVO = new LoginVO.LoginGroupVO();
+                groupVO.setSn(groupInfo.getSn());
+                groupVO.setName(groupInfo.getName());
+                groupVOS.add(groupVO);
+            });
+        }
+        String token = StpUtil.getTokenValue();
+        LoginVO loginVO = LoginVO.builder()
+                .token(token)
+                .userCode(account.getCode())
+                .email(account.getEmail())
+                .userId(account.getId())
+                .username(account.getUsername())
+                .realName(account.getRealName())
+                .groups(groupVOS)
+                .build();
+        StpUtil.getSession().set(ACCOUNT_LOGIN, loginVO);
+        return ReturnVo.ok(loginVO);
+    }
+
+    @Override
+    public ReturnVo<LoginVO> thirdPartyLogin(ThirdPartyLoginDTO loginDTO) {
+        if (loginDTO == null || StrUtil.isBlank(loginDTO.getPlatform()) || StrUtil.isBlank(loginDTO.getCode())) {
+            return ReturnVo.fail("参数不完整");
+        }
+
+        PlatformInfo platform = platformInfoService.getEnabledByType(loginDTO.getPlatform());
+        if (platform == null) {
+            return ReturnVo.fail("未找到启用的平台配置");
+        }
+
+        ThirdPartyLoginStrategy strategy = thirdPartyLoginFactory.getStrategy(loginDTO.getPlatform());
+        String thirdPartyId;
+        try {
+            thirdPartyId = strategy.resolveUserId(loginDTO.getCode(), platform);
+        } catch (Exception e) {
+            log.error("解析三方用户ID失败, platform: {}, error: ", loginDTO.getPlatform(), e);
+            return ReturnVo.fail("授权验证失败");
+        }
+        if (StrUtil.isBlank(thirdPartyId)) {
+            return ReturnVo.fail("授权验证失败");
+        }
+
+        AccountInfo account = getByThirdPartyId(thirdPartyId);
+        if (account == null) {
+            return ReturnVo.fail("未绑定平台账号，请联系管理员");
+        }
+        if ("0".equals(account.getStatus())) {
+            return ReturnVo.fail("账户已被禁用");
+        }
+
         StpUtil.login(account.getId());
         List<GroupInfo> groupInfos = groupInfoService.getByLoginId(account.getId());
         List<LoginVO.LoginGroupVO> groupVOS = new ArrayList<>();

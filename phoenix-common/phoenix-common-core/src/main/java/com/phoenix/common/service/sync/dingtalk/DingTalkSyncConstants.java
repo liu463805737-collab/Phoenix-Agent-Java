@@ -14,4 +14,6 @@ public interface DingTalkSyncConstants {
 
 	String USER_GET_URL = BASE_URL + "/topapi/v2/user/get";
 
+	String USER_INFO_URL = BASE_URL + "/topapi/v2/user/getuserinfo";
+
 }

@@ -12,4 +12,6 @@ public interface WeixinSyncConstants {
 
 	String USER_GET_URL = BASE_URL + "/cgi-bin/user/get?access_token=";
 
+	String USER_INFO_URL = BASE_URL + "/cgi-bin/user/getuserinfo";
+
 }

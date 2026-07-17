@@ -1,8 +1,12 @@
 <script lang="ts" setup>
-import { onMounted, ref } from 'vue';
-import { ElButton, ElDialog, ElIcon, ElInput, ElPagination, ElTable, ElTableColumn } from 'element-plus';
-import { IconifyIcon } from '@vben/icons';
 import type { PrivilegeEmployee } from '#/api';
+
+import { onMounted, ref } from 'vue';
+
+import { IconifyIcon } from '@vben/icons';
+
+import { ElButton, ElDialog, ElIcon, ElInput, ElPagination, ElTable, ElTableColumn } from 'element-plus';
+
 import { getEmployeePageApi } from '#/api';
 
 defineOptions({ name: 'EmployeeSelector' });
