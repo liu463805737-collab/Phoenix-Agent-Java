@@ -15,6 +15,7 @@ import ChatBubble from '../../components/chat/ChatBubble.vue';
 import ChatComposer from '../../components/chat/ChatComposer.vue';
 import SessionsDrawer from '../../components/chat/SessionsDrawer.vue';
 import AgentPickerSheet from '../../components/chat/AgentPickerSheet.vue';
+import PresetQuestions from '../../components/chat/PresetQuestions.vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -30,13 +31,6 @@ const pickerOpen = ref(false);
 const avatarError = ref(false);
 const bubbleMenu = useActionMenu();
 const longPressIndex = ref<number>(-1);
-
-const SUGGESTIONS = [
-  '帮我看下上周华东大区的 GMV 同比变化',
-  '生成一份本周工作总结',
-  '把这段代码优化一下并解释',
-  '给我推荐一条北京周末的城市漫步路线',
-];
 
 const hasAgent = computed(() => !!currentAgent.value);
 const hasMessages = computed(() => activeMessages.value.length > 0);
@@ -264,17 +258,7 @@ async function handleRegenerate(idx: number) {
             <div class="empty-state__sub">
               {{ currentAgent?.description ?? '挑一个智能体或直接发问' }}
             </div>
-            <div class="empty-state__suggest">
-              <button
-                  v-for="(s, i) in SUGGESTIONS"
-                  :key="i"
-                  type="button"
-                  class="suggest-chip"
-                  @click="handleSuggest(s)"
-              >
-                {{ s }}
-              </button>
-            </div>
+            <PresetQuestions @select="handleSuggest" />
           </div>
 
           <div v-else class="chat-page__inner">
@@ -448,36 +432,6 @@ async function handleRegenerate(idx: number) {
 .empty-state__sub {
   font-size: 13px;
   color: var(--m-text-soft);
-}
-
-.empty-state__suggest {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 100%;
-  max-width: 340px;
-  margin-top: 14px;
-}
-
-.suggest-chip {
-  display: block;
-  width: 100%;
-  padding: 12px 14px;
-  font-size: 14px;
-  color: var(--m-text-regular);
-  text-align: left;
-  cursor: pointer;
-  background: var(--m-bg-elevated);
-  border: 1px solid var(--m-border);
-  border-radius: 14px;
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease;
-}
-
-.suggest-chip:active {
-  background: var(--m-brand-primary-soft);
-  border-color: rgb(47 107 255 / 40%);
 }
 
 .no-agent-state {
