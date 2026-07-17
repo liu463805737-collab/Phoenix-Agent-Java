@@ -64,9 +64,9 @@ public class DataAgentProperties {
 	private boolean enableSqlResultChart = true;
 
 	/**
-	 * 执行SQL结果图表化超时时间，默认3000ms
+	 * 执行SQL结果图表化超时时间，默认30000ms
 	 */
-	private Long enrichSqlResultTimeout = 3000L;
+	private Long enrichSqlResultTimeout = 30000L;
 
 	/**
 	 * 报告模板相关配置

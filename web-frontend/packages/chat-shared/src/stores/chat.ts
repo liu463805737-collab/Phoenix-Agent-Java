@@ -144,7 +144,7 @@ export const useChatStore = defineStore('phoenix-chat-shared/chat', () => {
     abortController = new AbortController();
     const sendTimeout = setTimeout(
       () => abortController?.abort(),
-      60_000,
+      600_000,
     );
     try {
       const currentSession = sessions.value.find((s) => s.id === sessionId);
