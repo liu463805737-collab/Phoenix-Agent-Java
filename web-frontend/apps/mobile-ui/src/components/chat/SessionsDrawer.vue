@@ -6,7 +6,11 @@ import {
   useAuthStore,
   useChatStore,
 } from '@phoenix/chat-shared';
-import { showConfirmDialog } from 'vant';
+import {
+  showConfirmDialog,
+  showFailToast,
+  showSuccessToast,
+} from 'vant';
 
 interface Props {
   show: boolean;
@@ -101,42 +105,42 @@ const popoverIsPinned = ref(false);
 const popoverAnchorX = ref(0);
 const popoverAnchorY = ref(0);
 
-const popoverActions = computed(() => [
-  { text: '重命名', icon: 'edit' },
-  {
-    text: popoverIsPinned.value ? '取消置顶' : '置顶',
-    icon: popoverIsPinned.value ? 'star-filled' : 'star-o',
-  },
-  { text: '删除', icon: 'delete', color: '#b42318' },
-]);
+// --- Rename dialog ---
+const renameDialogShow = ref(false);
+const renameDialogText = ref('');
 
-function onPopoverSelect(action: { text: string }) {
+function handleRename() {
   popoverVisible.value = false;
-  if (action.text === '重命名') {
-    handleRename();
-  } else if (action.text === '置顶' || action.text === '取消置顶') {
-    handleTogglePin();
-  } else if (action.text === '删除') {
-    handleDelete();
-  }
+  renameDialogText.value = popoverSessionTitle.value;
+  renameDialogShow.value = true;
 }
 
-async function handleRename() {
-  const id = popoverSessionId.value;
-  const title = popoverSessionTitle.value;
-  const next = window.prompt('新的会话名称', title);
-  if (next && next.trim() && next.trim() !== title) {
-    await chat.renameSession(id, next.trim());
+async function handleRenameConfirm() {
+  const next = renameDialogText.value.trim();
+  if (!next || next === popoverSessionTitle.value) {
+    renameDialogShow.value = false;
+    return;
   }
+  try {
+    await chat.renameSession(popoverSessionId.value, next);
+    showSuccessToast('重命名成功');
+  } catch {
+    showFailToast('重命名失败');
+  }
+  renameDialogShow.value = false;
 }
 
 async function handleTogglePin() {
-  const id = popoverSessionId.value;
-  const newPinned = !popoverIsPinned.value;
-  await chat.pinSession(id, newPinned);
+  popoverVisible.value = false;
+  try {
+    await chat.pinSession(popoverSessionId.value, !popoverIsPinned.value);
+  } catch {
+    showFailToast('操作失败');
+  }
 }
 
 async function handleDelete() {
+  popoverVisible.value = false;
   const id = popoverSessionId.value;
   try {
     await showConfirmDialog({
@@ -144,8 +148,9 @@ async function handleDelete() {
       message: '删除后无法恢复，确认删除？',
     });
     await chat.deleteSession(id);
+    showSuccessToast('已删除');
   } catch {
-    /* canceled */
+    /* canceled or error */
   }
 }
 
@@ -158,6 +163,10 @@ let pressIsPinned = false;
 
 function startPress(id: string, title: string, isPinned: boolean, event: TouchEvent) {
   clearPress();
+  const touch = event.touches[0];
+  if (!touch) return;
+  const touchX = touch.clientX;
+  const touchY = touch.clientY;
   pressEl = event.currentTarget as HTMLElement | null;
   if (!pressEl) return;
   pressId = id;
@@ -165,9 +174,23 @@ function startPress(id: string, title: string, isPinned: boolean, event: TouchEv
   pressIsPinned = isPinned;
   pressTimer = window.setTimeout(() => {
     if (!pressEl) return;
-    const rect = pressEl.getBoundingClientRect();
-    popoverAnchorX.value = rect.left;
-    popoverAnchorY.value = rect.top + rect.height;
+
+    const POPOVER_W = 140;
+    const POPOVER_H = 150;
+    const GAP = 12;
+
+    let ax = touchX;
+    let ay = touchY + GAP;
+
+    if (touchX + POPOVER_W > window.innerWidth) {
+      ax = window.innerWidth - POPOVER_W;
+    }
+    if (touchY + GAP + POPOVER_H > window.innerHeight) {
+      ay = touchY - POPOVER_H;
+    }
+
+    popoverAnchorX.value = ax;
+    popoverAnchorY.value = ay;
     popoverSessionId.value = pressId;
     popoverSessionTitle.value = pressTitle;
     popoverIsPinned.value = pressIsPinned;
@@ -235,7 +258,7 @@ function handleMe() {
             class="drawer-item"
             :class="{ 'is-active': item.id === activeSessionId }"
             @click="handleSelect(item.id)"
-            @touchstart="startPress(item.id, item.title, !!item.isPinned, $event)"
+            @touchstart.passive="startPress(item.id, item.title, !!item.isPinned, $event)"
             @touchend="clearPress"
             @touchcancel="clearPress"
             @touchmove="clearPress"
@@ -254,27 +277,59 @@ function handleMe() {
         <van-icon name="ellipsis" />
       </button>
     </div>
+
+    <teleport to="body">
+      <div
+        v-if="popoverVisible"
+        class="popover-overlay"
+        @click="popoverVisible = false"
+        @touchmove.prevent
+      >
+        <div
+          class="popover-menu"
+          :style="{
+            left: popoverAnchorX + 'px',
+            top: popoverAnchorY + 'px',
+          }"
+          @click.stop
+          @touchmove.stop
+        >
+          <button class="popover-menu__item" @click="handleRename">
+            <van-icon name="edit" />
+            重命名
+          </button>
+          <button class="popover-menu__item" @click="handleTogglePin">
+            <van-icon :name="popoverIsPinned ? 'star-filled' : 'star-o'" />
+            {{ popoverIsPinned ? '取消置顶' : '置顶' }}
+          </button>
+          <button class="popover-menu__item popover-menu__item--danger" @click="handleDelete">
+            <van-icon name="delete" />
+            删除
+          </button>
+        </div>
+      </div>
+    </teleport>
+
   </van-popup>
 
-  <van-popover
-    v-model:show="popoverVisible"
-    :actions="popoverActions"
-    trigger="manual"
-    placement="bottom-start"
-    teleport="body"
-    @select="onPopoverSelect"
-  >
-    <template #reference>
-      <div
-        class="popover-anchor"
-        :style="{
-          position: 'fixed',
-          left: popoverAnchorX + 'px',
-          top: popoverAnchorY + 'px',
-        }"
-      />
-    </template>
-  </van-popover>
+  <teleport to="body">
+    <van-dialog
+      v-model:show="renameDialogShow"
+      title="重命名会话"
+      show-cancel-button
+      @confirm="handleRenameConfirm"
+      @cancel="renameDialogText = ''"
+    >
+      <div style="padding: 16px">
+        <van-field
+          v-model="renameDialogText"
+          placeholder="请输入会话名称"
+          :maxlength="100"
+          autofocus
+        />
+      </div>
+    </van-dialog>
+  </teleport>
 </template>
 
 <style lang="scss" scoped>
@@ -285,6 +340,8 @@ function handleMe() {
   padding-top: var(--m-safe-top);
   padding-bottom: var(--m-safe-bottom);
   background: var(--m-bg);
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .drawer__top {
@@ -382,6 +439,8 @@ function handleMe() {
   padding: 10px 12px;
   text-align: left;
   cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
   background: transparent;
   border: none;
   border-radius: 10px;
@@ -421,6 +480,8 @@ function handleMe() {
   background: transparent;
   border: 0;
   border-radius: 12px;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .drawer__user-avatar {
@@ -447,10 +508,50 @@ function handleMe() {
   white-space: nowrap;
 }
 
-.popover-anchor {
-  width: 1px;
-  height: 1px;
-  pointer-events: none;
-  z-index: -1;
+.popover-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 3000;
+  width: 100%;
+  height: 100%;
 }
+
+.popover-menu {
+  position: fixed;
+  z-index: 3001;
+  min-width: 130px;
+  padding: 6px;
+  background: var(--m-bg-elevated, #fff);
+  border: 1px solid var(--m-border, #e5e7eb);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.popover-menu__item {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--m-text-primary, #333);
+  text-align: left;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+}
+
+.popover-menu__item:active {
+  background: var(--m-bg-soft, #f3f4f6);
+}
+
+.popover-menu__item--danger {
+  color: #b42318;
+}
+
+
 </style>

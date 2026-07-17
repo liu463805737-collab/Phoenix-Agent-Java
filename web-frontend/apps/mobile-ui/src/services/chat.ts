@@ -70,15 +70,18 @@ export async function pinSessionApi(
   sessionId: string,
   isPinned: boolean,
 ): Promise<void> {
-  await http.put(`/api/sessions/${sessionId}/pin`, { isPinned });
+  await http.put(
+    `/api/sessions/${sessionId}/pin?isPinned=${isPinned}`,
+  );
 }
 
 export async function renameSessionApi(
   sessionId: string,
   title: string,
 ): Promise<void> {
-  const qs = `title=${encodeURIComponent(title.trim())}`;
-  await http.put(`/api/sessions/${sessionId}/rename?${qs}`);
+  await http.put(
+    `/api/sessions/${sessionId}/rename?title=${encodeURIComponent(title.trim())}`,
+  );
 }
 
 // ---- Message APIs ----

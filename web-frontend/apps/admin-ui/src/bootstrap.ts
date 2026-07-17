@@ -68,8 +68,12 @@ async function bootstrap(namespace: string) {
   watchEffect(() => {
     if (preferences.app.dynamicTitle) {
       const routeTitle = router.currentRoute.value.meta?.title;
+      const path = router.currentRoute.value.path;
+      const appName = path.startsWith('/front')
+        ? preferences.app.name.replace(/Admin/gi, '').trim()
+        : preferences.app.name;
       const pageTitle =
-        (routeTitle ? `${$t(routeTitle)} - ` : '') + preferences.app.name;
+        (routeTitle ? `${$t(routeTitle)} - ` : '') + appName;
       useTitle(pageTitle);
     }
   });
