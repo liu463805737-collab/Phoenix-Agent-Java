@@ -26,6 +26,7 @@ export interface ChatTransport {
   createSession(agentId: string): Promise<ChatSession>;
   deleteSession(sessionId: string): Promise<void>;
   renameSession(sessionId: string, title: string): Promise<void>;
+  pinSession(sessionId: string, isPinned: boolean): Promise<void>;
   /**
    * 发送一条消息，返回助手回复。
    * 若支持流式，会通过 onProgress 回调逐步返回已累积的文本。

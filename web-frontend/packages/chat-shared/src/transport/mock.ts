@@ -116,6 +116,14 @@ export const mockChatTransport: ChatTransport = {
     }
     return delay(undefined);
   },
+  async pinSession(sessionId, isPinned) {
+    const target = state.sessions.find((s) => s.id === sessionId);
+    if (target) {
+      target.isPinned = isPinned;
+      target.updatedAt = Date.now();
+    }
+    return delay(undefined);
+  },
   async send(payload, signal, _onProgress?, _onNodeMessage?) {
     const { sessionId, content } = payload;
     const list = state.messagesByS[sessionId] ?? [];

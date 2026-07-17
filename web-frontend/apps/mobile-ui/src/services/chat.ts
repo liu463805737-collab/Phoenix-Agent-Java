@@ -66,6 +66,13 @@ export async function deleteSessionApi(sessionId: string): Promise<void> {
   await http.delete(`/api/sessions/${sessionId}`);
 }
 
+export async function pinSessionApi(
+  sessionId: string,
+  isPinned: boolean,
+): Promise<void> {
+  await http.put(`/api/sessions/${sessionId}/pin`, { isPinned });
+}
+
 export async function renameSessionApi(
   sessionId: string,
   title: string,

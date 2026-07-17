@@ -8,8 +8,6 @@ import {
 } from '@phoenix/chat-shared';
 import { showConfirmDialog } from 'vant';
 
-import { useActionMenu } from '../useActionMenu';
-
 interface Props {
   show: boolean;
 }
@@ -72,12 +70,17 @@ function formatGroupLabel(ts: number) {
 
 const grouped = computed(() => {
   const kw = keyword.value.trim().toLowerCase();
-  const list = sessions.value.filter((s) =>
-    !kw
-      ? true
-      : s.title.toLowerCase().includes(kw) ||
-        s.preview.toLowerCase().includes(kw),
-  );
+  const list = sessions.value
+    .filter((s) =>
+      !kw
+        ? true
+        : s.title.toLowerCase().includes(kw) ||
+          s.preview.toLowerCase().includes(kw),
+    )
+    .sort((a, b) => {
+      if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
+      return b.updatedAt - a.updatedAt;
+    });
   const order = ['今天', '昨天', '本周', '本月', '更早'];
   const buckets = new Map<string, typeof list>();
   for (const s of list) {
@@ -90,37 +93,88 @@ const grouped = computed(() => {
     .map((k) => ({ label: k, items: buckets.get(k)! }));
 });
 
-const menu = useActionMenu();
+// --- Popover state ---
+const popoverVisible = ref(false);
+const popoverSessionId = ref('');
+const popoverSessionTitle = ref('');
+const popoverIsPinned = ref(false);
+const popoverAnchorX = ref(0);
+const popoverAnchorY = ref(0);
 
-async function handleLongPress(id: string, title: string) {
-  const r = await menu.open([
-    { name: '重命名' },
-    { name: '删除', color: '#b42318' },
-  ]);
-  if (!r) return;
-  if (r.name === '重命名') {
-    const next = window.prompt('新的会话名称', title);
-    if (next && next.trim() && next.trim() !== title) {
-      await chat.renameSession(id, next.trim());
-    }
-  } else if (r.name === '删除') {
-    try {
-      await showConfirmDialog({
-        title: '删除会话',
-        message: '删除后无法恢复，确认删除？',
-      });
-      await chat.deleteSession(id);
-    } catch {
-      /* canceled */
-    }
+const popoverActions = computed(() => [
+  { text: '重命名', icon: 'edit' },
+  {
+    text: popoverIsPinned.value ? '取消置顶' : '置顶',
+    icon: popoverIsPinned.value ? 'star-filled' : 'star-o',
+  },
+  { text: '删除', icon: 'delete', color: '#b42318' },
+]);
+
+function onPopoverSelect(action: { text: string }) {
+  popoverVisible.value = false;
+  if (action.text === '重命名') {
+    handleRename();
+  } else if (action.text === '置顶' || action.text === '取消置顶') {
+    handleTogglePin();
+  } else if (action.text === '删除') {
+    handleDelete();
   }
 }
 
-let pressTimer: number | null = null;
-function startPress(id: string, title: string) {
-  clearPress();
-  pressTimer = window.setTimeout(() => handleLongPress(id, title), 450);
+async function handleRename() {
+  const id = popoverSessionId.value;
+  const title = popoverSessionTitle.value;
+  const next = window.prompt('新的会话名称', title);
+  if (next && next.trim() && next.trim() !== title) {
+    await chat.renameSession(id, next.trim());
+  }
 }
+
+async function handleTogglePin() {
+  const id = popoverSessionId.value;
+  const newPinned = !popoverIsPinned.value;
+  await chat.pinSession(id, newPinned);
+}
+
+async function handleDelete() {
+  const id = popoverSessionId.value;
+  try {
+    await showConfirmDialog({
+      title: '删除会话',
+      message: '删除后无法恢复，确认删除？',
+    });
+    await chat.deleteSession(id);
+  } catch {
+    /* canceled */
+  }
+}
+
+// --- Long-press ---
+let pressTimer: number | null = null;
+let pressEl: HTMLElement | null = null;
+let pressId = '';
+let pressTitle = '';
+let pressIsPinned = false;
+
+function startPress(id: string, title: string, isPinned: boolean, event: TouchEvent) {
+  clearPress();
+  pressEl = event.currentTarget as HTMLElement | null;
+  if (!pressEl) return;
+  pressId = id;
+  pressTitle = title;
+  pressIsPinned = isPinned;
+  pressTimer = window.setTimeout(() => {
+    if (!pressEl) return;
+    const rect = pressEl.getBoundingClientRect();
+    popoverAnchorX.value = rect.left;
+    popoverAnchorY.value = rect.top + rect.height;
+    popoverSessionId.value = pressId;
+    popoverSessionTitle.value = pressTitle;
+    popoverIsPinned.value = pressIsPinned;
+    popoverVisible.value = true;
+  }, 450);
+}
+
 function clearPress() {
   if (pressTimer != null) {
     clearTimeout(pressTimer);
@@ -181,7 +235,7 @@ function handleMe() {
             class="drawer-item"
             :class="{ 'is-active': item.id === activeSessionId }"
             @click="handleSelect(item.id)"
-            @touchstart.passive="startPress(item.id, item.title)"
+            @touchstart="startPress(item.id, item.title, !!item.isPinned, $event)"
             @touchend="clearPress"
             @touchcancel="clearPress"
             @touchmove="clearPress"
@@ -200,16 +254,27 @@ function handleMe() {
         <van-icon name="ellipsis" />
       </button>
     </div>
-
-    <van-action-sheet
-      v-model:show="menu.state.show"
-      :actions="menu.state.actions"
-      :cancel-text="menu.state.cancelText"
-      close-on-click-action
-      @select="menu.onSelect"
-      @cancel="menu.onCancel"
-    />
   </van-popup>
+
+  <van-popover
+    v-model:show="popoverVisible"
+    :actions="popoverActions"
+    trigger="manual"
+    placement="bottom-start"
+    teleport="body"
+    @select="onPopoverSelect"
+  >
+    <template #reference>
+      <div
+        class="popover-anchor"
+        :style="{
+          position: 'fixed',
+          left: popoverAnchorX + 'px',
+          top: popoverAnchorY + 'px',
+        }"
+      />
+    </template>
+  </van-popover>
 </template>
 
 <style lang="scss" scoped>
@@ -380,5 +445,12 @@ function handleMe() {
   color: var(--m-text-primary);
   text-align: left;
   white-space: nowrap;
+}
+
+.popover-anchor {
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+  z-index: -1;
 }
 </style>
