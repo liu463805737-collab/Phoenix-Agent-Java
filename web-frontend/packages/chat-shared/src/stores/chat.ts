@@ -92,6 +92,15 @@ export const useChatStore = defineStore('phoenix-chat-shared/chat', () => {
     }
   }
 
+  async function pinSession(id: string, isPinned: boolean) {
+    await transport.pinSession(id, isPinned);
+    const target = sessions.value.find((s) => s.id === id);
+    if (target) {
+      target.isPinned = isPinned;
+      target.updatedAt = Date.now();
+    }
+  }
+
   async function send(content: string) {
     const trimmed = content.trim();
     if (!trimmed) return;
@@ -240,6 +249,7 @@ export const useChatStore = defineStore('phoenix-chat-shared/chat', () => {
     createSession,
     deleteSession,
     renameSession,
+    pinSession,
     send,
     stopSending,
     reset,

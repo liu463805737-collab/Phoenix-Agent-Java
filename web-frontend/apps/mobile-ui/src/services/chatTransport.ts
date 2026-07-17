@@ -12,6 +12,7 @@ import {
   deleteSessionApi,
   getAgentSessionsApi,
   getSessionMessagesApi,
+  pinSessionApi,
   renameSessionApi,
   saveMessageApi,
 } from './chat';
@@ -188,6 +189,10 @@ export const realChatTransport: ChatTransport = {
 
   async renameSession(sessionId: string, title: string): Promise<void> {
     await renameSessionApi(sessionId, title);
+  },
+
+  async pinSession(sessionId: string, isPinned: boolean): Promise<void> {
+    await pinSessionApi(sessionId, isPinned);
   },
 
   async send(
