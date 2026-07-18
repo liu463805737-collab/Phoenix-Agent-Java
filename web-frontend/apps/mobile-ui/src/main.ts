@@ -41,14 +41,27 @@ useChatStore().setTransport(realChatTransport);
 
 async function trySsoLogin(): Promise<boolean> {
   const platform = detectPlatform();
-  if (platform === 'browser') return false;
+  console.log('[bootstrap] detectPlatform:', platform);
+  if (platform === 'browser') {
+    console.log('[bootstrap] 浏览器环境，跳过 SSO 登录');
+    return false;
+  }
 
   try {
+    console.log('[bootstrap] 开始查询平台信息...');
     const enabled = await getEnabledPlatform();
-    if (!enabled || enabled.status !== '1' || enabled.type !== platform) return false;
+    console.log('[bootstrap] getEnabledPlatform 返回:', enabled);
+    if (!enabled || enabled.status !== '1' || enabled.type !== platform) {
+      console.log('[bootstrap] 平台未启用或不匹配，跳过 SSO');
+      return false;
+    }
 
+    console.log('[bootstrap] 开始获取授权码...');
     const code = await getAuthCode(enabled.corpid);
+    console.log('[bootstrap] 获取授权码成功');
+
     const result = await thirdPartyLogin({ platform, code });
+    console.log('[bootstrap] thirdPartyLogin 成功:', result.username);
 
     const user: User = {
       username: result.username,
@@ -66,21 +79,28 @@ async function trySsoLogin(): Promise<boolean> {
     localStorage.setItem(USER_KEY, JSON.stringify(user));
 
     return true;
-  } catch {
+  } catch (e) {
+    console.error('[bootstrap] SSO 登录失败:', e);
     return false;
   }
 }
 
 async function bootstrap() {
+  console.log('[bootstrap] 启动，token:', auth.token ? '存在' : '为空');
   if (!auth.token) {
+    console.log('[bootstrap] 无 token，尝试 SSO 登录...');
     const ssoOk = await trySsoLogin();
+    console.log('[bootstrap] SSO 登录结果:', ssoOk);
     if (ssoOk) {
+      console.log('[bootstrap] SSO 成功，加载智能体列表...');
       await useAgentStore().loadAll();
     }
   } else {
+    console.log('[bootstrap] 已有 token，直接加载智能体列表...');
     void useAgentStore().loadAll();
   }
 
+  console.log('[bootstrap] 挂载 Vue 应用');
   app.mount('#app');
 }
 

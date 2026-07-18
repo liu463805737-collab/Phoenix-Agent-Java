@@ -22,18 +22,24 @@ export async function request<T>(
     headers['phoenix-token'] = token;
   }
 
-  const res = await fetch(`${BASE_URL}${url}`, { ...options, headers });
+  const fullUrl = `${BASE_URL}${url}`;
+  console.log(`[HTTP] ${options.method || 'GET'} ${fullUrl}`);
+  const res = await fetch(fullUrl, { ...options, headers });
+  console.log(`[HTTP] 响应状态:`, res.status, res.statusText);
 
   if (!res.ok) {
+    console.error(`[HTTP] 请求失败:`, res.status, res.statusText);
     throw new Error(`HTTP ${res.status}: ${res.statusText}`);
   }
 
   const body: ApiResponse<T> = await res.json();
+  console.log(`[HTTP] 响应数据:`, body);
 
   if (body.code === '100' || body.code === '200') {
     return body.data;
   }
 
+  console.error(`[HTTP] 业务错误:`, body.code, body.msg);
   throw new Error(body.msg || '请求失败');
 }
 

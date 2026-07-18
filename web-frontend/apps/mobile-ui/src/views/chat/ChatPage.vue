@@ -53,12 +53,20 @@ watch(activeSessionId, () => void scrollToBottom());
 watch(currentAgent, () => { avatarError.value = false; });
 
 onMounted(async () => {
-  if (agentStore.agents.length === 0) await agentStore.loadAll();
+  console.log('[ChatPage] onMounted, agents 数量:', agentStore.agents.length);
+  if (agentStore.agents.length === 0) {
+    console.log('[ChatPage] 智能体列表为空，重新加载...');
+    await agentStore.loadAll();
+    console.log('[ChatPage] 加载后 agents 数量:', agentStore.agents.length);
+  }
 
   const agentId = (route.query.agentId as string) || agentStore.agents[0]?.id;
+  console.log('[ChatPage] 选中的 agentId:', agentId);
   if (agentId) {
     agentStore.setActiveAgent(agentId);
+    console.log('[ChatPage] 加载会话列表...');
     const list = await getAgentSessionsApi(agentId);
+    console.log('[ChatPage] 会话列表数量:', list.length);
     chat.sessions = list;
     if (list.length > 0) {
       await chat.switchSession(list[0]!.id);
