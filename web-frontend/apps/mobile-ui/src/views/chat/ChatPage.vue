@@ -269,6 +269,7 @@ async function handleRegenerate(idx: number) {
                 :content="msg.content"
                 :message-type="msg.messageType ?? 'text'"
                 :bot-avatar="currentAgent?.avatar || '智'"
+                :show-avatar="msg.role !== 'assistant' || idx === 0 || activeMessages[idx - 1]?.role !== 'assistant'"
                 @longpress="handleLongPress(idx)"
                 @copy="handleCopy(msg.content)"
                 @regenerate="handleRegenerate(idx)"

@@ -10,6 +10,7 @@ interface Props {
   botAvatar?: string;
   botName?: string;
   typing?: boolean;
+  showAvatar?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -18,6 +19,7 @@ const props = withDefaults(defineProps<Props>(), {
   botAvatar: '智',
   botName: '',
   typing: false,
+  showAvatar: true,
 });
 
 const emit = defineEmits<{
@@ -64,7 +66,7 @@ function clearTimer() {
 <template>
   <div class="bubble" :class="`bubble--${props.role}`">
     <template v-if="props.role === 'assistant'">
-      <div class="bubble__avatar">
+      <div v-if="props.showAvatar" class="bubble__avatar">
         <img
           v-if="botAvatar"
           :src="props.botAvatar"
@@ -74,7 +76,7 @@ function clearTimer() {
         />
         <span v-else>{{ props.botName ? [...props.botName][0] : '智' }}</span>
       </div>
-      <div class="bubble__main">
+      <div class="bubble__main" :class="{ 'bubble__main--no-avatar': !props.showAvatar }">
         <div
           class="bubble__content"
           :class="{
@@ -207,6 +209,10 @@ function clearTimer() {
     flex-direction: column;
     gap: 4px;
     min-width: 0;
+
+    &--no-avatar {
+      margin-left: 38px;
+    }
   }
 
   &__content {
