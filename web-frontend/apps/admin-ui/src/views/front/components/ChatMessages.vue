@@ -57,11 +57,18 @@ watch(activeSessionId, () => {
   <div ref="scrollRef" class="chat-messages">
     <div class="chat-messages__inner">
       <div
-        v-for="msg in activeMessages"
+··        v-for="(msg, index) in activeMessages"
         :key="msg.id"
         :class="['chat-message', msg.role]"
       >
-        <div v-if="msg.role === 'assistant'" class="chat-message__avatar">
+        <div
+          v-if="msg.role === 'assistant'"
+          class="chat-message__avatar"
+          :class="{
+            'chat-message__avatar--hidden':
+              index > 0 && activeMessages[index - 1].role === 'assistant',
+          }"
+        >
           {{ botName.charAt(0) }}
         </div>
 
@@ -183,6 +190,10 @@ watch(activeSessionId, () => {
 
   &.assistant &__content {
     width: 91.5%;
+  }
+
+  &__avatar--hidden {
+    visibility: hidden;
   }
 
   &__content {
