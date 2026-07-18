@@ -7,19 +7,13 @@ interface Props {
   role: 'assistant' | 'user';
   content?: string;
   messageType?: string;
-  botAvatar?: string;
-  botName?: string;
   typing?: boolean;
-  showAvatar?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   content: '',
   messageType: 'text',
-  botAvatar: '智',
-  botName: '',
   typing: false,
-  showAvatar: true,
 });
 
 const emit = defineEmits<{
@@ -27,13 +21,6 @@ const emit = defineEmits<{
   (e: 'copy'): void;
   (e: 'regenerate'): void;
 }>();
-
-const imgError = ref(false);
-
-const botAvatar = computed(() => {
-  const a = props.botAvatar;
-  return a && !imgError.value && (a.startsWith('/') || a.startsWith('http'));
-});
 
 const isHtml = computed(
   () =>
@@ -66,17 +53,7 @@ function clearTimer() {
 <template>
   <div class="bubble" :class="`bubble--${props.role}`">
     <template v-if="props.role === 'assistant'">
-      <div v-if="props.showAvatar" class="bubble__avatar">
-        <img
-          v-if="botAvatar"
-          :src="props.botAvatar"
-          :alt="props.botName || '助手'"
-          class="bubble__avatar-img"
-          @error="imgError = true"
-        />
-        <span v-else>{{ props.botName ? [...props.botName][0] : '智' }}</span>
-      </div>
-      <div class="bubble__main" :class="{ 'bubble__main--no-avatar': !props.showAvatar }">
+      <div class="bubble__main">
         <div
           class="bubble__content"
           :class="{
@@ -180,39 +157,12 @@ function clearTimer() {
     justify-content: flex-end;
   }
 
-  &__avatar {
-    position: relative;
-    display: flex;
-    flex: 0 0 auto;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    margin-top: 2px;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--m-brand-primary);
-    background: var(--m-brand-primary-soft);
-    border-radius: 50%;
-    overflow: hidden;
-  }
-
-  &__avatar-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
   &__main {
     display: flex;
     flex: 1 1 auto;
     flex-direction: column;
     gap: 4px;
     min-width: 0;
-
-    &--no-avatar {
-      margin-left: 38px;
-    }
   }
 
   &__content {
