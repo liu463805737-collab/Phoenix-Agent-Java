@@ -63,15 +63,41 @@ export const useChatStore = defineStore('phoenix-chat-shared/chat', () => {
   }
 
   async function createSession(agentId: string) {
-    const session = await transport.createSession(agentId);
+    const session: ChatSession = {
+      id: `temp-${Date.now()}`,
+      title: '新会话',
+      preview: '',
+      agentId,
+      updatedAt: Date.now(),
+    };
     sessions.value = [session, ...sessions.value];
     messagesByS.value = { ...messagesByS.value, [session.id]: [] };
     activeSessionId.value = session.id;
     return session;
   }
 
+  async function persistCurrentSessionIfNeeded() {
+    const session = activeSession.value;
+    if (!session || !session.id.startsWith('temp-')) return;
+    const persisted = await transport.createSession(session.agentId);
+    const oldId = session.id;
+    const idx = sessions.value.findIndex((s) => s.id === oldId);
+    if (idx >= 0) {
+      persisted.updatedAt = persisted.updatedAt ?? Date.now();
+      sessions.value[idx] = persisted;
+    }
+    const msgs = messagesByS.value[oldId] ?? [];
+    const next = { ...messagesByS.value };
+    delete next[oldId];
+    next[persisted.id] = msgs;
+    messagesByS.value = next;
+    activeSessionId.value = persisted.id;
+  }
+
   async function deleteSession(id: string) {
-    await transport.deleteSession(id);
+    if (!id.startsWith('temp-')) {
+      await transport.deleteSession(id);
+    }
     sessions.value = sessions.value.filter((s) => s.id !== id);
     const next = { ...messagesByS.value };
     delete next[id];
@@ -84,20 +110,24 @@ export const useChatStore = defineStore('phoenix-chat-shared/chat', () => {
   }
 
   async function renameSession(id: string, title: string) {
-    await transport.renameSession(id, title);
     const target = sessions.value.find((s) => s.id === id);
     if (target) {
       target.title = title;
       target.updatedAt = Date.now();
     }
+    if (!id.startsWith('temp-')) {
+      await transport.renameSession(id, title);
+    }
   }
 
   async function pinSession(id: string, isPinned: boolean) {
-    await transport.pinSession(id, isPinned);
     const target = sessions.value.find((s) => s.id === id);
     if (target) {
       target.isPinned = isPinned;
       target.updatedAt = Date.now();
+    }
+    if (!id.startsWith('temp-')) {
+      await transport.pinSession(id, isPinned);
     }
   }
 
@@ -106,6 +136,7 @@ export const useChatStore = defineStore('phoenix-chat-shared/chat', () => {
     if (!trimmed) return;
     if (!activeSessionId.value) return;
     if (sending.value) return;
+    await persistCurrentSessionIfNeeded();
     const sessionId = activeSessionId.value;
     // 乐观写入用户消息
     const msgs = messagesByS.value[sessionId] ?? [];
@@ -247,6 +278,7 @@ export const useChatStore = defineStore('phoenix-chat-shared/chat', () => {
     loadMessages,
     switchSession,
     createSession,
+    persistCurrentSessionIfNeeded,
     deleteSession,
     renameSession,
     pinSession,

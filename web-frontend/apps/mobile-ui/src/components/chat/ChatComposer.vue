@@ -91,6 +91,10 @@ function handleKeydown(event: KeyboardEvent) {
   border: 1px solid var(--m-border);
   border-radius: var(--m-radius-input);
   transition: border-color 0.15s ease;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.08);
 
   &:focus-within {
     border-color: var(--m-brand-primary);

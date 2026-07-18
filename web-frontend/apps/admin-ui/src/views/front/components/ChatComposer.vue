@@ -181,9 +181,13 @@ function handleKeydown(event: KeyboardEvent) {
     background: hsl(var(--background));
     border: 1px solid hsl(var(--border));
     border-radius: 12px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.08);
     transition:
       border-color 0.15s ease,
       box-shadow 0.15s ease;
+
 
     &:focus-within {
       border-color: hsl(var(--primary));

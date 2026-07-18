@@ -49,14 +49,21 @@ async function handlePick(id: string) {
       preview: s.preview || '',
       agentId: String(s.agentId ?? id),
       updatedAt: s.updateTime ? new Date(s.updateTime).getTime() : Date.now(),
+      isPinned: !!s.isPinned,
     })) as ChatSession[];
   } catch {
     await chat.loadSessions();
   } finally {
     chat.loadingSessions = false;
   }
-  const exist = chat.sessions.find((s) => s.agentId === id);
-  await (exist ? chat.switchSession(exist.id) : chat.createSession(id));
+  const newSession = chat.sessions.find(
+    (s) => s.agentId === id && s.title === '新会话',
+  );
+  if (newSession) {
+    await chat.switchSession(newSession.id);
+  } else {
+    await chat.createSession(id);
+  }
 }
 
 function isImageUrl(val: string) {
