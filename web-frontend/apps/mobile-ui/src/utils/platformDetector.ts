@@ -41,13 +41,25 @@ export function getAuthCode(corpId?: string): Promise<string> {
   }
 }
 
-function getDingTalkAuthCode(corpId?: string): Promise<string> {
+function loadDingTalkJsApi(): Promise<void> {
   return new Promise((resolve, reject) => {
-    if (typeof dd === 'undefined') {
-      reject(new Error('钉钉JSAPI未加载'));
+    if (typeof dd !== 'undefined') {
+      resolve();
       return;
     }
+    const script = document.createElement('script');
+    script.src = 'https://g.alicdn.com/dingding/dingtalk-jsapi/2.13.0/dingtalk.open.js';
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('钉钉JSAPI加载失败'));
+    document.head.appendChild(script);
+  });
+}
 
+async function getDingTalkAuthCode(corpId?: string): Promise<string> {
+  await loadDingTalkJsApi();
+
+  return new Promise((resolve, reject) => {
     dd.ready(() => {
       dd.runtime.permission.requestAuthCode({
         corpId: corpId || '',
