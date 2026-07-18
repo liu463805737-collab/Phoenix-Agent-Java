@@ -57,7 +57,7 @@ watch(activeSessionId, () => {
   <div ref="scrollRef" class="chat-messages">
     <div class="chat-messages__inner">
       <div
-··        v-for="(msg, index) in activeMessages"
+        v-for="(msg, index) in activeMessages"
         :key="msg.id"
         :class="['chat-message', msg.role]"
       >
@@ -99,7 +99,7 @@ watch(activeSessionId, () => {
             class="chat-message__text"
             :class="{
               'chat-message__text--markdown': msg.role === 'assistant',
-              'chat-message__text--streaming': msg.streaming,
+              'chat-message__text--streaming': msg.streaming
             }"
             v-html="renderMessage(msg)"
           ></div>
