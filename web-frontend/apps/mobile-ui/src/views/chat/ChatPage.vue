@@ -237,7 +237,7 @@ async function handleRegenerate(idx: number) {
             aria-label="新建对话"
             @click="handleNewChat"
         >
-          <van-icon size="24" name="plus" />
+          <van-icon name="plus" />
         </button>
       </header>
 
@@ -351,6 +351,9 @@ async function handleRegenerate(idx: number) {
   border: none;
   border-radius: 10px;
   transition: background 0.15s ease;
+  > i{
+    font-size: 20px;
+  }
 }
 
 .chat-nav__btn:active {

@@ -1,8 +1,20 @@
 const API_BASE_URL = import.meta.env.VITE_GLOB_API_URL || '/api';
 const TOKEN_KEY = 'mobile-ui:auth:token';
+const USER_KEY = 'mobile-ui:auth:user';
 
 function getToken(): string {
   return localStorage.getItem(TOKEN_KEY) || '';
+}
+
+function handleUnauthorized(): void {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(USER_KEY);
+  import('vant').then(({ showFailToast }) => {
+    showFailToast('登录已过期，请重新登录');
+  });
+  import('../router').then(({ default: router }) => {
+    router.push('/login');
+  });
 }
 
 export interface FrontChatStreamRequest {
@@ -43,6 +55,10 @@ export function streamFrontChat(
         body: JSON.stringify(request),
         signal: controller.signal,
       });
+      if (response.status === 401) {
+        handleUnauthorized();
+        throw new Error('未授权，请先登录');
+      }
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -133,6 +149,10 @@ export function streamFrontChatSql(
         },
         signal: controller.signal,
       });
+      if (response.status === 401) {
+        handleUnauthorized();
+        throw new Error('未授权，请先登录');
+      }
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
