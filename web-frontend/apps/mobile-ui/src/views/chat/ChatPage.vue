@@ -108,6 +108,7 @@ async function handleNewChat() {
   if (latest && latest.title === '新会话') {
     await chat.switchSession(latest.id);
     await router.replace({ query: { agentId: currentAgent.value.id } });
+    showSuccessToast('已在新对话中');
     return;
   }
   await router.replace({ query: { agentId: currentAgent.value.id } });
@@ -237,7 +238,7 @@ async function handleRegenerate(idx: number) {
             aria-label="新建对话"
             @click="handleNewChat"
         >
-          <van-icon name="plus" />
+          <van-icon color="#1989fa" name="add-o" />
         </button>
       </header>
 

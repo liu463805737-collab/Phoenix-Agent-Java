@@ -205,6 +205,28 @@ function clearPress() {
   }
 }
 
+function openActions(item: { id: string; title: string; isPinned?: boolean }, event: MouseEvent) {
+  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+  const POPOVER_W = 140;
+  const POPOVER_H = 150;
+  const GAP = 4;
+
+  let ax = rect.right - POPOVER_W;
+  let ay = rect.bottom + GAP;
+
+  if (ax < 10) ax = rect.left;
+  if (ay + POPOVER_H > window.innerHeight) {
+    ay = rect.top - POPOVER_H - GAP;
+  }
+
+  popoverSessionId.value = item.id;
+  popoverSessionTitle.value = item.title;
+  popoverIsPinned.value = !!item.isPinned;
+  popoverAnchorX.value = ax;
+  popoverAnchorY.value = ay;
+  popoverVisible.value = true;
+}
+
 function handleSelect(id: string) {
   emit('select', id);
   emit('update:show', false);
@@ -263,10 +285,19 @@ function handleMe() {
             @touchcancel="clearPress"
             @touchmove="clearPress"
           >
-            <div class="drawer-item__title">{{ item.title }}</div>
-            <div class="drawer-item__meta">
-              {{ getAgentName(item.agentId) }}
+            <div class="drawer-item__body">
+              <div class="drawer-item__title">{{ item.title }}</div>
+              <div class="drawer-item__meta">
+                {{ getAgentName(item.agentId) }}
+              </div>
             </div>
+            <span
+              class="drawer-item__action"
+              @click.stop="openActions(item, $event)"
+              @touchstart.stop
+            >
+              <van-icon name="ellipsis" />
+            </span>
           </button>
         </div>
       </div>
@@ -433,10 +464,10 @@ function handleMe() {
 
 .drawer-item {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  gap: 4px;
   width: 100%;
-  padding: 10px 12px;
+  padding: 8px 8px 8px 12px;
   text-align: left;
   cursor: pointer;
   user-select: none;
@@ -456,6 +487,14 @@ function handleMe() {
   color: var(--m-brand-primary);
 }
 
+.drawer-item__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .drawer-item__title {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -468,6 +507,26 @@ function handleMe() {
 .drawer-item__meta {
   font-size: 12px;
   color: var(--m-text-muted);
+}
+
+.drawer-item__action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  font-size: 18px;
+  color: var(--m-text-muted);
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  transition: background 0.15s ease;
+}
+
+.drawer-item__action:active {
+  background: var(--m-border-soft);
 }
 
 .drawer__user {
