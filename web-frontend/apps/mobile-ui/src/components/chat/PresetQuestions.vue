@@ -208,14 +208,14 @@ watch(
   justify-content: center;
   gap: 4px;
   width: 100%;
-  padding: 8px 0;
+  padding: 12px 14px;
   margin-bottom: 8px;
   font-size: 13px;
   color: var(--m-brand-primary);
   cursor: pointer;
   background: var(--m-brand-primary-soft);
   border: 1px dashed var(--m-brand-primary);
-  border-radius: 10px;
+  border-radius: 14px;
   transition: opacity 0.15s ease;
 }
 

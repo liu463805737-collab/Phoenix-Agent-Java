@@ -58,11 +58,13 @@ export const useChatStore = defineStore('phoenix-chat-shared/chat', () => {
   }
 
   async function switchSession(id: string) {
+    stopSending();
     activeSessionId.value = id;
     await loadMessages(id);
   }
 
   async function createSession(agentId: string) {
+    stopSending();
     const session: ChatSession = {
       id: `temp-${Date.now()}`,
       title: '新会话',
