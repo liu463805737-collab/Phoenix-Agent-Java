@@ -96,6 +96,7 @@ const formData = reactive<Record<string, any>>({
   corpid: '',
   corpsecret: '',
   agentid: '',
+  appKey: '',
 });
 
 const formRules: FormRules = {
@@ -132,6 +133,7 @@ function showAddDialog() {
     corpid: '',
     corpsecret: '',
     agentid: '',
+    appKey: '',
   });
   dialogVisible.value = true;
 }
@@ -146,6 +148,7 @@ function handleEdit(row: PlatformInfo) {
     corpid: row.corpid,
     corpsecret: row.corpsecret,
     agentid: row.agentid,
+    appKey: row.appKey,
   });
   dialogVisible.value = true;
 }
@@ -259,6 +262,7 @@ onMounted(() => {
             </template>
           </ElTableColumn>
           <ElTableColumn prop="agentid" label="AgentId" width="100" />
+          <ElTableColumn prop="appKey" label="登录AppKey" width="200" />
           <ElTableColumn label="创建时间" width="170">
             <template #default="scope">
               {{ scope.row.createTime?.replace('T', ' ')?.slice(0, 16) }}
@@ -348,6 +352,9 @@ onMounted(() => {
           </ElFormItem>
           <ElFormItem label="AgentId">
             <ElInput v-model="formData.agentid" placeholder="请输入AgentId" />
+          </ElFormItem>
+          <ElFormItem label="登录AppKey">
+            <ElInput v-model="formData.appKey" placeholder="请输入登录认证AppKey（钉钉/飞书OAuth用）" />
           </ElFormItem>
         </ElForm>
         <template #footer>

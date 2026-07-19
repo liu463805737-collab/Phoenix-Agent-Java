@@ -27,4 +27,8 @@ public class PlatformInfo extends BaseModel {
     private String corpid;
     private String corpsecret;
     private String agentid;
+    /**
+     * 登录认证AppKey（钉钉/飞书OAuth用）
+     */
+    private String appKey;
 }

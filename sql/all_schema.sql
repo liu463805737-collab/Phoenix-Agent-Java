@@ -1185,6 +1185,7 @@ CREATE TABLE "public"."tbl_platform_platform_info" (
   "corpid" varchar(255) COLLATE "pg_catalog"."default" DEFAULT NULL::character varying,
   "corpsecret" varchar(255) COLLATE "pg_catalog"."default" DEFAULT NULL::character varying,
   "agentid" varchar(100) COLLATE "pg_catalog"."default" DEFAULT NULL::character varying,
+  "app_key" varchar(255) COLLATE "pg_catalog"."default" DEFAULT NULL::character varying,
   "status" varchar(2) COLLATE "pg_catalog"."default" DEFAULT '0'::character varying,
   "create_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
   "creator" varchar(255) COLLATE "pg_catalog"."default" DEFAULT NULL::character varying,
@@ -1200,6 +1201,7 @@ COMMENT ON COLUMN "public"."tbl_platform_platform_info"."name" IS '平台名称'
 COMMENT ON COLUMN "public"."tbl_platform_platform_info"."corpid" IS '企业ID';
 COMMENT ON COLUMN "public"."tbl_platform_platform_info"."corpsecret" IS '企业密钥';
 COMMENT ON COLUMN "public"."tbl_platform_platform_info"."agentid" IS '应用AgentId';
+COMMENT ON COLUMN "public"."tbl_platform_platform_info"."app_key" IS '登录认证AppKey（钉钉/飞书OAuth用）';
 COMMENT ON COLUMN "public"."tbl_platform_platform_info"."status" IS '启用状态 0-禁用 1-启用';
 COMMENT ON COLUMN "public"."tbl_platform_platform_info"."create_time" IS '创建时间';
 COMMENT ON COLUMN "public"."tbl_platform_platform_info"."creator" IS '创建人';

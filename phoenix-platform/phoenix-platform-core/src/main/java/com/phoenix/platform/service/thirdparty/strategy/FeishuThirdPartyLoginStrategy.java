@@ -25,7 +25,7 @@ public class FeishuThirdPartyLoginStrategy implements ThirdPartyLoginStrategy {
         String body = JSONUtil.createObj()
                 .set("grant_type", "authorization_code")
                 .set("code", code)
-                .set("app_id", platform.getCorpid())
+                .set("app_id", platform.getAppKey())
                 .set("app_secret", platform.getCorpsecret())
                 .toString();
         String respBody = HttpRequest.post(url).body(body).execute().body();

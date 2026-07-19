@@ -8,6 +8,7 @@ export interface PlatformInfo {
   corpid?: string;
   corpsecret?: string;
   agentid?: string;
+  appKey?: string;
   createTime?: string;
   updateTime?: string;
 }

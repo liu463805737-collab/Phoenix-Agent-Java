@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
+import { onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import {
   useAgentStore,
+  useAuthStore,
   useChatStore,
   useLoginFlow,
 } from '@phoenix/chat-shared';
@@ -11,6 +12,16 @@ import { showFailToast } from 'vant';
 const router = useRouter();
 const route = useRoute();
 const { submit } = useLoginFlow();
+
+onMounted(() => {
+  const auth = useAuthStore();
+  if (auth.token) {
+    console.log('[LoginPage] 已登录，跳转到聊天页');
+    const redirect =
+      typeof route.query.redirect === 'string' ? route.query.redirect : '/chat';
+    router.replace(redirect);
+  }
+});
 
 const form = reactive({
   username: '',

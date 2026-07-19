@@ -42,7 +42,7 @@ public class DingTalkSdkServiceImpl implements DingTalkSdkService {
 			throw new RuntimeException("未找到启用的钉钉平台配置");
 		}
 
-		String url = DingTalkSyncConstants.TOKEN_URL + "?appkey=" + platformInfo.getCorpid() + "&appsecret="
+		String url = DingTalkSyncConstants.TOKEN_URL + "?appkey=" + platformInfo.getAppKey() + "&appsecret="
 				+ platformInfo.getCorpsecret();
 		String respBody = HttpRequest.get(url).execute().body();
 		JSONObject resp = JSONUtil.parseObj(respBody);

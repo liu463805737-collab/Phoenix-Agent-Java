@@ -32,7 +32,6 @@ const USER_KEY = 'mobile-ui:auth:user';
 const app = createApp(App);
 
 app.use(createPinia());
-app.use(router);
 
 const auth = useAuthStore();
 useAuthStore().setTransport(realAuthTransport);
@@ -99,6 +98,9 @@ async function bootstrap() {
     console.log('[bootstrap] 已有 token，直接加载智能体列表...');
     void useAgentStore().loadAll();
   }
+
+  console.log('[bootstrap] 安装路由');
+  app.use(router);
 
   console.log('[bootstrap] 挂载 Vue 应用');
   app.mount('#app');

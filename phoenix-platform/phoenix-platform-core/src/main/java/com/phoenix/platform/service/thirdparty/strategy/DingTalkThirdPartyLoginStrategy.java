@@ -21,7 +21,7 @@ public class DingTalkThirdPartyLoginStrategy implements ThirdPartyLoginStrategy 
 
     @Override
     public String resolveUserId(String code, PlatformInfo platform) {
-        String tokenUrl = DingTalkSyncConstants.TOKEN_URL + "?appkey=" + platform.getCorpid()
+        String tokenUrl = DingTalkSyncConstants.TOKEN_URL + "?appkey=" + platform.getAppKey()
                 + "&appsecret=" + platform.getCorpsecret();
         String tokenResp = HttpRequest.get(tokenUrl).execute().body();
         JSONObject tokenJson = JSONUtil.parseObj(tokenResp);

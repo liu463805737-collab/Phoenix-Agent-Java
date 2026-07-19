@@ -1,8 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router';
+
 import { useAuthStore } from '@phoenix/chat-shared';
 
-import ChatPage from '../views/chat/ChatPage.vue';
 import LoginPage from '../views/auth/LoginPage.vue';
+import ChatPage from '../views/chat/ChatPage.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),

@@ -46,7 +46,7 @@ public class FeishuSdkServiceImpl implements FeishuSdkService {
 
 		String url = FeishuSyncConstants.TOKEN_URL;
 		String body = JSONUtil.createObj()
-			.set("app_id", platformInfo.getCorpid())
+			.set("app_id", platformInfo.getAppKey())
 			.set("app_secret", platformInfo.getCorpsecret())
 			.toString();
 		String respBody = HttpRequest.post(url).body(body).execute().body();
