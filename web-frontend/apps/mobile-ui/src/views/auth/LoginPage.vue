@@ -247,14 +247,13 @@ async function handleSubmit() {
   justify-content: center;
   width: 72px;
   height: 72px;
-  background: linear-gradient(135deg, #f0f4ff 0%, #e8eeff 100%);
   border-radius: 18px;
-  box-shadow: 0 8px 20px rgb(64 121 255 / 20%);
+  box-shadow: 0 8px 20px rgb(64 121 255 / 10%);
 }
 
 .login__logo-img {
-  width: 48px;
-  height: 48px;
+  width: 54px;
+  height: 54px;
 }
 
 .login__title {
