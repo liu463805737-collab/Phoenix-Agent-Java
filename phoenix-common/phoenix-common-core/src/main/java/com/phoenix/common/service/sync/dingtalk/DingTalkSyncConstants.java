@@ -16,4 +16,8 @@ public interface DingTalkSyncConstants {
 
 	String USER_INFO_URL = BASE_URL + "/topapi/v2/user/getuserinfo";
 
+	String JSAPI_TICKET_URL = BASE_URL + "/get_jsapi_ticket";
+
+	String JSAPI_TICKET_CACHE_KEY = "dingtalk_jsapi_ticket";
+
 }

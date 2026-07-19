@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@phoenix/chat-shared": "workspace:*",
+    "dingtalk-jsapi": "^3.2.9",
     "dompurify": "3.2.4",
     "highlight.js": "11.11.1",
     "marked": "12.0.2",

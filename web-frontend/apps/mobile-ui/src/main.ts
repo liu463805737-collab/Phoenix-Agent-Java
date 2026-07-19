@@ -55,6 +55,7 @@ async function trySsoLogin(): Promise<boolean> {
       return false;
     }
 
+    // enabled.corpid = 'ding2b18ec037e0f3530ffe93478753d9884';
     console.log('[bootstrap] 开始获取授权码...');
     const code = await getAuthCode(enabled.corpid);
     console.log('[bootstrap] 获取授权码成功');
@@ -85,18 +86,22 @@ async function trySsoLogin(): Promise<boolean> {
 }
 
 async function bootstrap() {
-  console.log('[bootstrap] 启动，token:', auth.token ? '存在' : '为空');
-  if (!auth.token) {
-    console.log('[bootstrap] 无 token，尝试 SSO 登录...');
-    const ssoOk = await trySsoLogin();
-    console.log('[bootstrap] SSO 登录结果:', ssoOk);
-    if (ssoOk) {
-      console.log('[bootstrap] SSO 成功，加载智能体列表...');
-      await useAgentStore().loadAll();
+  try {
+    console.log('[bootstrap] 启动，token:', auth.token ? '存在' : '为空');
+    if (!auth.token) {
+      console.log('[bootstrap] 无 token，尝试 SSO 登录...');
+      const ssoOk = await trySsoLogin();
+      console.log('[bootstrap] SSO 登录结果:', ssoOk);
+      if (ssoOk) {
+        console.log('[bootstrap] SSO 成功，加载智能体列表...');
+        await useAgentStore().loadAll();
+      }
+    } else {
+      console.log('[bootstrap] 已有 token，直接加载智能体列表...');
+      void useAgentStore().loadAll();
     }
-  } else {
-    console.log('[bootstrap] 已有 token，直接加载智能体列表...');
-    void useAgentStore().loadAll();
+  } catch (e) {
+    console.error('[bootstrap] 启动异常:', e);
   }
 
   console.log('[bootstrap] 安装路由');
