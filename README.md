@@ -243,6 +243,7 @@ mvn spring-boot:run -pl phoenix-admin/phoenix-admin-manager
 | [权限管理](docs/PRIVILEGE.md)           | RBAC的权限管理                                       |
 | [组织管理](docs/RNG.md)                 | 人员组织管理                                          |
 | [前台管理](docs/FRNT.md)                | 前台账号管理                                          |
+| [基础管理](docs/FRNT.md)                | 配置钉钉、企微、飞书自建应用信息                                |
 
 ## 🤝 加入社区 & 贡献
 
