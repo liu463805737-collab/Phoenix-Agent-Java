@@ -15,9 +15,11 @@ export const useChatStore = defineStore('phoenix-chat-shared/chat', () => {
 
   const loadingSessions = ref(false);
   const loadingMessages = ref(false);
-  const sending = ref(false);
+  const sendingSessions = ref(new Set<string>());
 
-  let abortController: AbortController | null = null;
+  const abortControllers = new Map<string, AbortController>();
+
+  const sending = computed(() => sendingSessions.value.size > 0);
 
   const activeSession = computed<ChatSession | null>(() => {
     if (!activeSessionId.value) return null;
@@ -28,6 +30,10 @@ export const useChatStore = defineStore('phoenix-chat-shared/chat', () => {
     if (!activeSessionId.value) return [];
     return messagesByS.value[activeSessionId.value] ?? [];
   });
+
+  const isActiveSessionSending = computed<boolean>(
+    () => activeSessionId.value !== null && sendingSessions.value.has(activeSessionId.value),
+  );
 
   function setTransport(next: ChatTransport) {
     transport = next;
@@ -58,13 +64,11 @@ export const useChatStore = defineStore('phoenix-chat-shared/chat', () => {
   }
 
   async function switchSession(id: string) {
-    stopSending();
     activeSessionId.value = id;
     await loadMessages(id);
   }
 
   async function createSession(agentId: string) {
-    stopSending();
     const session: ChatSession = {
       id: `temp-${Date.now()}`,
       title: '新会话',
@@ -137,9 +141,9 @@ export const useChatStore = defineStore('phoenix-chat-shared/chat', () => {
     const trimmed = content.trim();
     if (!trimmed) return;
     if (!activeSessionId.value) return;
-    if (sending.value) return;
-    await persistCurrentSessionIfNeeded();
     const sessionId = activeSessionId.value;
+    if (sendingSessions.value.has(sessionId)) return;
+    await persistCurrentSessionIfNeeded();
     // 乐观写入用户消息
     const msgs = messagesByS.value[sessionId] ?? [];
     const optimistic: ChatMessage = {
@@ -182,17 +186,18 @@ export const useChatStore = defineStore('phoenix-chat-shared/chat', () => {
       messagesByS.value = { ...messagesByS.value, [sessionId]: [...msgs] };
     };
 
-    sending.value = true;
-    abortController = new AbortController();
+    sendingSessions.value = new Set(sendingSessions.value).add(sessionId);
+    const ac = new AbortController();
+    abortControllers.set(sessionId, ac);
     const sendTimeout = setTimeout(
-      () => abortController?.abort(),
+      () => ac.abort(),
       600_000,
     );
     try {
       const currentSession = sessions.value.find((s) => s.id === sessionId);
       const reply = await transport.send(
         { sessionId, content: trimmed, agentId: currentSession?.agentId },
-        abortController.signal,
+        ac.signal,
         (text: string) => {
           updateStreamMessage(text);
         },
@@ -201,7 +206,7 @@ export const useChatStore = defineStore('phoenix-chat-shared/chat', () => {
         },
       );
       clearTimeout(sendTimeout);
-      if (abortController?.signal.aborted) return;
+      if (ac.signal.aborted) return;
 
       // 将占位消息（报告文本流）替换为最终回复
       if (streamMsgId) {
@@ -248,15 +253,20 @@ export const useChatStore = defineStore('phoenix-chat-shared/chat', () => {
       throw err;
     } finally {
       clearTimeout(sendTimeout);
-      sending.value = false;
-      abortController = null;
+      const next = new Set(sendingSessions.value);
+      next.delete(sessionId);
+      sendingSessions.value = next;
+      abortControllers.delete(sessionId);
     }
   }
 
-  function stopSending() {
-    if (abortController) {
-      abortController.abort();
-      abortController = null;
+  function stopSending(sessionId?: string) {
+    if (sessionId) {
+      abortControllers.get(sessionId)?.abort();
+    } else {
+      for (const ac of abortControllers.values()) {
+        ac.abort();
+      }
     }
   }
 
@@ -275,6 +285,8 @@ export const useChatStore = defineStore('phoenix-chat-shared/chat', () => {
     loadingSessions,
     loadingMessages,
     sending,
+    sendingSessions,
+    isActiveSessionSending,
     setTransport,
     loadSessions,
     loadMessages,

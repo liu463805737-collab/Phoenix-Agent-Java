@@ -21,7 +21,7 @@ const router = useRouter();
 const route = useRoute();
 const chat = useChatStore();
 const agentStore = useAgentStore();
-const { activeMessages, activeSessionId, sending, currentAgent } =
+const { activeMessages, activeSessionId, sending, isActiveSessionSending, currentAgent } =
   useChatSession();
 const { sessions } = storeToRefs(chat);
 
@@ -282,7 +282,7 @@ async function handleRegenerate(idx: number) {
                 @regenerate="handleRegenerate(idx)"
             />
             <ChatBubble
-                v-if="sending"
+                v-if="isActiveSessionSending"
                 role="assistant"
                 typing
             />
@@ -291,7 +291,7 @@ async function handleRegenerate(idx: number) {
       </div>
 
       <div v-if="hasAgent" class="chat-page__composer">
-        <ChatComposer :disabled="sending" @submit="handleSend" />
+        <ChatComposer :disabled="isActiveSessionSending" @submit="handleSend" />
       </div>
 
     </div>
