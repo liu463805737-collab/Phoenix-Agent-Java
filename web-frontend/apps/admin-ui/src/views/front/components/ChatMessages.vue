@@ -8,7 +8,7 @@ import ResultSetDisplay from '#/components/run/ResultSetDisplay.vue';
 
 const chat = useChatStore();
 const agentStore = useAgentStore();
-const { activeMessages, activeSession, activeSessionId, sending } =
+const { activeMessages, activeSession, activeSessionId, sending, loadingMessages } =
   storeToRefs(chat);
 const { agents } = storeToRefs(agentStore);
 
@@ -130,7 +130,15 @@ watch(activeSessionId, () => {
       </div>
 
       <div
-        v-if="activeMessages.length === 0 && !sending"
+        v-if="loadingMessages && activeMessages.length === 0"
+        class="chat-messages__loading"
+      >
+        <span class="chat-messages__loading-spinner"></span>
+        <span>加载中...</span>
+      </div>
+
+      <div
+        v-else-if="activeMessages.length === 0 && !sending"
         class="chat-messages__empty"
       >
         当前会话还没有消息，发送一条试试
@@ -390,6 +398,29 @@ watch(activeSessionId, () => {
   font-size: 13px;
   color: hsl(var(--muted-foreground));
   text-align: center;
+}
+
+.chat-messages__loading {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 0;
+  font-size: 13px;
+  color: hsl(var(--muted-foreground));
+
+  &-spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid hsl(var(--border));
+    border-top-color: hsl(var(--primary));
+    border-radius: 50%;
+    animation: messages-loading-spin 0.6s linear infinite;
+  }
+}
+
+@keyframes messages-loading-spin {
+  to { transform: rotate(360deg); }
 }
 
 .chat-message__bubble--typing {

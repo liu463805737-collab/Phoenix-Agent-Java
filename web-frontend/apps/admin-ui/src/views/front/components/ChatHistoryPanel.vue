@@ -175,6 +175,7 @@ async function handleSelect(id: string) {
     cancelRename();
   }
   await chat.switchSession(id);
+  chat.loadingMessages = true;
   try {
     const apiMessages = await getSessionMessagesApi(id);
     const mapped = apiMessages.map((m) => ({
@@ -188,6 +189,8 @@ async function handleSelect(id: string) {
     chat.messagesByS = { ...chat.messagesByS, [id]: mapped };
   } catch {
     // keep store default
+  } finally {
+    chat.loadingMessages = false;
   }
 }
 
