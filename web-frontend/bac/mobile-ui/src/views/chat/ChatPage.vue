@@ -118,7 +118,7 @@ async function handleLongPress(idx: number) {
   } else if (r.name === '重新生成') {
     const last = activeMessages.value
       .slice(0, idx + 1)
-      .toReversed()
+      .reverse()
       .find((m) => m.role === 'user');
     if (last) await chat.send(last.content);
   }
@@ -136,7 +136,7 @@ async function handleCopy(content: string) {
 async function handleRegenerate(idx: number) {
   const last = activeMessages.value
     .slice(0, idx + 1)
-    .toReversed()
+    .reverse()
     .find((m) => m.role === 'user');
   if (last) await chat.send(last.content);
 }

@@ -159,7 +159,7 @@ export const realChatTransport: ChatTransport = {
   async listMessages(sessionId: string): Promise<ChatMessage[]> {
     const messages = await getSessionMessagesApi(sessionId);
     const lastAssistant = [...messages]
-      .toReversed()
+      .reverse()
       .find((m) => m.role === 'assistant' && m.metadata);
     if (lastAssistant?.metadata) {
       try {

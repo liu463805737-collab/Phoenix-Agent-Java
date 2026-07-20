@@ -215,7 +215,7 @@ export const apiChatTransport: ChatTransport = {
     const messages = list.map((m) => toStoreMessage(m));
     // Restore threadId from last assistant message's metadata
     const lastAssistant = [...messages]
-      .toReversed()
+      .reverse()
       .find((m) => m.role === 'assistant' && m.metadata);
     if (lastAssistant?.metadata) {
       try {

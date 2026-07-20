@@ -345,7 +345,7 @@ export function useTDesignDesignTokens() {
 
     // 亮色模式 1 最浅、10 最深；暗色模式相反
     const lightScale = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
-    const scaleLevels = dark ? [...lightScale].toReversed() : lightScale;
+    const scaleLevels = dark ? [...lightScale].reverse() : lightScale;
     const scale: Record<string, string> = {};
     scaleLevels.forEach((level, index) => {
       scale[`--td-${tdName}-color-${index + 1}`] = getColor(level);
