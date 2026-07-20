@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 
-import { escapeHtml } from '../../utils/markdown';
+import { escapeHtml, renderMarkdown } from '../../utils/markdown';
 
 interface Props {
   role: 'assistant' | 'user';
@@ -25,9 +25,16 @@ const emit = defineEmits<{
 const isHtml = computed(
   () =>{
     return props.role === 'assistant' &&
-        (props.messageType === 'html' || props.messageType === 'text');
+        (props.messageType === 'html' || props.messageType === 'text' || props.messageType === 'markdown-report');
   },
 );
+const renderedContent = computed(() => {
+  if (props.role !== 'assistant') return '';
+  if (props.messageType === 'markdown-report' || props.messageType === 'text') {
+    return renderMarkdown(props.content);
+  }
+  return props.content;
+});
 const userContent = computed(() => {
   if (props.role !== 'user') return '';
   return escapeHtml(props.content).replaceAll('\n', '<br>');
@@ -72,7 +79,7 @@ function clearTimer() {
             <span class="dot" />
           </template>
           <template v-else-if="isHtml">
-            <div class="bubble__html" v-html="props.content" />
+            <div class="bubble__html" v-html="renderedContent" />
           </template>
           <template v-else>{{ props.content }}</template>
         </div>
