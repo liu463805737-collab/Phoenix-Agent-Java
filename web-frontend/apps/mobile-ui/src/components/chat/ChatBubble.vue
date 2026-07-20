@@ -23,9 +23,10 @@ const emit = defineEmits<{
 }>();
 
 const isHtml = computed(
-  () =>
-    props.role === 'assistant' &&
-    (props.messageType === 'html' || props.messageType === 'text'),
+  () =>{
+    return props.role === 'assistant' &&
+        (props.messageType === 'html' || props.messageType === 'text');
+  },
 );
 const userContent = computed(() => {
   if (props.role !== 'user') return '';

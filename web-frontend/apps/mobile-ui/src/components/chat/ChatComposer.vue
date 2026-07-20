@@ -79,7 +79,7 @@ function handleKeydown(event: KeyboardEvent) {
 
 <style lang="scss" scoped>
 .composer {
-  padding: 8px 12px 12px;
+  padding: 8px 12px 20px 12px;
 }
 
 .composer__shell {
