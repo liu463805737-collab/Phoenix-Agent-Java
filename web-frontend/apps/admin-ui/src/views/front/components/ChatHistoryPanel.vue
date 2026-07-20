@@ -8,8 +8,6 @@ import { Fold, More } from '@element-plus/icons-vue';
 
 
 import { useAuthStore } from '#/store';
-import { getSessionMessagesApi } from '#/api/front/chat';
-
 import SystemSettingsModal from './SystemSettingsModal.vue';
 
 const emit = defineEmits(['collapse'])
@@ -175,23 +173,6 @@ async function handleSelect(id: string) {
     cancelRename();
   }
   await chat.switchSession(id);
-  chat.loadingMessages = true;
-  try {
-    const apiMessages = await getSessionMessagesApi(id);
-    const mapped = apiMessages.map((m) => ({
-      id: String(m.id ?? `${Date.now()}-${Math.random()}`),
-      role: (m.role === 'user' ? 'user' : 'assistant') as 'user' | 'assistant',
-      content: m.content,
-      createdAt: m.createTime ? new Date(m.createTime).getTime() : Date.now(),
-      messageType: m.messageType ?? 'text',
-      metadata: m.metadata,
-    }));
-    chat.messagesByS = { ...chat.messagesByS, [id]: mapped };
-  } catch {
-    // keep store default
-  } finally {
-    chat.loadingMessages = false;
-  }
 }
 
 async function handleNewChat() {

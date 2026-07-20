@@ -213,6 +213,20 @@ export const apiChatTransport: ChatTransport = {
   async listMessages(sessionId: string): Promise<ChatMessage[]> {
     const list = await getSessionMessagesApi(sessionId);
     const messages = list.map((m) => toStoreMessage(m));
+    // Convert markdown content for assistant text messages
+    for (const msg of messages) {
+      if (msg.role === 'assistant' && !msg.messageType) {
+        msg.messageType = 'text';
+      }
+      if (
+        msg.role === 'assistant' &&
+        msg.messageType === 'text' &&
+        !/<[a-z][\s\S]*>/i.test(msg.content)
+      ) {
+        msg.content = markdownToHtml(msg.content);
+        msg.messageType = 'html';
+      }
+    }
     // Restore threadId from last assistant message's metadata
     const lastAssistant = [...messages]
       .reverse()
