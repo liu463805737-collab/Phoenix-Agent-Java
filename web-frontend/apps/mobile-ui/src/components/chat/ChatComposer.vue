@@ -79,18 +79,22 @@ function handleKeydown(event: KeyboardEvent) {
 
 <style lang="scss" scoped>
 .composer {
-  padding: 8px 12px 12px;
+  padding: 8px 12px 20px 12px;
 }
 
 .composer__shell {
   display: flex;
   gap: 8px;
-  align-items: flex-end;
+  align-items: center;
   padding: 8px 8px 8px 16px;
   background: var(--m-bg-elevated);
   border: 1px solid var(--m-border);
   border-radius: var(--m-radius-input);
   transition: border-color 0.15s ease;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.08);
 
   &:focus-within {
     border-color: var(--m-brand-primary);
@@ -101,7 +105,6 @@ function handleKeydown(event: KeyboardEvent) {
   flex: 1 1 auto;
   min-height: 24px;
   max-height: 140px;
-  padding: 6px 0;
   font-size: 16px;
   line-height: 1.5;
   color: var(--m-text-primary);

@@ -16,15 +16,19 @@ public class PlatformInfo extends BaseModel {
     @Id(keyType = KeyType.Generator, value = KeyGenerators.snowFlakeId)
     private String id;
     /**
-     * @see com.phoenix.platform.enm.PlatformTypeEnm
+     * @see com.phoenix.common.enm.PlatformTypeEnm
      */
     private String type;
     private String name;
     /**
      * 启用状态 0 禁用 1为启用
      */
-    private String status= "0";
+    private String status;
     private String corpid;
     private String corpsecret;
     private String agentid;
+    /**
+     * 登录认证AppKey（钉钉/飞书OAuth用）
+     */
+    private String appKey;
 }

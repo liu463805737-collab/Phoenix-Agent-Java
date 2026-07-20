@@ -30,6 +30,7 @@ async function handleLogout() {
     await showConfirmDialog({
       title: '退出登录',
       message: '确认要退出当前账号吗？',
+      width: '70%',
     });
     chat.reset();
     await auth.logout();
@@ -71,11 +72,11 @@ async function handleLogout() {
     </section>
 
     <section class="profile__group">
-      <button type="button" class="profile-cell">
+      <button type="button" class="profile-cell" @click="router.push('/me/setting')">
         <span class="profile-cell__label">个人设置</span>
         <span class="profile-cell__caret">›</span>
       </button>
-      <button type="button" class="profile-cell">
+      <button type="button" class="profile-cell" @click="router.push('/about')">
         <span class="profile-cell__label">关于我们</span>
         <span class="profile-cell__caret">›</span>
       </button>

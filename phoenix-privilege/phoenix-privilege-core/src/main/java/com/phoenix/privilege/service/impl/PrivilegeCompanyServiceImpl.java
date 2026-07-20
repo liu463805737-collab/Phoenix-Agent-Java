@@ -29,9 +29,7 @@ public class PrivilegeCompanyServiceImpl extends ServiceImpl<PrivilegeCompanyMap
 
 	@Override
 	public ReturnVo<String> deleteCompanyById(String id) {
-		long deptCount = QueryChain.of(privilegeDepartmentMapper)
-			.eq(PrivilegeDepartment::getCompanyId, id)
-			.count();
+		long deptCount = QueryChain.of(privilegeDepartmentMapper).eq(PrivilegeDepartment::getCompanyId, id).count();
 		if (deptCount > 0) {
 			return ReturnVo.fail("删除失败，请先删除下级部门");
 		}

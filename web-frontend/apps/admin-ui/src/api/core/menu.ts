@@ -6,7 +6,7 @@ import { requestClient } from '#/api/request';
  * 获取用户所有菜单
  */
 export async function getAllMenusApi() {
-  return requestClient.get<RouteRecordStringComponent[]>('/api/privilege/auth/menus');
+  return requestClient.get<RouteRecordStringComponent[]>('/api/privilege/auth/menus', {responseReturn: 'raw'});
 }
 
 /** 权限值信息（模块级） */
@@ -45,5 +45,5 @@ interface UserMenuVO {
  * 获取当前登录用户的菜单及权限
  */
 export async function getPrivilegeMenusApi() {
-  return requestClient.get<UserMenuVO>('/api/privilege/auth/menus');
+  return requestClient.get<UserMenuVO>('/api/privilege/auth/menus', {responseReturn: 'data'});
 }

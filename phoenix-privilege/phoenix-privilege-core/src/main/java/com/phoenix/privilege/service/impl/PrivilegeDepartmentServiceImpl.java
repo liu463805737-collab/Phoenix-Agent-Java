@@ -152,6 +152,10 @@ public class PrivilegeDepartmentServiceImpl extends ServiceImpl<PrivilegeDepartm
 		// code -> entity
 		Map<String, PrivilegeDepartment> codeMap = new HashMap<>();
 		for (JSONObject dept : depts) {
+			// 跳过根部门（公司本身），公司已在tbl_privilege_company中维护
+			if (isRootDept(dept, platformType)) {
+				continue;
+			}
 			String code = getDeptCode(dept, platformType);
 			String name = dept.getStr("name");
 			Integer order = getDeptOrder(dept, platformType);
@@ -286,21 +290,15 @@ public class PrivilegeDepartmentServiceImpl extends ServiceImpl<PrivilegeDepartm
 
 	@Override
 	public boolean deleteById(String id) {
-		long childCount = QueryChain.of(getMapper())
-			.eq(PrivilegeDepartment::getPid, id)
-			.count();
+		long childCount = QueryChain.of(getMapper()).eq(PrivilegeDepartment::getPid, id).count();
 		if (childCount > 0) {
 			throw new BusinessException("该部门下存在下级部门，无法删除");
 		}
-		long userCount = QueryChain.of(privilegeUserMapper)
-			.eq(PrivilegeUser::getDeptId, id)
-			.count();
+		long userCount = QueryChain.of(privilegeUserMapper).eq(PrivilegeUser::getDeptId, id).count();
 		if (userCount > 0) {
 			throw new BusinessException("该部门下存在用户，无法删除");
 		}
-		long employeeCount = QueryChain.of(privilegeEmployeeMapper)
-			.eq(PrivilegeEmployee::getDeptId, id)
-			.count();
+		long employeeCount = QueryChain.of(privilegeEmployeeMapper).eq(PrivilegeEmployee::getDeptId, id).count();
 		if (employeeCount > 0) {
 			throw new BusinessException("该部门下存在人员，无法删除");
 		}
@@ -312,6 +310,17 @@ public class PrivilegeDepartmentServiceImpl extends ServiceImpl<PrivilegeDepartm
 			case DINGTALK -> dept.getInt("order");
 			case FEISHU -> dept.getInt("order");
 			case WEIXIN -> dept.getInt("order");
+		};
+	}
+
+	private static boolean isRootDept(JSONObject dept, PlatformTypeEnm platformType) {
+		return switch (platformType) {
+			case DINGTALK -> "1".equals(dept.getStr("dept_id"));
+			case FEISHU -> {
+				String pid = dept.getStr("parent_department_id");
+				yield StrUtil.isBlank(pid) || "0".equals(pid);
+			}
+			case WEIXIN -> "0".equals(dept.getStr("parentid"));
 		};
 	}
 

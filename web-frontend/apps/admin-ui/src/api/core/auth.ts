@@ -30,7 +30,7 @@ export namespace AuthApi {
 export async function loginApi(data: AuthApi.LoginParams) {
   return requestClient.post<AuthApi.LoginResult>(
     '/api/privilege/auth/login',
-    data,
+    data
   );
 }
 

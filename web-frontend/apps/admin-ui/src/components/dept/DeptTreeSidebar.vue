@@ -14,8 +14,9 @@ const props = withDefaults(
   defineProps<{
     modelValue?: string;
     title?: string;
+    noCard?: boolean;
   }>(),
-  { title: '部门列表' },
+  { title: '部门列表', noCard: false },
 );
 
 const emit = defineEmits<{
@@ -72,7 +73,7 @@ onMounted(load);
 </script>
 
 <template>
-  <ElCard class="tree-section" :body-style="{ padding: '12px' }">
+  <ElCard v-if="!noCard" class="tree-section" :body-style="{ padding: '12px' }">
     <div class="tree-header">{{ title }}</div>
     <div v-loading="loading" class="tree-body">
       <ElTree
@@ -97,6 +98,34 @@ onMounted(load);
       </ElTree>
     </div>
   </ElCard>
+  <div v-else class="tree-section-plain">
+    <div class="flex items-center gap-2 border-b border-border px-4 py-3 text-sm font-semibold">
+      <ElIcon><IconifyIcon icon="lucide:folder-tree" /></ElIcon>
+      <span>{{ title }}</span>
+    </div>
+    <div v-loading="loading" class="tree-body">
+      <ElTree
+        :data="treeData"
+        :props="{ children: 'children', label: 'name' }"
+        node-key="id"
+        :default-expanded-keys="defaultExpandedKeys"
+        highlight-current
+        :current-node-key="props.modelValue"
+        @node-click="handleNodeClick"
+      >
+        <template #default="{ node }">
+          <div class="tree-node-content" :class="{ 'is-org': node.level === 1 }">
+            <ElIcon class="tree-node-icon">
+              <IconifyIcon
+                :icon="node.level === 1 ? 'lucide:building-2' : 'lucide:folder-tree'"
+              />
+            </ElIcon>
+            <span class="tree-node-label">{{ node.label }}</span>
+          </div>
+        </template>
+      </ElTree>
+    </div>
+  </div>
 </template>
 
 <style scoped>
@@ -106,6 +135,16 @@ onMounted(load);
   flex-direction: column;
   width: 260px;
   border-radius: 12px;
+}
+
+.tree-section-plain {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 100%;
+  border-radius: 8px;
+  border: 1px solid hsl(var(--border));
+  background-color: hsl(var(--card));
 }
 
 .tree-section :deep(.el-card__body) {

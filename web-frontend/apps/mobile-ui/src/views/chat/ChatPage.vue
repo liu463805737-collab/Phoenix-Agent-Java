@@ -8,35 +8,31 @@ import {
   useChatStore,
 } from '@phoenix/chat-shared';
 import { getAgentSessionsApi } from '../../services/chat';
-import { showToast } from 'vant';
+import { showFailToast, showLoadingToast, showSuccessToast } from 'vant';
 
 import { useActionMenu } from '../../components/useActionMenu';
 import ChatBubble from '../../components/chat/ChatBubble.vue';
 import ChatComposer from '../../components/chat/ChatComposer.vue';
 import SessionsDrawer from '../../components/chat/SessionsDrawer.vue';
 import AgentPickerSheet from '../../components/chat/AgentPickerSheet.vue';
+import PresetQuestions from '../../components/chat/PresetQuestions.vue';
 
 const router = useRouter();
 const route = useRoute();
 const chat = useChatStore();
 const agentStore = useAgentStore();
-const { activeMessages, activeSessionId, sending, currentAgent } =
+const { activeMessages, activeSessionId, sending, isActiveSessionSending, currentAgent } =
   useChatSession();
 const { sessions } = storeToRefs(chat);
 
 const scrollRef = ref<HTMLElement | null>(null);
 const drawerOpen = ref(false);
 const pickerOpen = ref(false);
+const avatarError = ref(false);
 const bubbleMenu = useActionMenu();
 const longPressIndex = ref<number>(-1);
 
-const SUGGESTIONS = [
-  '帮我看下上周华东大区的 GMV 同比变化',
-  '生成一份本周工作总结',
-  '把这段代码优化一下并解释',
-  '给我推荐一条北京周末的城市漫步路线',
-];
-
+const hasAgent = computed(() => !!currentAgent.value);
 const hasMessages = computed(() => activeMessages.value.length > 0);
 const greetingTitle = computed(
   () => `有什么可以帮你的，${currentAgent.value?.name ?? '我'}？`,
@@ -54,14 +50,23 @@ watch(
   () => void scrollToBottom(),
 );
 watch(activeSessionId, () => void scrollToBottom());
+watch(currentAgent, () => { avatarError.value = false; });
 
 onMounted(async () => {
-  if (agentStore.agents.length === 0) await agentStore.loadAll();
+  console.log('[ChatPage] onMounted, agents 数量:', agentStore.agents.length);
+  if (agentStore.agents.length === 0) {
+    console.log('[ChatPage] 智能体列表为空，重新加载...');
+    await agentStore.loadAll();
+    console.log('[ChatPage] 加载后 agents 数量:', agentStore.agents.length);
+  }
 
   const agentId = (route.query.agentId as string) || agentStore.agents[0]?.id;
+  console.log('[ChatPage] 选中的 agentId:', agentId);
   if (agentId) {
     agentStore.setActiveAgent(agentId);
+    console.log('[ChatPage] 加载会话列表...');
     const list = await getAgentSessionsApi(agentId);
+    console.log('[ChatPage] 会话列表数量:', list.length);
     chat.sessions = list;
     if (list.length > 0) {
       await chat.switchSession(list[0]!.id);
@@ -84,36 +89,71 @@ async function ensureSession() {
 async function handleSend(content: string) {
   const id = await ensureSession();
   if (!id) return;
-  await chat.send(content);
+  try {
+    await chat.send(content);
+  } catch {
+    // 发送失败由 store 内部处理，这里防止未捕获的 rejection
+  }
 }
 
 async function handleNewChat() {
-  const agentId = currentAgent.value?.id ?? agentStore.agents[0]?.id;
-  if (!agentId) return;
-  await router.replace({ query: { agentId } });
-  await chat.createSession(agentId);
+  if (!currentAgent.value) {
+    showFailToast('请先选择智能体！');
+    return;
+  }
+  const agentSessions = sessions.value.filter(
+    (s) => s.agentId === currentAgent.value!.id,
+  );
+  const latest = agentSessions[0];
+  if (latest && latest.title === '新会话') {
+    await chat.switchSession(latest.id);
+    await router.replace({ query: { agentId: currentAgent.value.id } });
+    showSuccessToast('已在新对话中');
+    return;
+  }
+  await router.replace({ query: { agentId: currentAgent.value.id } });
+  await chat.createSession(currentAgent.value.id);
 }
 
 async function handlePickAgent(agentId: string) {
-  agentStore.setActiveAgent(agentId);
-  await router.replace({ query: { agentId } });
-  const list = await getAgentSessionsApi(agentId);
-  chat.sessions = list;
-  if (list.length > 0) {
-    await chat.switchSession(list[0]!.id);
-  } else {
-    await chat.createSession(agentId);
+  const toast = showLoadingToast({
+    message: '切换中...',
+    duration: 0,
+    forbidClick: true,
+  });
+  try {
+    agentStore.setActiveAgent(agentId);
+    await router.replace({ query: { agentId } });
+    const list = await getAgentSessionsApi(agentId);
+    chat.sessions = list;
+    const latest = list[0];
+    if (latest && latest.title === '新会话') {
+      await chat.switchSession(latest.id);
+    } else {
+      await chat.createSession(agentId);
+    }
+  } finally {
+    toast.close();
   }
 }
 
 async function handleSelectSession(id: string) {
-  const session = chat.sessions.find((s) => s.id === id);
-  const agentId = session?.agentId ?? currentAgent.value?.id;
-  if (agentId) {
-    agentStore.setActiveAgent(agentId);
-    await router.replace({ query: { agentId } });
+  const toast = showLoadingToast({
+    message: '加载中...',
+    duration: 0,
+    forbidClick: true,
+  });
+  try {
+    const session = chat.sessions.find((s) => s.id === id);
+    const agentId = session?.agentId ?? currentAgent.value?.id;
+    if (agentId) {
+      agentStore.setActiveAgent(agentId);
+      await router.replace({ query: { agentId } });
+    }
+    await chat.switchSession(id);
+  } finally {
+    toast.close();
   }
-  await chat.switchSession(id);
 }
 
 function handleSuggest(text: string) {
@@ -129,7 +169,7 @@ async function handleLongPress(idx: number) {
     if (msg) {
       try {
         await navigator.clipboard.writeText(msg.content);
-        showToast({ message: '已复制', position: 'bottom' });
+        showSuccessToast({ message: '已复制' });
       } catch {
         /* ignore */
       }
@@ -137,7 +177,7 @@ async function handleLongPress(idx: number) {
   } else if (r.name === '重新生成') {
     const last = activeMessages.value
       .slice(0, idx + 1)
-      .toReversed()
+      .reverse()
       .find((m) => m.role === 'user');
     if (last) await chat.send(last.content);
   }
@@ -146,7 +186,7 @@ async function handleLongPress(idx: number) {
 async function handleCopy(content: string) {
   try {
     await navigator.clipboard.writeText(content);
-    showToast({ message: '已复制', position: 'bottom' });
+    showSuccessToast({ message: '已复制' });
   } catch {
     /* ignore */
   }
@@ -155,138 +195,123 @@ async function handleCopy(content: string) {
 async function handleRegenerate(idx: number) {
   const last = activeMessages.value
     .slice(0, idx + 1)
-    .toReversed()
+    .reverse()
     .find((m) => m.role === 'user');
   if (last) await chat.send(last.content);
 }
 </script>
 
 <template>
-  <div class="chat-page">
-    <header class="chat-nav">
-      <button
-        type="button"
-        class="chat-nav__btn"
-        aria-label="历史"
-        @click="drawerOpen = true"
-      >
-        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-          <path
-            d="M4 7h16M4 12h16M4 17h10"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.8"
-            stroke-linecap="round"
-          />
-        </svg>
-      </button>
-
-      <button
-        type="button"
-        class="chat-nav__title"
-        aria-label="切换智能体"
-        @click="pickerOpen = true"
-      >
-        <span>{{ currentAgent?.name ?? '智能体' }}</span>
-        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
-          <path
-            d="m4 6 4 4 4-4"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.6"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
-      </button>
-
-      <button
-        type="button"
-        class="chat-nav__btn"
-        aria-label="新建对话"
-        @click="handleNewChat"
-      >
-        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-          <path
-            d="M12 5v14M5 12h14"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.8"
-            stroke-linecap="round"
-          />
-        </svg>
-      </button>
-    </header>
-
-    <div ref="scrollRef" class="chat-page__scroll">
-      <div v-if="!hasMessages" class="empty-state">
-        <div class="empty-state__avatar">
-          <img
-            v-if="currentAgent?.avatar && (currentAgent.avatar.startsWith('/') || currentAgent.avatar.startsWith('http'))"
-            :src="currentAgent.avatar"
-            :alt="currentAgent.name || '智能体'"
-            class="empty-state__avatar-img"
-          />
-          <span v-else>{{ currentAgent?.name ? [...currentAgent.name][0] : '智' }}</span>
-        </div>
-        <div class="empty-state__title">{{ greetingTitle }}</div>
-        <div class="empty-state__sub">
-          {{ currentAgent?.description ?? '挑一个智能体或直接发问' }}
-        </div>
-        <div class="empty-state__suggest">
-          <button
-            v-for="(s, i) in SUGGESTIONS"
-            :key="i"
+  <div>
+    <div class="chat-page" :class="{'slide-with-drawer': drawerOpen}" >
+      <header class="chat-nav">
+        <button
             type="button"
-            class="suggest-chip"
-            @click="handleSuggest(s)"
-          >
-            {{ s }}
-          </button>
+            class="chat-nav__btn"
+            aria-label="历史"
+            @click="drawerOpen = true"
+        >
+          <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true">
+            <path
+                d="M4 7h16M4 12h16M4 17h10"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+            />
+          </svg>
+        </button>
+
+        <button
+            type="button"
+            class="chat-nav__title"
+            aria-label="切换智能体"
+            @click="pickerOpen = true"
+        >
+          <span style="line-height: 1;">{{ currentAgent?.name ?? '选择智能体' }}</span>
+          <van-icon name="arrow-down" />
+        </button>
+
+        <button
+            type="button"
+            class="chat-nav__btn"
+            aria-label="新建对话"
+            @click="handleNewChat"
+        >
+          <van-icon color="#1989fa" name="add-o" />
+        </button>
+      </header>
+
+      <div ref="scrollRef" class="chat-page__scroll">
+        <div v-if="!hasAgent" class="no-agent-state">
+          <div class="no-agent-state__brand">
+            <img src="/imgs/logo.png" alt="Phoenix" class="no-agent-state__logo" />
+            <span class="no-agent-state__app-name">Phoenix智能体助手</span>
+          </div>
+          <span class="select-agent-trigger" @click="pickerOpen = true">请选择智能体开始对话</span>
         </div>
+
+        <template v-else>
+          <div v-if="!hasMessages" class="empty-state">
+            <div class="empty-state__avatar">
+              <img
+                  v-if="currentAgent?.avatar && !avatarError && (currentAgent.avatar.startsWith('/') || currentAgent.avatar.startsWith('http'))"
+                  :src="currentAgent.avatar"
+                  :alt="currentAgent.name || '智能体'"
+                  class="empty-state__avatar-img"
+                  @error="avatarError = true"
+              />
+              <span v-else>{{ currentAgent?.name ? [...currentAgent.name][0] : '智' }}</span>
+            </div>
+            <div class="empty-state__title">{{ greetingTitle }}</div>
+            <div class="empty-state__sub">
+              {{ currentAgent?.description ?? '挑一个智能体或直接发问' }}
+            </div>
+            <PresetQuestions @select="handleSuggest" />
+          </div>
+
+          <div v-else class="chat-page__inner">
+            <ChatBubble
+                v-for="(msg, idx) in activeMessages"
+                :key="msg.id"
+                :role="msg.role"
+                :content="msg.content"
+                :message-type="msg.messageType ?? 'text'"
+                @longpress="handleLongPress(idx)"
+                @copy="handleCopy(msg.content)"
+                @regenerate="handleRegenerate(idx)"
+            />
+            <ChatBubble
+                v-if="isActiveSessionSending"
+                role="assistant"
+                typing
+            />
+          </div>
+        </template>
       </div>
 
-      <div v-else class="chat-page__inner">
-        <ChatBubble
-          v-for="(msg, idx) in activeMessages"
-          :key="msg.id"
-          :role="msg.role"
-          :content="msg.content"
-          :message-type="msg.messageType ?? 'text'"
-          :bot-avatar="currentAgent?.avatar ?? '智'"
-          @longpress="handleLongPress(idx)"
-          @copy="handleCopy(msg.content)"
-          @regenerate="handleRegenerate(idx)"
-        />
-        <ChatBubble
-          v-if="sending"
-          role="assistant"
-          :bot-avatar="currentAgent?.avatar ?? '智'"
-          typing
-        />
+      <div v-if="hasAgent" class="chat-page__composer">
+        <ChatComposer :disabled="isActiveSessionSending" @submit="handleSend" />
       </div>
-    </div>
 
-    <div class="chat-page__composer">
-      <ChatComposer :disabled="sending" @submit="handleSend" />
     </div>
 
     <SessionsDrawer
-      v-model:show="drawerOpen"
-      @select="handleSelectSession"
-      @new-chat="handleNewChat"
-      @goto-me="router.push('/me')"
+        v-model:show="drawerOpen"
+        @select="handleSelectSession"
+        @new-chat="handleNewChat"
+        @goto-me="router.push('/me')"
     />
 
     <AgentPickerSheet v-model:show="pickerOpen" @picked="handlePickAgent" />
 
     <van-action-sheet
-      v-model:show="bubbleMenu.state.show"
-      :actions="bubbleMenu.state.actions"
-      :cancel-text="bubbleMenu.state.cancelText"
-      close-on-click-action
-      @select="bubbleMenu.onSelect"
-      @cancel="bubbleMenu.onCancel"
+        v-model:show="bubbleMenu.state.show"
+        :actions="bubbleMenu.state.actions"
+        :cancel-text="bubbleMenu.state.cancelText"
+        close-on-click-action
+        @select="bubbleMenu.onSelect"
+        @cancel="bubbleMenu.onCancel"
     />
   </div>
 </template>
@@ -297,6 +322,7 @@ async function handleRegenerate(idx: number) {
   flex-direction: column;
   height: 100dvh;
   background: var(--m-bg);
+  transition: transform var(--van-duration-base) ease-out;
 }
 
 .chat-nav {
@@ -323,6 +349,9 @@ async function handleRegenerate(idx: number) {
   border: none;
   border-radius: 10px;
   transition: background 0.15s ease;
+  > i{
+    font-size: 20px;
+  }
 }
 
 .chat-nav__btn:active {
@@ -415,33 +444,49 @@ async function handleRegenerate(idx: number) {
   color: var(--m-text-soft);
 }
 
-.empty-state__suggest {
+.no-agent-state {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  width: 100%;
-  max-width: 340px;
-  margin-top: 14px;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  min-height: 100%;
+  padding: 32px 20px;
 }
 
-.suggest-chip {
-  display: block;
-  width: 100%;
-  padding: 12px 14px;
-  font-size: 14px;
-  color: var(--m-text-regular);
-  text-align: left;
+.no-agent-state__brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.no-agent-state__logo {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+}
+
+.no-agent-state__app-name {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--m-text-primary);
+}
+
+.select-agent-trigger {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--m-brand-primary);
   cursor: pointer;
-  background: var(--m-bg-elevated);
-  border: 1px solid var(--m-border);
-  border-radius: 14px;
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease;
+  padding: 8px 16px;
 }
 
-.suggest-chip:active {
-  background: var(--m-brand-primary-soft);
-  border-color: rgb(47 107 255 / 40%);
+.select-agent-trigger:active {
+  opacity: 0.7;
+}
+
+.slide-with-drawer {
+  /* 位移距离应与抽屉宽度一致，此处为 80% */
+  transform: translateX(70%);
 }
 </style>

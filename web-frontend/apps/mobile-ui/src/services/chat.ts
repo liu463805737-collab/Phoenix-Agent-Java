@@ -66,12 +66,22 @@ export async function deleteSessionApi(sessionId: string): Promise<void> {
   await http.delete(`/api/sessions/${sessionId}`);
 }
 
+export async function pinSessionApi(
+  sessionId: string,
+  isPinned: boolean,
+): Promise<void> {
+  await http.put(
+    `/api/sessions/${sessionId}/pin?isPinned=${isPinned}`,
+  );
+}
+
 export async function renameSessionApi(
   sessionId: string,
   title: string,
 ): Promise<void> {
-  const qs = `title=${encodeURIComponent(title.trim())}`;
-  await http.put(`/api/sessions/${sessionId}/rename?${qs}`);
+  await http.put(
+    `/api/sessions/${sessionId}/rename?title=${encodeURIComponent(title.trim())}`,
+  );
 }
 
 // ---- Message APIs ----
@@ -115,4 +125,46 @@ export async function saveMessageApi(
     ...message,
     sessionId,
   });
+}
+
+// ---- Preset Question APIs ----
+
+export interface PresetQuestion {
+  id?: number;
+  question?: string;
+  answer?: string;
+  sortOrder?: number;
+  isActive?: boolean;
+}
+
+export interface AddPresetQuestionRequest {
+  agentId: number;
+  question: string;
+  sortOrder?: number;
+}
+
+export async function getPresetQuestionsApi(
+  agentId: string,
+): Promise<PresetQuestion[]> {
+  try {
+    return (
+      (await http.get<PresetQuestion[]>(
+        `/api/front/${agentId}/preset-questions`,
+      )) ?? []
+    );
+  } catch {
+    return [];
+  }
+}
+
+export async function addPresetQuestionApi(
+  data: AddPresetQuestionRequest,
+): Promise<PresetQuestion> {
+  return http.post<PresetQuestion>('/api/front/addPresetQuestion', data);
+}
+
+export async function deletePresetQuestionApi(
+  questionId: number,
+): Promise<void> {
+  await http.delete(`/api/front/deletePresetQuestion/${questionId}`);
 }

@@ -8,7 +8,7 @@ import { VantResolver } from '@vant/auto-import-resolver';
 import pxToViewport from 'postcss-px-to-viewport-8-plugin';
 
 // 设计稿基准宽度（375）；如果是 750 设计稿，把 viewportWidth 改为 750
-const VIEWPORT_WIDTH = 375;
+const VIEWPORT_WIDTH = 400;
 
 const targetUrl = 'http://localhost:8066';
 

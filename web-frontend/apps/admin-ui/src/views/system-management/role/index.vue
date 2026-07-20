@@ -1,31 +1,9 @@
 <script lang="ts" setup>
-import type { FormInstance, FormRules } from 'element-plus';
+import type {FormInstance, FormRules} from 'element-plus';
+import {ElButton, ElMessage, ElMessageBox, ElTree,} from 'element-plus';
+import type {Recordable} from '@vben/types';
 
-import type { AclPvalueItem, AclRecord, AclTreeNode, PrivilegeRole } from '#/api';
-
-import { computed, onMounted, reactive, ref } from 'vue';
-
-import { Page } from '@vben/common-ui';
-import { IconifyIcon } from '@vben/icons';
-import { useVbenForm } from '#/adapter/form';
-
-import {
-  ElButton,
-  ElCard,
-  ElCheckbox,
-  ElDialog,
-  ElForm,
-  ElFormItem,
-  ElIcon,
-  ElInput,
-  ElMessage,
-  ElMessageBox,
-  ElPagination,
-  ElTable,
-  ElTableColumn,
-  ElTree,
-} from 'element-plus';
-
+import type {AclPvalueItem, AclRecord, AclTreeNode, PrivilegeRole} from '#/api';
 import {
   createRoleApi,
   deleteRoleApi,
@@ -36,6 +14,17 @@ import {
   saveModuleAclApi,
   updateRoleApi,
 } from '#/api';
+import type {VxeGridProps} from '#/adapter/vxe-table';
+import {useVbenVxeGrid, VbenTableAction} from '#/adapter/vxe-table';
+import type {VbenFormProps} from '@vben/common-ui';
+import {Page, useVbenModal} from '@vben/common-ui';
+import {useColumns, useSearchFormSchema} from './data';
+import Form from './form.vue';
+import AssignMenu from './assign-menu.vue';
+import {computed, onMounted, reactive, ref} from 'vue';
+import {useVbenForm} from '#/adapter/form';
+
+const PerPrefix = "Role:";
 
 const loading = ref(false);
 const tableData = ref<PrivilegeRole[]>([]);
@@ -46,6 +35,88 @@ const dialogVisible = ref(false);
 const isEditMode = ref(false);
 const submitting = ref(false);
 const formRef = ref<FormInstance>();
+
+const [FormModal, formModalApi] = useVbenModal({
+  connectedComponent: Form,
+  destroyOnClose: true,
+});
+
+const [AssignMenuModal, assignMenuModalApi] = useVbenModal({
+  connectedComponent: AssignMenu,
+  destroyOnClose: true,
+});
+
+const formOptions: VbenFormProps = {
+  showCollapseButton: false,
+  submitOnEnter: true,
+  commonConfig: {
+    labelWidth: 60,
+  },
+  wrapperClass: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4',
+  actionWrapperClass: 'pl-2 !justify-end md:!justify-start',
+  actionPosition: 'left',
+  actionLayout: 'inline',
+  schema: useSearchFormSchema(),
+};
+
+const gridOptions: VxeGridProps = {
+  checkboxConfig: {
+    highlight: true,
+    labelField: 'name',
+  },
+  columns: useColumns(onStatusChange),
+  columnConfig: {resizable: true},
+  height: 'auto',
+  keepSource: true,
+  border: false,
+  stripe: true,
+  showOverflow: false,
+  proxyConfig: {
+    ajax: {
+      query: async ({page}, formValues) => {
+        return await getRolePageApi({
+          page: page.currentPage,
+          size: page.pageSize,
+          ...formValues,
+        });
+      },
+    },
+  },
+};
+
+const [Grid, gridApi] = useVbenVxeGrid({formOptions, gridOptions});
+
+function onCreate() {
+  formModalApi.setData(null).open();
+}
+function onEdit(row: any) {
+  formModalApi.setData(row).open();
+}
+/**
+ * 状态开关即将改变
+ * @param newStatus 期望改变的状态值
+ * @param row 行数据
+ * @returns 返回false则中止改变，返回其他值（undefined、true）则允许改变
+ */
+async function onStatusChange(
+    newStatus: number,
+    row: any,
+) {
+  const status: Recordable<string> = {
+    0: '禁用',
+    1: '启用',
+  };
+  try {
+    await confirm(
+        `你要将${row.name}的状态切换为 【${status[newStatus.toString()]}】 吗？`,
+        `切换状态`,
+    );
+    await updateUser(row.id, { status: newStatus });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 const [FilterForm] = useVbenForm({
   commonConfig: { componentProps: { clearable: true } },
@@ -98,11 +169,11 @@ const existingAclMap = ref(new Map<string, AclRecord>());
 async function loadData(params: Record<string, any> = {}) {
   loading.value = true;
   try {
-    const res = (await getRolePageApi(
-      page.value,
-      pageSize.value,
-      params,
-    )) as any;
+    const res = (await getRolePageApi({
+      page: page.value,
+      size: pageSize.value,
+      ...params,
+    })) as any;
     const pageResult = res?.data || res;
     tableData.value = pageResult?.records || [];
     total.value = pageResult?.totalRow || 0;
@@ -170,6 +241,10 @@ async function handleDelete(id: string, name: string) {
 }
 
 async function handleAssignMenu(row: PrivilegeRole) {
+
+  assignMenuModalApi.setData(row).open();
+
+  return;
   currentRole.value = row;
   assignDialogVisible.value = true;
   aclLoading.value = true;
@@ -299,19 +374,88 @@ function handleSizeChange(val: number) {
   page.value = 1;
   loadData();
 }
+/**
+ * 刷新表格
+ */
+function refreshGrid() {
+  gridApi.query();
+}
+
+
+function onDelete(row: SystemUserApi.SystemUser) {
+  /*const hideLoading = message.loading({
+    content: '加载中...',
+    duration: 0,
+    key: 'action_process_msg',
+  });*/
+  deleteRoleApi(row.id)
+      .then((res) => {
+        ElMessage.success('删除成功');
+        /*message.success({
+          content: $t('ui.actionMessage.deleteSuccess', [row.name]),
+          key: 'action_process_msg',
+        });*/
+        refreshGrid();
+      })
+      .catch(() => {
+        // hideLoading();
+      });
+}
+
+function getActions(row: any) {
+  return [
+    {
+      text: '分配权限',
+      icon: 'lucide:edit',
+      onClick: () => handleAssignMenu(row),
+    },
+    {
+      text: '编辑',
+      icon: 'lucide:edit',
+      onClick: () => onEdit(row),
+    },
+    {
+      text: '删除',
+      icon: 'lucide:trash-2',
+      danger: true,
+      popConfirm: {
+        title: `确定要删除【${row.name}】吗？`,
+        confirm: () => onDelete(row),
+        okText: '确定',
+        cancelText: '取消',
+      },
+    },
+  ];
+}
 
 onMounted(() => {
-  loadData();
+  // loadData();
 });
 </script>
 
 <template>
-  <Page>
-    <div class="page-container">
-      <ElCard class="table-section" :body-style="{ padding: '20px' }">
+  <Page auto-content-height>
+    <AssignMenuModal @success="refreshGrid" />
+    <FormModal @success="refreshGrid" />
+    <Grid table-title="角色列表">
+      <template #toolbar-tools>
+        <ElButton type="primary" @click="onCreate">新建</ElButton>
+      </template>
+
+      <template #action="{ row }">
+        <VbenTableAction
+            align="center"
+            :actions="getActions(row)"
+        />
+      </template>
+    </Grid>
+
+
+<!--    <div class="bg-background-deep">
+      <ElCard class="rounded-xl" :body-style="{ padding: '20px' }">
         <FilterForm />
 
-        <div class="table-toolbar">
+        <div class="flex gap-3 mb-4">
           <ElButton type="primary" @click="showAddDialog">
             <ElIcon><IconifyIcon icon="lucide:plus" /></ElIcon>
             新增
@@ -365,7 +509,7 @@ onMounted(() => {
           </ElTableColumn>
         </ElTable>
 
-        <div class="pagination-wrapper">
+        <div class="flex justify-end mt-4">
           <ElPagination
             v-model:current-page="page"
             v-model:page-size="pageSize"
@@ -413,14 +557,14 @@ onMounted(() => {
         width="1000px"
         :close-on-click-modal="false"
       >
-        <div v-loading="aclLoading" class="acl-body">
-          <div v-if="aclTreeData.length === 0 && !aclLoading" class="acl-empty">
+        <div v-loading="aclLoading" class="acl-body max-h-[600px] overflow-y-auto">
+          <div v-if="aclTreeData.length === 0 && !aclLoading" class="py-8 text-center text-gray-400">
             暂无菜单数据
           </div>
-          <div v-else class="acl-tree-wrapper">
-            <div class="acl-header">
-              <div class="acl-header-col-name">菜单名称</div>
-              <div class="acl-header-col-checkall">
+          <div v-else>
+            <div class="grid grid-cols-[220px_100px_1fr] items-center px-2 py-2 pl-6 mb-1 text-xs font-semibold text-gray-500 border-b border-gray-200">
+              <div>菜单名称</div>
+              <div class="text-left">
                 <ElCheckbox
                   :model-value="headerAllSelected"
                   :indeterminate="headerIndeterminate"
@@ -429,7 +573,7 @@ onMounted(() => {
                   {{ headerAllSelected ? '取消全选' : '全选' }}
                 </ElCheckbox>
               </div>
-              <div class="acl-header-col-pvalues">操作权限</div>
+              <div>操作权限</div>
             </div>
             <ElTree
               ref="treeRef"
@@ -439,16 +583,16 @@ onMounted(() => {
               :default-expand-all="true"
             >
             <template #default="{ data }: { data: AclTreeNode }">
-              <div class="acl-node">
-                <div class="acl-node-col-name" :style="{ paddingLeft: ((data as any)._level || 0) * 24 + 'px' }">
-                  <ElIcon class="acl-node-icon">
+              <div class="grid grid-cols-[220px_100px_1fr] gap-2 items-center w-full min-w-0">
+                <div class="flex gap-2 items-center min-w-0" :style="{ paddingLeft: ((data as any)._level || 0) * 24 + 'px' }">
+                  <ElIcon class="flex shrink-0 items-center text-base">
                     <IconifyIcon
                       :icon="data.image || (data.type === '0' ? 'lucide:folder' : 'lucide:file-text')"
                     />
                   </ElIcon>
-                  <span class="acl-node-name">{{ data.name }}</span>
+                  <span class="truncate text-sm font-medium">{{ data.name }}</span>
                 </div>
-                <div v-if="data.pvalues?.length" class="acl-node-col-checkall">
+                <div v-if="data.pvalues?.length" class="flex items-center text-xs">
                   <ElCheckbox
                     :model-value="data.pvalues.every((pv) => pv.enabled)"
                     :indeterminate="
@@ -476,8 +620,8 @@ onMounted(() => {
                     全选
                   </ElCheckbox>
                 </div>
-                <div v-else class="acl-node-col-checkall" />
-                <div v-if="data.pvalues?.length" class="acl-node-col-pvalues">
+                <div v-else class="flex items-center text-xs" />
+                <div v-if="data.pvalues?.length" class="flex flex-wrap gap-1 gap-x-3 items-center">
                   <ElCheckbox
                     v-for="pv in data.pvalues"
                     :key="pv.pvalueId"
@@ -487,7 +631,7 @@ onMounted(() => {
                       pv.enabled = !!val;
                       handlePvalueChange(data);
                     }"
-                    class="acl-node-pvalue"
+                    class="text-xs"
                   >
                     {{ pv.pvalueName || pv.name }}
                   </ElCheckbox>
@@ -502,58 +646,11 @@ onMounted(() => {
           <ElButton type="primary" @click="handleSaveAcl">保存</ElButton>
         </template>
       </ElDialog>
-    </div>
+    </div>-->
   </Page>
 </template>
 
 <style scoped>
-.page-container {
-  @apply bg-background-deep;
-}
-
-.table-section {
-  border-radius: 12px;
-}
-
-.table-toolbar {
-  display: flex;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-}
-
-.pagination-wrapper {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 1rem;
-}
-
-.acl-body {
-  max-height: 600px;
-  overflow-y: auto;
-}
-
-.acl-header {
-  display: grid;
-  grid-template-columns: 220px 100px 1fr;
-  align-items: center;
-  padding: 0.5rem 0.5rem 0.5rem 1.5rem;
-  margin-bottom: 0.25rem;
-  font-size: 13px;
-  font-weight: 600;
-  color: #6b7280;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.acl-header-col-checkall {
-  text-align: left;
-}
-
-.acl-empty {
-  padding: 2rem 0;
-  color: #999;
-  text-align: center;
-}
-
 .acl-body :deep(.el-tree-node) {
   padding-left: 0 !important;
 }
@@ -562,53 +659,5 @@ onMounted(() => {
   height: auto;
   padding: 0.35rem 0.5rem;
   padding-left: 8px !important;
-}
-
-.acl-node {
-  display: grid;
-  grid-template-columns: 220px 100px 1fr;
-  gap: 0.5rem;
-  align-items: center;
-  width: 100%;
-  min-width: 0;
-}
-
-.acl-node-col-name {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  min-width: 0;
-}
-
-.acl-node-icon {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  font-size: 16px;
-}
-
-.acl-node-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 14px;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-.acl-node-col-checkall {
-  display: flex;
-  align-items: center;
-  font-size: 13px;
-}
-
-.acl-node-col-pvalues {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 0.75rem;
-  align-items: center;
-}
-
-.acl-node-pvalue {
-  font-size: 13px;
 }
 </style>

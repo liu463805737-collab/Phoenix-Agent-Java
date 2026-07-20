@@ -8,12 +8,7 @@ import { Fold, More } from '@element-plus/icons-vue';
 
 
 import { useAuthStore } from '#/store';
-import {
-  deleteSessionApi,
-  getSessionMessagesApi,
-  pinSessionApi,
-  renameSessionApi,
-} from '#/api/front/chat';
+import { getSessionMessagesApi } from '#/api/front/chat';
 
 import SystemSettingsModal from './SystemSettingsModal.vue';
 
@@ -133,9 +128,7 @@ async function saveRename(id: string) {
     return;
   }
   try {
-    await renameSessionApi(id, title);
-    const session = sessions.value.find((s) => s.id === id);
-    if (session) session.title = title;
+    await chat.renameSession(id, title);
     ElMessage.success('会话已重命名');
   } catch {
     ElMessage.error('重命名失败');
@@ -151,12 +144,8 @@ function cancelRename() {
 
 async function togglePin(id: string) {
   activeMenuSessionId.value = null;
-  const session = sessions.value.find((s) => s.id === id);
-  if (!session) return;
-  const newPinned = !session.isPinned;
   try {
-    await pinSessionApi(id, newPinned);
-    session.isPinned = newPinned;
+    await chat.pinSession(id, !sessions.value.find((s) => s.id === id)?.isPinned);
   } catch {
     ElMessage.error('置顶操作失败');
   }
@@ -171,7 +160,6 @@ async function removeSession(id: string) {
       confirmButtonType: 'danger',
       confirmButtonClass: 'el-button--danger',
     });
-    await deleteSessionApi(id);
     await chat.deleteSession(id);
     ElMessage.success('会话已删除');
   } catch (error) {
@@ -527,7 +515,7 @@ defineExpose({
           </div>
         </div>
       </div>
-      <div v-if="filteredHistory.length === 0" class="history-panel__empty">
+      <div v-if="!loadingSessions && filteredHistory.length === 0" class="history-panel__empty">
         没有匹配的会话
       </div>
     </div>

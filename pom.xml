@@ -11,9 +11,9 @@
     <modules>
         <module>phoenix-parent</module>
         <module>phoenix-data</module>
+        <module>phoenix-agent</module>
         <module>phoenix-admin</module>
         <module>phoenix-privilege</module>
-        <module>phoenix-agent</module>
         <module>phoenix-common</module>
         <module>phoenix-tool</module>
         <module>phoenix-platform</module>

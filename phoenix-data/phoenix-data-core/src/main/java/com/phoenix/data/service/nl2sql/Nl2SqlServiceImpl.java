@@ -7,7 +7,6 @@ import com.phoenix.data.dto.schema.SchemaDTO;
 import com.phoenix.data.prompt.PromptHelper;
 import com.phoenix.data.service.llm.LlmService;
 import com.phoenix.data.util.*;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.phoenix.data.utils.FluxUtil;
 import com.phoenix.data.utils.JsonParseUtil;
 import lombok.AllArgsConstructor;
@@ -17,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
+import tools.jackson.core.type.TypeReference;
 
 import java.util.HashSet;
 import java.util.List;

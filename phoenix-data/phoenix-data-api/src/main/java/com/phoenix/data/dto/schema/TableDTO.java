@@ -1,10 +1,10 @@
 package com.phoenix.data.dto.schema;
 
-import com.phoenix.data.util.JsonUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.phoenix.data.util.JsonUtil;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,12 +30,7 @@ public class TableDTO {
 	@Override
 	public String toString() {
 		ObjectMapper objectMapper = JsonUtil.getObjectMapper();
-		try {
-			return objectMapper.writeValueAsString(this);
-		}
-		catch (JsonProcessingException e) {
-			throw new RuntimeException("Failed to convert object to JSON string", e);
-		}
-	}
+        return objectMapper.writeValueAsString(this);
+    }
 
 }

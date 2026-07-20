@@ -146,9 +146,6 @@ onMounted(async () => {
       @click="openDialog"
       @clear="handleClear"
     >
-      <template #prepend>
-        <ElIcon><IconifyIcon icon="lucide:folder-tree" /></ElIcon>
-      </template>
       <template #append>
         <ElButton @click.stop="openDialog">选择</ElButton>
       </template>
@@ -161,6 +158,7 @@ onMounted(async () => {
       :close-on-click-modal="false"
       class="dept-dialog"
       @open="openDialog"
+      append-to-body
     >
       <div class="dept-dialog-body">
         <div class="dept-search">

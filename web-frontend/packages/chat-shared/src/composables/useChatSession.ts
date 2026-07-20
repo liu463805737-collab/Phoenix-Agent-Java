@@ -17,6 +17,7 @@ export function useChatSession() {
     activeSession,
     activeMessages,
     sending,
+    isActiveSessionSending,
     loadingMessages,
   } = storeToRefs(chat);
 
@@ -49,6 +50,7 @@ export function useChatSession() {
     activeSession,
     activeMessages,
     sending,
+    isActiveSessionSending,
     loadingMessages,
     currentAgent,
     send,

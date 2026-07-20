@@ -480,14 +480,10 @@ public class DataAgentConfiguration implements DisposableBean {
 	 */
 	@Bean(name = "token")
 	public TextSplitter textSplitter(DataAgentProperties properties) {
-		List<Character> punctuationMarks = Arrays.asList(
-				'.', ',', '!', '?', ';', ':',
-				'。', '，', '！', '？', '；', '：'
-		);
 		DataAgentProperties.TextSplitter textSplitterProps = properties.getTextSplitter();
 		DataAgentProperties.TextSplitter.TokenTextSplitterConfig config = textSplitterProps.getToken();
 		return new TokenTextSplitter(textSplitterProps.getChunkSize(), config.getMinChunkSizeChars(),
-				config.getMinChunkLengthToEmbed(), config.getMaxNumChunks(), config.isKeepSeparator(), punctuationMarks);
+				config.getMinChunkLengthToEmbed(), config.getMaxNumChunks(), config.isKeepSeparator(), List.of('.', '?', '!', '\n', ';', ':', '。'));
 	}
 
 	/**

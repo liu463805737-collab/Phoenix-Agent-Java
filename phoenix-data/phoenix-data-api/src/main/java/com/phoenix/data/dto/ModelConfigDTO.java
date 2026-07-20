@@ -42,7 +42,7 @@ public class ModelConfigDTO {
 
 	private Double temperature = 0.0;
 
-	private Integer maxTokens = 2000;
+	private Integer maxTokens = 4096;
 	/**
 	 * 1 true; 0 false
 	 */

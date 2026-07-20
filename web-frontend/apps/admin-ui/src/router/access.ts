@@ -93,7 +93,6 @@ async function generateAccess(options: GenerateMenuAndRoutesOptions) {
       //   message: `${$t('common.loadingMenu')}...`,
       // });
       const res = await getPrivilegeMenusApi();
-
       // 存储权限值（pvalues）到 accessStore，用于前端按钮级权限控制
       if (res.pvalues?.length) {
         const accessStore = useAccessStore();

@@ -6,9 +6,11 @@ import {
   useAuthStore,
   useChatStore,
 } from '@phoenix/chat-shared';
-import { showConfirmDialog } from 'vant';
-
-import { useActionMenu } from '../useActionMenu';
+import {
+  showConfirmDialog,
+  showFailToast,
+  showSuccessToast,
+} from 'vant';
 
 interface Props {
   show: boolean;
@@ -72,12 +74,17 @@ function formatGroupLabel(ts: number) {
 
 const grouped = computed(() => {
   const kw = keyword.value.trim().toLowerCase();
-  const list = sessions.value.filter((s) =>
-    !kw
-      ? true
-      : s.title.toLowerCase().includes(kw) ||
-        s.preview.toLowerCase().includes(kw),
-  );
+  const list = sessions.value
+    .filter((s) =>
+      !kw
+        ? true
+        : s.title.toLowerCase().includes(kw) ||
+          s.preview.toLowerCase().includes(kw),
+    )
+    .sort((a, b) => {
+      if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
+      return b.updatedAt - a.updatedAt;
+    });
   const order = ['今天', '昨天', '本周', '本月', '更早'];
   const buckets = new Map<string, typeof list>();
   for (const s of list) {
@@ -90,42 +97,134 @@ const grouped = computed(() => {
     .map((k) => ({ label: k, items: buckets.get(k)! }));
 });
 
-const menu = useActionMenu();
+// --- Popover state ---
+const popoverVisible = ref(false);
+const popoverSessionId = ref('');
+const popoverSessionTitle = ref('');
+const popoverIsPinned = ref(false);
+const popoverAnchorX = ref(0);
+const popoverAnchorY = ref(0);
 
-async function handleLongPress(id: string, title: string) {
-  const r = await menu.open([
-    { name: '重命名' },
-    { name: '删除', color: '#b42318' },
-  ]);
-  if (!r) return;
-  if (r.name === '重命名') {
-    const next = window.prompt('新的会话名称', title);
-    if (next && next.trim() && next.trim() !== title) {
-      await chat.renameSession(id, next.trim());
-    }
-  } else if (r.name === '删除') {
-    try {
-      await showConfirmDialog({
-        title: '删除会话',
-        message: '删除后无法恢复，确认删除？',
-      });
-      await chat.deleteSession(id);
-    } catch {
-      /* canceled */
-    }
+// --- Rename dialog ---
+const renameDialogShow = ref(false);
+const renameDialogText = ref('');
+
+function handleRename() {
+  popoverVisible.value = false;
+  renameDialogText.value = popoverSessionTitle.value;
+  renameDialogShow.value = true;
+}
+
+async function handleRenameConfirm() {
+  const next = renameDialogText.value.trim();
+  if (!next || next === popoverSessionTitle.value) {
+    renameDialogShow.value = false;
+    return;
+  }
+  try {
+    await chat.renameSession(popoverSessionId.value, next);
+    showSuccessToast('重命名成功');
+  } catch {
+    showFailToast('重命名失败');
+  }
+  renameDialogShow.value = false;
+}
+
+async function handleTogglePin() {
+  popoverVisible.value = false;
+  try {
+    await chat.pinSession(popoverSessionId.value, !popoverIsPinned.value);
+  } catch {
+    showFailToast('操作失败');
   }
 }
 
-let pressTimer: number | null = null;
-function startPress(id: string, title: string) {
-  clearPress();
-  pressTimer = window.setTimeout(() => handleLongPress(id, title), 450);
+async function handleDelete() {
+  popoverVisible.value = false;
+  const id = popoverSessionId.value;
+  try {
+    await showConfirmDialog({
+      title: '删除会话',
+      message: '删除后无法恢复，确认删除？',
+    });
+    await chat.deleteSession(id);
+    showSuccessToast('已删除');
+  } catch {
+    /* canceled or error */
+  }
 }
+
+// --- Long-press ---
+let pressTimer: number | null = null;
+let pressEl: HTMLElement | null = null;
+let pressId = '';
+let pressTitle = '';
+let pressIsPinned = false;
+
+function startPress(id: string, title: string, isPinned: boolean, event: TouchEvent) {
+  clearPress();
+  const touch = event.touches[0];
+  if (!touch) return;
+  const touchX = touch.clientX;
+  const touchY = touch.clientY;
+  pressEl = event.currentTarget as HTMLElement | null;
+  if (!pressEl) return;
+  pressId = id;
+  pressTitle = title;
+  pressIsPinned = isPinned;
+  pressTimer = window.setTimeout(() => {
+    if (!pressEl) return;
+
+    const POPOVER_W = 140;
+    const POPOVER_H = 150;
+    const GAP = 12;
+
+    let ax = touchX;
+    let ay = touchY + GAP;
+
+    if (touchX + POPOVER_W > window.innerWidth) {
+      ax = window.innerWidth - POPOVER_W;
+    }
+    if (touchY + GAP + POPOVER_H > window.innerHeight) {
+      ay = touchY - POPOVER_H;
+    }
+
+    popoverAnchorX.value = ax;
+    popoverAnchorY.value = ay;
+    popoverSessionId.value = pressId;
+    popoverSessionTitle.value = pressTitle;
+    popoverIsPinned.value = pressIsPinned;
+    popoverVisible.value = true;
+  }, 450);
+}
+
 function clearPress() {
   if (pressTimer != null) {
     clearTimeout(pressTimer);
     pressTimer = null;
   }
+}
+
+function openActions(item: { id: string; title: string; isPinned?: boolean }, event: MouseEvent) {
+  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+  const POPOVER_W = 140;
+  const POPOVER_H = 150;
+  const GAP = 4;
+
+  let ax = rect.right - POPOVER_W;
+  let ay = rect.bottom + GAP;
+
+  if (ax < 10) ax = rect.left;
+  if (ay + POPOVER_H > window.innerHeight) {
+    ay = rect.top - POPOVER_H - GAP;
+  }
+
+  popoverSessionId.value = item.id;
+  popoverSessionTitle.value = item.title;
+  popoverIsPinned.value = !!item.isPinned;
+  popoverAnchorX.value = ax;
+  popoverAnchorY.value = ay;
+  popoverVisible.value = true;
 }
 
 function handleSelect(id: string) {
@@ -146,34 +245,19 @@ function handleMe() {
   <van-popup
     :show="props.show"
     position="left"
-    :style="{ width: '84%', height: '100%' }"
+    :style="{ width: '70%', height: '100%' }"
     :overlay="true"
     @update:show="(v: boolean) => emit('update:show', v)"
   >
     <div class="drawer">
       <div class="drawer__top">
         <button type="button" class="drawer__new" @click="handleNew">
-          <span class="drawer__new-icon">+</span>
-          新建对话
+          <van-icon class="drawer__new-icon" name="plus" />
+          <span>新建对话</span>
         </button>
 
         <label class="drawer__search">
-          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
-            <circle
-              cx="7"
-              cy="7"
-              r="4.5"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.4"
-            />
-            <path
-              d="m10.5 10.5 3 3"
-              stroke="currentColor"
-              stroke-width="1.4"
-              stroke-linecap="round"
-            />
-          </svg>
+          <van-icon name="search" />
           <input
             v-model="keyword"
             class="drawer__search-input"
@@ -196,15 +280,24 @@ function handleMe() {
             class="drawer-item"
             :class="{ 'is-active': item.id === activeSessionId }"
             @click="handleSelect(item.id)"
-            @touchstart.passive="startPress(item.id, item.title)"
+            @touchstart.passive="startPress(item.id, item.title, !!item.isPinned, $event)"
             @touchend="clearPress"
             @touchcancel="clearPress"
             @touchmove="clearPress"
           >
-            <div class="drawer-item__title">{{ item.title }}</div>
-            <div class="drawer-item__meta">
-              {{ getAgentName(item.agentId) }}
+            <div class="drawer-item__body">
+              <div class="drawer-item__title">{{ item.title }}</div>
+              <div class="drawer-item__meta">
+                {{ getAgentName(item.agentId) }}
+              </div>
             </div>
+            <span
+              class="drawer-item__action"
+              @click.stop="openActions(item, $event)"
+              @touchstart.stop
+            >
+              <van-icon name="ellipsis" />
+            </span>
           </button>
         </div>
       </div>
@@ -212,28 +305,62 @@ function handleMe() {
       <button type="button" class="drawer__user" @click="handleMe">
         <span class="drawer__user-avatar">{{ avatarChar }}</span>
         <span class="drawer__user-name">{{ displayName }}</span>
-        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
-          <path
-            d="m6 4 4 4-4 4"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.4"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
+        <van-icon name="ellipsis" />
       </button>
     </div>
 
-    <van-action-sheet
-      v-model:show="menu.state.show"
-      :actions="menu.state.actions"
-      :cancel-text="menu.state.cancelText"
-      close-on-click-action
-      @select="menu.onSelect"
-      @cancel="menu.onCancel"
-    />
+    <teleport to="body">
+      <div
+        v-if="popoverVisible"
+        class="popover-overlay"
+        @click="popoverVisible = false"
+        @touchmove.prevent
+      >
+        <div
+          class="popover-menu"
+          :style="{
+            left: popoverAnchorX + 'px',
+            top: popoverAnchorY + 'px',
+          }"
+          @click.stop
+          @touchmove.stop
+        >
+          <button class="popover-menu__item" @click="handleRename">
+            <van-icon name="edit" />
+            重命名
+          </button>
+          <button class="popover-menu__item" @click="handleTogglePin">
+            <van-icon :name="popoverIsPinned ? 'star-filled' : 'star-o'" />
+            {{ popoverIsPinned ? '取消置顶' : '置顶' }}
+          </button>
+          <button class="popover-menu__item popover-menu__item--danger" @click="handleDelete">
+            <van-icon name="delete" />
+            删除
+          </button>
+        </div>
+      </div>
+    </teleport>
+
   </van-popup>
+
+  <teleport to="body">
+    <van-dialog
+      v-model:show="renameDialogShow"
+      title="重命名会话"
+      show-cancel-button
+      @confirm="handleRenameConfirm"
+      @cancel="renameDialogText = ''"
+    >
+      <div style="padding: 16px">
+        <van-field
+          v-model="renameDialogText"
+          placeholder="请输入会话名称"
+          :maxlength="100"
+          autofocus
+        />
+      </div>
+    </van-dialog>
+  </teleport>
 </template>
 
 <style lang="scss" scoped>
@@ -244,6 +371,8 @@ function handleMe() {
   padding-top: var(--m-safe-top);
   padding-bottom: var(--m-safe-bottom);
   background: var(--m-bg);
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .drawer__top {
@@ -257,20 +386,23 @@ function handleMe() {
   display: flex;
   gap: 8px;
   align-items: center;
-  height: 40px;
-  padding: 0 14px;
+  height: 36px;
+  padding: 0 12px;
   font-size: 14px;
   color: var(--m-text-primary);
   cursor: pointer;
   background: var(--m-bg-elevated);
   border: 1px solid var(--m-border);
   border-radius: 10px;
+  line-height: 1;
 }
 
 .drawer__new-icon {
   font-size: 16px;
   line-height: 1;
   color: var(--m-brand-primary);
+  display: flex;
+  align-items: center;
 }
 
 .drawer__search {
@@ -278,11 +410,11 @@ function handleMe() {
   display: flex;
   align-items: center;
   height: 36px;
-  padding: 0 12px 0 32px;
+  padding: 0 12px 0 12px;
   color: var(--m-text-muted);
   background: var(--m-bg-elevated);
   border: 1px solid var(--m-border);
-  border-radius: 10px;
+  border-radius: 36px;
 }
 
 .drawer__search > svg {
@@ -332,12 +464,14 @@ function handleMe() {
 
 .drawer-item {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  gap: 4px;
   width: 100%;
-  padding: 10px 12px;
+  padding: 8px 8px 8px 12px;
   text-align: left;
   cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
   background: transparent;
   border: none;
   border-radius: 10px;
@@ -351,6 +485,14 @@ function handleMe() {
 
 .drawer-item.is-active .drawer-item__title {
   color: var(--m-brand-primary);
+}
+
+.drawer-item__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .drawer-item__title {
@@ -367,16 +509,38 @@ function handleMe() {
   color: var(--m-text-muted);
 }
 
+.drawer-item__action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  font-size: 18px;
+  color: var(--m-text-muted);
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  transition: background 0.15s ease;
+}
+
+.drawer-item__action:active {
+  background: var(--m-border-soft);
+}
+
 .drawer__user {
   display: flex;
   gap: 10px;
   align-items: center;
-  padding: 10px 12px;
-  margin: 8px 12px 4px;
+  padding: 6px 6px;
+  margin: 4px 12px 4px;
   cursor: pointer;
-  background: var(--m-bg-elevated);
-  border: 1px solid var(--m-border-soft);
+  background: transparent;
+  border: 0;
   border-radius: 12px;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .drawer__user-avatar {
@@ -402,4 +566,51 @@ function handleMe() {
   text-align: left;
   white-space: nowrap;
 }
+
+.popover-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 3000;
+  width: 100%;
+  height: 100%;
+}
+
+.popover-menu {
+  position: fixed;
+  z-index: 3001;
+  min-width: 130px;
+  padding: 6px;
+  background: var(--m-bg-elevated, #fff);
+  border: 1px solid var(--m-border, #e5e7eb);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.popover-menu__item {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--m-text-primary, #333);
+  text-align: left;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+}
+
+.popover-menu__item:active {
+  background: var(--m-bg-soft, #f3f4f6);
+}
+
+.popover-menu__item--danger {
+  color: #b42318;
+}
+
+
 </style>

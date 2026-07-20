@@ -1,22 +1,18 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 
-import { escapeHtml } from '../../utils/markdown';
+import { escapeHtml, renderMarkdown } from '../../utils/markdown';
 
 interface Props {
   role: 'assistant' | 'user';
   content?: string;
   messageType?: string;
-  botAvatar?: string;
-  botName?: string;
   typing?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   content: '',
   messageType: 'text',
-  botAvatar: '智',
-  botName: '',
   typing: false,
 });
 
@@ -27,10 +23,18 @@ const emit = defineEmits<{
 }>();
 
 const isHtml = computed(
-  () =>
-    props.role === 'assistant' &&
-    (props.messageType === 'html' || props.messageType === 'text'),
+  () =>{
+    return props.role === 'assistant' &&
+        (props.messageType === 'html' || props.messageType === 'text' || props.messageType === 'markdown-report');
+  },
 );
+const renderedContent = computed(() => {
+  if (props.role !== 'assistant') return '';
+  if (props.messageType === 'markdown-report' || props.messageType === 'text') {
+    return renderMarkdown(props.content);
+  }
+  return props.content;
+});
 const userContent = computed(() => {
   if (props.role !== 'user') return '';
   return escapeHtml(props.content).replaceAll('\n', '<br>');
@@ -57,15 +61,6 @@ function clearTimer() {
 <template>
   <div class="bubble" :class="`bubble--${props.role}`">
     <template v-if="props.role === 'assistant'">
-      <div class="bubble__avatar">
-        <img
-          v-if="props.botAvatar && (props.botAvatar.startsWith('/') || props.botAvatar.startsWith('http'))"
-          :src="props.botAvatar"
-          :alt="props.botName || '助手'"
-          class="bubble__avatar-img"
-        />
-        <span v-else>{{ props.botName ? [...props.botName][0] : props.botAvatar }}</span>
-      </div>
       <div class="bubble__main">
         <div
           class="bubble__content"
@@ -84,7 +79,7 @@ function clearTimer() {
             <span class="dot" />
           </template>
           <template v-else-if="isHtml">
-            <div class="bubble__html" v-html="props.content" />
+            <div class="bubble__html" v-html="renderedContent" />
           </template>
           <template v-else>{{ props.content }}</template>
         </div>
@@ -95,7 +90,7 @@ function clearTimer() {
             aria-label="复制"
             @click="emit('copy')"
           >
-            <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
               <rect
                 x="8"
                 y="8"
@@ -122,7 +117,7 @@ function clearTimer() {
             aria-label="重新生成"
             @click="emit('regenerate')"
           >
-            <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
               <path
                 d="M4 12a8 8 0 0 1 13.66-5.66M20 12a8 8 0 0 1-13.66 5.66"
                 fill="none"
@@ -170,29 +165,6 @@ function clearTimer() {
     justify-content: flex-end;
   }
 
-  &__avatar {
-    position: relative;
-    display: flex;
-    flex: 0 0 auto;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    margin-top: 2px;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--m-brand-primary);
-    background: var(--m-brand-primary-soft);
-    border-radius: 50%;
-    overflow: hidden;
-  }
-
-  &__avatar-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
   &__main {
     display: flex;
     flex: 1 1 auto;
@@ -202,16 +174,16 @@ function clearTimer() {
   }
 
   &__content {
-    font-size: 15px;
-    line-height: 1.65;
+    font-size: 14px;
+    line-height: 1.5;
     color: var(--m-text-primary);
     word-break: break-word;
 
     &--user {
       max-width: 78%;
       padding: 10px 14px;
-      font-size: 15px;
-      line-height: 1.55;
+      font-size: 14px;
+      line-height: 1.5;
       color: var(--m-bubble-user-fg);
       background: var(--m-bubble-user-bg);
       border-radius: var(--m-radius-bubble);
@@ -226,7 +198,7 @@ function clearTimer() {
       display: inline-flex;
       gap: 5px;
       align-items: center;
-      padding: 6px 0;
+      padding: 12px 0;
     }
   }
 

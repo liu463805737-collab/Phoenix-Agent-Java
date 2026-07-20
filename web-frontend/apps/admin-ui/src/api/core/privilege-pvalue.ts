@@ -1,5 +1,6 @@
-import { requestClient } from '#/api/request';
 import type { PageResult } from '#/api/core/privilege-types';
+
+import { requestClient } from '#/api/request';
 
 export interface PrivilegePvalue {
   id?: string;
@@ -13,45 +14,43 @@ export interface PrivilegePvalue {
 }
 
 export async function getPvaluePageApi(
-  page: number,
-  size: number,
   params?: Record<string, any>,
 ) {
-  return requestClient.get<PageResult<PrivilegePvalue>>(
-    '/privilege/pvalue/page',
+  return requestClient.post<PageResult<PrivilegePvalue>>(
+    '/api/privilege/pvalue/page',
+    params,
     {
-      params: { page, size, ...params },
-      responseReturn: 'body',
+      responseReturn: 'data',
     },
   );
 }
 
 export async function getPvalueApi(id: string) {
-  return requestClient.get<PrivilegePvalue>(`/privilege/pvalue/${id}`, {
+  return requestClient.get<PrivilegePvalue>(`/api/privilege/pvalue/${id}`, {
     responseReturn: 'body',
   });
 }
 
 export async function getPvaluesBySystemApi() {
-  return requestClient.get<PrivilegePvalue[]>('/privilege/pvalue/system', {
+  return requestClient.get<PrivilegePvalue[]>('/api/privilege/pvalue/system', {
     responseReturn: 'body',
   });
 }
 
 export async function createPvalueApi(data: Record<string, any>) {
-  return requestClient.post('/privilege/pvalue', data, {
+  return requestClient.post('/api/privilege/pvalue', data, {
     responseReturn: 'body',
   });
 }
 
 export async function updatePvalueApi(data: Record<string, any>) {
-  return requestClient.put('/privilege/pvalue', data, {
+  return requestClient.put('/api/privilege/pvalue', data, {
     responseReturn: 'body',
   });
 }
 
 export async function deletePvalueApi(id: string) {
-  return requestClient.delete(`/privilege/pvalue/${id}`, {
+  return requestClient.delete(`/api/privilege/pvalue/${id}`, {
     responseReturn: 'body',
   });
 }

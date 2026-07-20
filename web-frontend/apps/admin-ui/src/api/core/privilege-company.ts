@@ -13,16 +13,12 @@ export interface PrivilegeCompany {
 }
 
 export async function getCompanyPageApi(
-  page: number,
-  size: number,
   params?: Record<string, any>,
 ) {
-  return requestClient.get<PageResult<PrivilegeCompany>>(
+  return requestClient.post<PageResult<PrivilegeCompany>>(
     '/api/privilege/company/page',
-    {
-      params: { page, size, ...params },
-      responseReturn: 'body',
-    },
+    params,
+    { responseReturn: 'data' },
   );
 }
 

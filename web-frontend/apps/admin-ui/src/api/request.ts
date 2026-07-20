@@ -1,7 +1,7 @@
 /**
  * 该文件可自行根据业务逻辑进行调整
  */
-import type { RequestClientOptions } from '@vben/request';
+import type { AxiosResponseHeaders, RequestClientOptions } from '@vben/request';
 
 import { useAppConfig } from '@vben/hooks';
 import { preferences } from '@vben/preferences';
@@ -12,8 +12,10 @@ import {
   RequestClient,
 } from '@vben/request';
 import { useAccessStore } from '@vben/stores';
+import { cloneDeep } from '@vben/utils';
 
 import { ElMessage } from 'element-plus';
+import JSONBigInt from 'json-bigint';
 
 import { useAuthStore } from '#/store';
 
@@ -25,6 +27,18 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
   const client = new RequestClient({
     ...options,
     baseURL,
+    transformResponse: (data: any, header: AxiosResponseHeaders) => {
+      // storeAsString指示将BigInt存储为字符串，设为false则会存储为内置的BigInt类型
+      if (
+        header.getContentType()?.toString().includes('application/json') &&
+        typeof data === 'string'
+      ) {
+        return cloneDeep(
+          JSONBigInt({ storeAsString: true, strict: true }).parse(data),
+        );
+      }
+      return data;
+    },
   });
 
   /**
@@ -93,27 +107,6 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
     }),
   );
 
-  // 业务层面未登录（code=401）处理
-  client.addResponseInterceptor({
-    fulfilled: async (response) => {
-      // responseReturn=body 时 response 是响应体本身，responseReturn=raw 时 response.data 是响应体
-      const body = response?.code != null ? response : response?.data;
-      if (Number(body?.code) === 401) {
-        await doReAuthenticate();
-        throw new Error(body?.msg || '用户未登录');
-      }
-      return response;
-    },
-    rejected: async (error) => {
-      const body = error?.code != null ? error : error?.response?.data ?? error?.data;
-      if (Number(body?.code) === 401) {
-        await doReAuthenticate();
-        throw new Error(body?.msg || '用户未登录');
-      }
-      throw error;
-    },
-  });
-
   // 通用的错误处理,如果没有进入上面的错误处理逻辑，就会进入这里
   client.addResponseInterceptor(
     errorMessageResponseInterceptor((msg: string, error) => {
@@ -134,3 +127,9 @@ export const requestClient = createRequestClient(apiURL, {
 });
 
 export const baseRequestClient = new RequestClient({ baseURL: apiURL });
+
+export interface PageFetchParams {
+  [key: string]: any;
+  pageNo?: number;
+  pageSize?: number;
+}

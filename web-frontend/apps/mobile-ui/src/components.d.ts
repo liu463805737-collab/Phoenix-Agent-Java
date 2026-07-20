@@ -10,10 +10,15 @@ declare module 'vue' {
     AgentPickerSheet: typeof import('./components/chat/AgentPickerSheet.vue')['default']
     ChatBubble: typeof import('./components/chat/ChatBubble.vue')['default']
     ChatComposer: typeof import('./components/chat/ChatComposer.vue')['default']
+    PresetQuestions: typeof import('./components/chat/PresetQuestions.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     SessionsDrawer: typeof import('./components/chat/SessionsDrawer.vue')['default']
     VanActionSheet: typeof import('vant/es')['ActionSheet']
+    VanDialog: typeof import('vant/es')['Dialog']
+    VanField: typeof import('vant/es')['Field']
+    VanIcon: typeof import('vant/es')['Icon']
+    VanLoading: typeof import('vant/es')['Loading']
     VanPopup: typeof import('vant/es')['Popup']
   }
 }

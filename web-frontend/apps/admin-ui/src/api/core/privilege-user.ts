@@ -1,7 +1,9 @@
-import { requestClient } from '#/api/request';
 import type { PageResult } from '#/api/core/privilege-types';
 
+import { requestClient } from '#/api/request';
+
 export interface PrivilegeUser {
+  roles?: Array<{ id?: string; name?: string }>;
   id?: string;
   username?: string;
   realName?: string;

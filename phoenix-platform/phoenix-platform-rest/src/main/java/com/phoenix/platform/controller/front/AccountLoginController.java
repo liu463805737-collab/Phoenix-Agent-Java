@@ -3,6 +3,7 @@ package com.phoenix.platform.controller.front;
 import cn.dev33.satoken.reactor.context.SaReactorHolder;
 import cn.dev33.satoken.stp.StpUtil;
 import com.phoenix.platform.dto.front.AccountLoginDTO;
+import com.phoenix.platform.dto.front.ThirdPartyLoginDTO;
 import com.phoenix.platform.dto.front.UpdatePwdDTO;
 import com.phoenix.platform.service.front.AccountInfoService;
 import com.phoenix.common.vo.front.LoginVO;
@@ -30,6 +31,11 @@ public class AccountLoginController {
     @PostMapping("/logout")
     public Mono<ReturnVo<Void>> logout() {
         return SaReactorHolder.sync(accountInfoService::logout);
+    }
+
+    @PostMapping("/thirdLogin")
+    public Mono<ReturnVo<LoginVO>> thirdPartyLogin(@RequestBody ThirdPartyLoginDTO loginDTO) {
+        return SaReactorHolder.sync(() -> accountInfoService.thirdPartyLogin(loginDTO));
     }
 
     @PutMapping("/updatePassword")

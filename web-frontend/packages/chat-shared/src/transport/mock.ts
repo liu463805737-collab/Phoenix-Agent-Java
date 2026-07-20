@@ -61,6 +61,9 @@ export const mockAuthTransport: AuthTransport = {
       user: {
         username: payload.username,
         displayName: payload.username,
+        realName: payload.username,
+        email: `${payload.username}@example.com`,
+        phone: '138****0000',
         loginAt: Date.now(),
       },
     });
@@ -109,6 +112,14 @@ export const mockChatTransport: ChatTransport = {
     const target = state.sessions.find((s) => s.id === sessionId);
     if (target) {
       target.title = title;
+      target.updatedAt = Date.now();
+    }
+    return delay(undefined);
+  },
+  async pinSession(sessionId, isPinned) {
+    const target = state.sessions.find((s) => s.id === sessionId);
+    if (target) {
+      target.isPinned = isPinned;
       target.updatedAt = Date.now();
     }
     return delay(undefined);

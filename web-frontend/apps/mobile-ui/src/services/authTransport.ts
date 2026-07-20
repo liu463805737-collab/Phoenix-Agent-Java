@@ -29,6 +29,9 @@ export const realAuthTransport: AuthTransport = {
       user: {
         username: data.username,
         displayName: data.realName || data.username,
+        realName: data.realName,
+        email: data.email,
+        phone: data.phone,
         loginAt: Date.now(),
       },
     };

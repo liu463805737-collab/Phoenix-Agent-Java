@@ -1,8 +1,12 @@
 <script lang="ts" setup>
-import { onMounted, ref } from 'vue';
-import { ElButton, ElDialog, ElIcon, ElInput, ElPagination, ElTable, ElTableColumn } from 'element-plus';
-import { IconifyIcon } from '@vben/icons';
 import type { PrivilegeEmployee } from '#/api';
+
+import { onMounted, ref } from 'vue';
+
+import { IconifyIcon } from '@vben/icons';
+
+import { ElButton, ElDialog, ElIcon, ElInput, ElPagination, ElTable, ElTableColumn } from 'element-plus';
+
 import { getEmployeePageApi } from '#/api';
 
 defineOptions({ name: 'EmployeeSelector' });
@@ -129,9 +133,6 @@ onMounted(() => {
       @click="openDialog"
       @clear="handleClear"
     >
-      <template #prepend>
-        <ElIcon><IconifyIcon icon="lucide:user" /></ElIcon>
-      </template>
       <template #append>
         <ElButton @click.stop="openDialog">选择</ElButton>
       </template>
@@ -144,6 +145,7 @@ onMounted(() => {
       :close-on-click-modal="false"
       class="emp-dialog"
       top="8vh"
+      append-to-body
     >
       <div class="emp-dialog-body">
         <div class="emp-search-bar">

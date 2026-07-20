@@ -1,7 +1,7 @@
 import { createApp, watchEffect } from 'vue';
 
 import { registerAccessDirective } from '@vben/access';
-import { registerLoadingDirective } from '@vben/common-ui';
+import { registerLoadingDirective, setDefaultModalProps } from '@vben/common-ui';
 import { preferences } from '@vben/preferences';
 import { initStores } from '@vben/stores';
 import '@vben/styles';
@@ -24,10 +24,11 @@ async function bootstrap(namespace: string) {
   // 初始化表单组件
   await initSetupVbenForm();
 
-  // // 设置弹窗的默认配置
-  // setDefaultModalProps({
-  //   fullscreenButton: false,
-  // });
+  // 设置弹窗的默认配置
+  setDefaultModalProps({
+    fullscreenButton: false,
+    draggable: true,
+  });
   // // 设置抽屉的默认配置
   // setDefaultDrawerProps({
   //   zIndex: 2000,
@@ -67,8 +68,12 @@ async function bootstrap(namespace: string) {
   watchEffect(() => {
     if (preferences.app.dynamicTitle) {
       const routeTitle = router.currentRoute.value.meta?.title;
+      const path = router.currentRoute.value.path;
+      const appName = path.startsWith('/front')
+        ? preferences.app.name.replace(/Admin/gi, '').trim()
+        : preferences.app.name;
       const pageTitle =
-        (routeTitle ? `${$t(routeTitle)} - ` : '') + preferences.app.name;
+        (routeTitle ? `${$t(routeTitle)} - ` : '') + appName;
       useTitle(pageTitle);
     }
   });

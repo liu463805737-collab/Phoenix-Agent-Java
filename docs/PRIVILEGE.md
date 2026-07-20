@@ -69,3 +69,49 @@
 ![前台分组列表](../img/front-group-list.png)
 
 ![前台分组新增Agent](../img/front-group-add-agent.png)
+
+---
+
+## 三方平台集成
+
+平台支持集成**钉钉、企业微信、飞书**三个第三方平台，提供两大核心能力：
+
+1. **组织和人员同步** — 将三方平台的组织架构和员工信息自动同步到本系统
+2. **单点登录（SSO）** — 用户可通过三方平台的 OAuth 授权直接登录系统
+
+### 配置入口
+
+在 **系统管理 → 三方平台** 菜单中管理平台配置：
+
+![三方平台配置](../img/third-config.png)
+
+### 平台类型
+
+| 平台 | 类型值 | 登录 AppKey 来源 |
+|------|--------|-----------------|
+| 钉钉 | `dingtalk` | 钉钉开放平台应用的 **AppKey** |
+| 企业微信 | `weixin` | 无需额外 AppKey，使用 **corpid** |
+| 飞书 | `feishu` | 飞书开放平台应用的 **App Id** |
+
+### 敏感字段说明
+
+| 字段 | 用途 |
+|------|------|
+| **企业ID (CorpId)** | 三方平台的企业标识，用于 API 调用和 OAuth 登录 |
+| **通讯录 Secret** | 通讯录同步的密钥（钉钉 AppSecret / 企微 CorpSecret / 飞书 App Secret） |
+| **登录 AppKey** | OAuth 登录认证的 AppKey（钉钉 AppKey / 飞书 App Id），**企业微信不需要** |
+| **AgentId** | 应用 AgentId（钉钉/企微需要） |
+
+> **注意：** 钉钉和飞书的 OAuth 登录使用 **登录 AppKey**，通讯录同步使用 **通讯录 Secret**，两者凭证不同，需要分别配置，登录账户只能是本企业人员，且是三方平台同步人员。
+
+### 钉钉配置参考
+
+在钉钉开放平台创建应用后，获取 **CorpId** 和 **AppKey / AppSecret**：
+
+![钉钉 AppKey 与 AppSecret](../img/dingtalk-config.png)
+
+![钉钉 CorpId](../img/dingtalk-corpId.png)
+
+### 启用规则
+
+> ⚠️ **同时只能有一个应用为启用状态**。启用新应用时，系统会自动将其他应用禁用。

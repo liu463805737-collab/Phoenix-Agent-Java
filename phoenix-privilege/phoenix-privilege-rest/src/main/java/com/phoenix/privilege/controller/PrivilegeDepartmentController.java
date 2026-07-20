@@ -35,18 +35,14 @@ public class PrivilegeDepartmentController {
 	 */
 	@GetMapping("/orgTree")
 	public ReturnVo<List<OrganizationTreeVO>> orgTree() {
-		QueryWrapper qw = QueryWrapper.create()
-			.orderBy(PrivilegeCompany::getSort, true);
+		QueryWrapper qw = QueryWrapper.create().orderBy(PrivilegeCompany::getSort, true);
 		List<PrivilegeCompany> companies = privilegeCompanyService.list(qw);
 		List<OrganizationTreeVO> tree = new ArrayList<>();
-        for (PrivilegeCompany company : companies) {
-            OrganizationTreeVO node = OrganizationTreeVO.builder()
-                    .id(company.getId())
-                    .name(company.getCname())
-                    .build();
-            node.setChildren(privilegeDepartmentService.tree(company.getId()));
-            tree.add(node);
-        }
+		for (PrivilegeCompany company : companies) {
+			OrganizationTreeVO node = OrganizationTreeVO.builder().id(company.getId()).name(company.getCname()).build();
+			node.setChildren(privilegeDepartmentService.tree(company.getId()));
+			tree.add(node);
+		}
 		return ReturnVo.ok(tree);
 	}
 
@@ -128,7 +124,7 @@ public class PrivilegeDepartmentController {
 	@PostMapping
 	public ReturnVo<Boolean> save(@RequestBody PrivilegeDepartmentDTO dto) {
 
-		String loginId = (String)StpUtil.getLoginId();
+		String loginId = (String) StpUtil.getLoginId();
 		dto.setCreateBy(loginId);
 		dto.setDepartmentType(0); // 默认自建部门
 		return ReturnVo.ok(privilegeDepartmentService.save(dto.toEntity()));
@@ -139,7 +135,7 @@ public class PrivilegeDepartmentController {
 	 */
 	@PutMapping
 	public ReturnVo<Boolean> update(@RequestBody PrivilegeDepartmentDTO dto) {
-		String loginId = (String)StpUtil.getLoginId();
+		String loginId = (String) StpUtil.getLoginId();
 		PrivilegeDepartment entity = dto.toEntity();
 		entity.setUpdateBy(loginId);
 		entity.setUpdateTime(new Date());

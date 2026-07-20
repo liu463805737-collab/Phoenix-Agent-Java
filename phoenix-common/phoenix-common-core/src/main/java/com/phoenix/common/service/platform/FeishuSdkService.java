@@ -19,4 +19,10 @@ public interface FeishuSdkService {
      * @return
      */
     List<JSONObject> getUsersByDepartmentId(String departmentId) ;
+
+    /**
+     * 获取企业信息（名称、企业编号）
+     * @return JSONObject包含 name, display_id
+     */
+    JSONObject getTenantInfo();
 }

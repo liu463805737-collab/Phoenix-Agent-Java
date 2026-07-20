@@ -39,15 +39,13 @@ export interface AclTreeNode {
 }
 
 export async function getRolePageApi(
-  page: number,
-  size: number,
   params?: Record<string, any>,
 ) {
-  return requestClient.get<PageResult<PrivilegeRole>>(
+  return requestClient.post<PageResult<PrivilegeRole>>(
     '/api/privilege/role/page',
+      params,
     {
-      params: { page, size, ...params },
-      responseReturn: 'body',
+      responseReturn: 'data',
     },
   );
 }
@@ -98,7 +96,7 @@ export async function getRoleAclsApi(roleId: string) {
     `/api/privilege/module/tree/acl`,
     {
       params: { roleId },
-      responseReturn: 'body',
+      responseReturn: 'data',
     },
   );
 }
@@ -106,7 +104,7 @@ export async function getRoleAclsApi(roleId: string) {
 export async function getAclsByReleaseIdApi(releaseId: string) {
   return requestClient.get<AclRecord[]>(
     `/api/privilege/acl/release/${releaseId}`,
-    { responseReturn: 'body' },
+    { responseReturn: 'data' },
   );
 }
 

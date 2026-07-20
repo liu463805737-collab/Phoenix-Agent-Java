@@ -3,6 +3,12 @@ export interface User {
   username: string;
   /** 展示名，可与 username 不同 */
   displayName?: string;
+  /** 真实姓名 */
+  realName?: string;
+  /** 手机号 */
+  phone?: string;
+  /** 邮箱 */
+  email?: string;
   /** 头像字符（兜底）或图片地址 */
   avatar?: string;
   /** 本次登录时间戳 */

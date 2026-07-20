@@ -15,9 +15,11 @@ export const useChatStore = defineStore('phoenix-chat-shared/chat', () => {
 
   const loadingSessions = ref(false);
   const loadingMessages = ref(false);
-  const sending = ref(false);
+  const sendingSessions = ref(new Set<string>());
 
-  let abortController: AbortController | null = null;
+  const abortControllers = new Map<string, AbortController>();
+
+  const sending = computed(() => sendingSessions.value.size > 0);
 
   const activeSession = computed<ChatSession | null>(() => {
     if (!activeSessionId.value) return null;
@@ -28,6 +30,10 @@ export const useChatStore = defineStore('phoenix-chat-shared/chat', () => {
     if (!activeSessionId.value) return [];
     return messagesByS.value[activeSessionId.value] ?? [];
   });
+
+  const isActiveSessionSending = computed<boolean>(
+    () => activeSessionId.value !== null && sendingSessions.value.has(activeSessionId.value),
+  );
 
   function setTransport(next: ChatTransport) {
     transport = next;
@@ -63,15 +69,41 @@ export const useChatStore = defineStore('phoenix-chat-shared/chat', () => {
   }
 
   async function createSession(agentId: string) {
-    const session = await transport.createSession(agentId);
+    const session: ChatSession = {
+      id: `temp-${Date.now()}`,
+      title: '新会话',
+      preview: '',
+      agentId,
+      updatedAt: Date.now(),
+    };
     sessions.value = [session, ...sessions.value];
     messagesByS.value = { ...messagesByS.value, [session.id]: [] };
     activeSessionId.value = session.id;
     return session;
   }
 
+  async function persistCurrentSessionIfNeeded() {
+    const session = activeSession.value;
+    if (!session || !session.id.startsWith('temp-')) return;
+    const persisted = await transport.createSession(session.agentId);
+    const oldId = session.id;
+    const idx = sessions.value.findIndex((s) => s.id === oldId);
+    if (idx >= 0) {
+      persisted.updatedAt = persisted.updatedAt ?? Date.now();
+      sessions.value[idx] = persisted;
+    }
+    const msgs = messagesByS.value[oldId] ?? [];
+    const next = { ...messagesByS.value };
+    delete next[oldId];
+    next[persisted.id] = msgs;
+    messagesByS.value = next;
+    activeSessionId.value = persisted.id;
+  }
+
   async function deleteSession(id: string) {
-    await transport.deleteSession(id);
+    if (!id.startsWith('temp-')) {
+      await transport.deleteSession(id);
+    }
     sessions.value = sessions.value.filter((s) => s.id !== id);
     const next = { ...messagesByS.value };
     delete next[id];
@@ -84,11 +116,24 @@ export const useChatStore = defineStore('phoenix-chat-shared/chat', () => {
   }
 
   async function renameSession(id: string, title: string) {
-    await transport.renameSession(id, title);
     const target = sessions.value.find((s) => s.id === id);
     if (target) {
       target.title = title;
       target.updatedAt = Date.now();
+    }
+    if (!id.startsWith('temp-')) {
+      await transport.renameSession(id, title);
+    }
+  }
+
+  async function pinSession(id: string, isPinned: boolean) {
+    const target = sessions.value.find((s) => s.id === id);
+    if (target) {
+      target.isPinned = isPinned;
+      target.updatedAt = Date.now();
+    }
+    if (!id.startsWith('temp-')) {
+      await transport.pinSession(id, isPinned);
     }
   }
 
@@ -96,8 +141,9 @@ export const useChatStore = defineStore('phoenix-chat-shared/chat', () => {
     const trimmed = content.trim();
     if (!trimmed) return;
     if (!activeSessionId.value) return;
-    if (sending.value) return;
     const sessionId = activeSessionId.value;
+    if (sendingSessions.value.has(sessionId)) return;
+    await persistCurrentSessionIfNeeded();
     // 乐观写入用户消息
     const msgs = messagesByS.value[sessionId] ?? [];
     const optimistic: ChatMessage = {
@@ -140,13 +186,18 @@ export const useChatStore = defineStore('phoenix-chat-shared/chat', () => {
       messagesByS.value = { ...messagesByS.value, [sessionId]: [...msgs] };
     };
 
-    sending.value = true;
-    abortController = new AbortController();
+    sendingSessions.value = new Set(sendingSessions.value).add(sessionId);
+    const ac = new AbortController();
+    abortControllers.set(sessionId, ac);
+    const sendTimeout = setTimeout(
+      () => ac.abort(),
+      600_000,
+    );
     try {
       const currentSession = sessions.value.find((s) => s.id === sessionId);
       const reply = await transport.send(
         { sessionId, content: trimmed, agentId: currentSession?.agentId },
-        abortController.signal,
+        ac.signal,
         (text: string) => {
           updateStreamMessage(text);
         },
@@ -154,7 +205,8 @@ export const useChatStore = defineStore('phoenix-chat-shared/chat', () => {
           onNodeMessage(nodeMsg);
         },
       );
-      if (abortController?.signal.aborted) return;
+      clearTimeout(sendTimeout);
+      if (ac.signal.aborted) return;
 
       // 将占位消息（报告文本流）替换为最终回复
       if (streamMsgId) {
@@ -200,15 +252,21 @@ export const useChatStore = defineStore('phoenix-chat-shared/chat', () => {
       if (err?.name === 'AbortError') return;
       throw err;
     } finally {
-      sending.value = false;
-      abortController = null;
+      clearTimeout(sendTimeout);
+      const next = new Set(sendingSessions.value);
+      next.delete(sessionId);
+      sendingSessions.value = next;
+      abortControllers.delete(sessionId);
     }
   }
 
-  function stopSending() {
-    if (abortController) {
-      abortController.abort();
-      abortController = null;
+  function stopSending(sessionId?: string) {
+    if (sessionId) {
+      abortControllers.get(sessionId)?.abort();
+    } else {
+      for (const ac of abortControllers.values()) {
+        ac.abort();
+      }
     }
   }
 
@@ -227,13 +285,17 @@ export const useChatStore = defineStore('phoenix-chat-shared/chat', () => {
     loadingSessions,
     loadingMessages,
     sending,
+    sendingSessions,
+    isActiveSessionSending,
     setTransport,
     loadSessions,
     loadMessages,
     switchSession,
     createSession,
+    persistCurrentSessionIfNeeded,
     deleteSession,
     renameSession,
+    pinSession,
     send,
     stopSending,
     reset,
