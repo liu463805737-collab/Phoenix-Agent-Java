@@ -7,7 +7,6 @@
   <p>
     NL2SQL 智能报表 | Python 深度分析 | 自定义智能体 | MCP 服务器 | RAG 增强 | Vben5 管理后台
   </p>
-
   <p>
     <img src="https://img.shields.io/badge/Spring%20Boot-4.0.0-blue" alt="Spring Boot">
     <img src="https://img.shields.io/badge/Java-21-orange" alt="Java">
