@@ -14,7 +14,6 @@
     <img src="https://img.shields.io/badge/Vben-5-blueviolet" alt="Vben5">
     <img src="https://img.shields.io/badge/License-Apache%202.0-red" alt="License">
   </p>
-
   <p>
     <a href="#-项目简介">项目简介</a> •
     <a href="#-核心特性">核心特性</a> •
