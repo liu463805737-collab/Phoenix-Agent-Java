@@ -56,7 +56,7 @@ public class DataAgentProperties {
 	private int maxplanlength = 2000;
 
 	// 每张表的最大预估列数
-	private int maxColumnsPerTable = 50;
+	private int maxColumnsPerTable = 150;
 
 	/**
 	 * 是否启用SQL执行结果图表判断，默认启用
