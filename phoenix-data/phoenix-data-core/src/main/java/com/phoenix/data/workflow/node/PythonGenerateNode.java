@@ -9,7 +9,6 @@ import com.phoenix.data.service.llm.LlmService;
 import com.phoenix.data.util.*;
 import com.alibaba.cloud.ai.graph.GraphResponse;
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -39,6 +38,11 @@ public class PythonGenerateNode extends AabstractNodeAction {
 	 * 样本数据数量限制
 	 */
 	private static final int SAMPLE_DATA_NUMBER = 5;
+
+	/**
+	 * Python生成最大续写深度
+	 */
+	private static final int MAX_CONTINUATION_DEPTH = 3;
 
 	private final ObjectMapper objectMapper;
 
@@ -81,8 +85,6 @@ public class PythonGenerateNode extends AabstractNodeAction {
 
 		String userPrompt = StateUtil.getCanonicalQuery(state);
 		if (!codeRunSuccess) {
-			// Last generated Python code failed to run, inform AI model of this
-			// information
 			String lastCode = StateUtil.getStringValue(state, PYTHON_GENERATE_NODE_OUTPUT);
 			String lastError = StateUtil.getStringValue(state, PYTHON_EXECUTE_NODE_OUTPUT);
 			userPrompt += String.format("""
@@ -109,12 +111,12 @@ public class PythonGenerateNode extends AabstractNodeAction {
 					objectMapper.writeValueAsString(schemaDTO), "sample_input",
 					objectMapper.writeValueAsString(sqlResults.stream().limit(SAMPLE_DATA_NUMBER).toList()),
 					"plan_description", objectMapper.writeValueAsString(toolParameters)));
-		Flux<ChatResponse> pythonGenerateFlux = llmService.call(systemPrompt, userPrompt);
+
+		// 递归续写：检测到 finish_reason=length 时自动续写，直到完整或达到最大深度
+		Flux<ChatResponse> pythonGenerateFlux = generateWithContinuation(systemPrompt, userPrompt, 0);
 
 		Flux<GraphResponse<StreamingOutput>> generator = FluxUtil.createStreamingGeneratorWithMessages(this.getChName(), this.getClass(),
 				state, aiResponse -> {
-					// Some AI models still output Markdown markup (even though Prompt has
-					// emphasized this)
 					aiResponse = aiResponse.substring(TextType.PYTHON.getStartSign().length(),
 							aiResponse.length() - TextType.PYTHON.getEndSign().length());
 					aiResponse = MarkdownParserUtil.extractRawText(aiResponse);
@@ -126,6 +128,66 @@ public class PythonGenerateNode extends AabstractNodeAction {
 						Flux.just(ChatResponseUtil.createPureResponse(TextType.PYTHON.getEndSign()))));
 
 		return Map.of(PYTHON_GENERATE_NODE_OUTPUT, generator);
+	}
+
+	/**
+	 * 递归续写：检测到 finish_reason=length 时自动续写，直到完整或达到最大深度。
+	 *
+	 * @param systemPrompt 系统提示词
+	 * @param userPrompt   用户提示词
+	 * @param depth        当前递归深度
+	 * @return 合并后的 LLM 响应流
+	 */
+	private Flux<ChatResponse> generateWithContinuation(String systemPrompt, String userPrompt, int depth) {
+		if (depth >= MAX_CONTINUATION_DEPTH) {
+			log.warn("Python generation continuation reached max depth ({}), code may still be incomplete", MAX_CONTINUATION_DEPTH);
+			return Flux.empty();
+		}
+
+		StringBuilder accumulated = new StringBuilder();
+		ChatResponse[] lastResponse = new ChatResponse[1];
+
+		Flux<ChatResponse> currentCall = llmService.call(systemPrompt, userPrompt)
+			.doOnNext(r -> {
+				lastResponse[0] = r;
+				accumulated.append(ChatResponseUtil.getText(r));
+			});
+
+		return Flux.concat(
+				currentCall,
+				Flux.defer(() -> {
+					if (lastResponse[0] != null
+							&& lastResponse[0].getResult() != null
+							&& lastResponse[0].getResult().getMetadata() != null
+							&& "LENGTH".equals(lastResponse[0].getResult().getMetadata().getFinishReason())) {
+						log.warn("Python code truncated by token limit, initiating continuation (depth={})", depth + 1);
+						String continuationPrompt = buildContinuationPrompt(accumulated.toString(), depth + 1);
+						return generateWithContinuation(systemPrompt, continuationPrompt, depth + 1);
+					}
+					return Flux.empty();
+				}));
+	}
+
+	/**
+	 * 构建续写 prompt，携带完整已输出代码作为上下文。
+	 *
+	 * @param accumulatedCode   当前轮已输出的代码
+	 * @param continuationCount 第几次续写
+	 * @return 续写 prompt
+	 */
+	private String buildContinuationPrompt(String accumulatedCode, int continuationCount) {
+		return String.format("""
+				你之前生成的Python代码因为长度限制被截断（第%d次续写）。
+				请直接从断点处继续生成，只输出剩余的代码，**不要重复**已经输出的内容。
+				请严格遵循原始要求中的代码规范。
+
+				【已输出的代码（请继续，不要重复）】
+				```python
+				%s
+				```
+
+				请从上面代码的断点处继续：
+				""", continuationCount, accumulatedCode);
 	}
 
 }
