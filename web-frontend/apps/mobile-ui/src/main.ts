@@ -24,6 +24,11 @@ import 'vant/es/toast/style';
 import 'vant/lib/index.css';
 import './styles/global.scss';
 
+// 每次加载清除上次的缓存，强制重新认证（自建应用 token 过期场景）
+Object.keys(localStorage)
+  .filter((k) => k.startsWith('mobile-ui:'))
+  .forEach((k) => localStorage.removeItem(k));
+
 configureAuthStorage({ storageKey: 'mobile-ui' });
 
 const TOKEN_KEY = 'mobile-ui:auth:token';
