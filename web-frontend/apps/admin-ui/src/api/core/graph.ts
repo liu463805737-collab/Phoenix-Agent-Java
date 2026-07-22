@@ -28,6 +28,12 @@ export enum TextType {
   TEXT = 'TEXT',
 }
 
+export interface HarnessChatRequest {
+  sessionId: string;
+  message: string;
+  harnessSn: string;
+}
+
 const API_BASE_URL = '/api';
 
 export interface ChatApiRequest {
@@ -231,6 +237,99 @@ export function streamSearch(
     } catch (error: any) {
       if (error.name === 'AbortError') return;
       if (isCompleted) return;
+      await onError?.(new Error('Stream connection failed'));
+    }
+  };
+
+  doFetch();
+
+  return () => {
+    controller.abort();
+  };
+}
+
+export function streamHarnessChat(
+  request: HarnessChatRequest,
+  onMessage: (response: GraphNodeResponse) => Promise<void>,
+  onError?: (error: Error) => Promise<void>,
+  onComplete?: () => Promise<void>,
+): () => void {
+  const url = `${API_BASE_URL}/api/admin/harness/chat`;
+  const controller = new AbortController();
+
+  const doFetch = async () => {
+    try {
+      const token = localStorage.getItem('phoenix-token');
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'phoenix-token': token || '',
+          'Content-Type': 'application/json',
+          Accept: 'text/event-stream',
+        },
+        body: JSON.stringify(request),
+        signal: controller.signal,
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      if (!reader) {
+        throw new Error('No reader available');
+      }
+
+      let buffer = '';
+      let currentData = '';
+
+      const dispatchEvent = async () => {
+        if (currentData) {
+          try {
+            const parsed = JSON.parse(currentData);
+            if (parsed.end) {
+              await onComplete?.();
+              return;
+            }
+            const nodeResponse: GraphNodeResponse = {
+              agentId: request.harnessSn,
+              threadId: request.sessionId,
+              nodeName: 'Harness',
+              textType: TextType.MARK_DOWN,
+              text: parsed.content || '',
+              error: false,
+              complete: false,
+            };
+            await onMessage(nodeResponse);
+          } catch {
+            await onError?.(new Error('Failed to parse server response'));
+          }
+        }
+        currentData = '';
+      };
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const parts = buffer.split('\n');
+        buffer = parts.pop() || '';
+        for (const line of parts) {
+          if (line === '') {
+            await dispatchEvent();
+          } else if (line.startsWith('data:')) {
+            currentData = line.slice(5).trim();
+          }
+        }
+      }
+      if (buffer) {
+        const line = buffer.trim();
+        if (line.startsWith('data:')) {
+          currentData = line.slice(5).trim();
+          await dispatchEvent();
+        }
+      }
+    } catch (error: any) {
+      if (error.name === 'AbortError') return;
       await onError?.(new Error('Stream connection failed'));
     }
   };
