@@ -1351,8 +1351,8 @@ onMounted(async () => {
               </div>
             </div>
 
-            <div v-if="isStreaming" class="streaming-response">
-              <div class="streaming-header">
+            <div v-if="isStreaming || nodeBlocks.length > 0" class="streaming-response">
+              <div v-if="isStreaming" class="streaming-header">
                 <el-icon class="loading-icon"><Loading /></el-icon>
                 <span>智能体正在处理中...</span>
               </div>
