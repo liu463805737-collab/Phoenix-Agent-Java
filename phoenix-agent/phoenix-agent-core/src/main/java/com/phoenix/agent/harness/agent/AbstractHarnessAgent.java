@@ -11,6 +11,7 @@ import io.agentscope.extensions.postgresql.state.PostgresAgentStateStore;
 import io.agentscope.extensions.redis.RedisDistributedStore;
 import io.agentscope.extensions.redis.store.RedisStore;
 import io.agentscope.harness.agent.HarnessAgent;
+import io.agentscope.harness.agent.filesystem.spec.RemoteFilesystemSpec;
 import io.agentscope.harness.agent.memory.MemoryConfig;
 import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +38,8 @@ public abstract class AbstractHarnessAgent implements SmartInitializingSingleton
     @Autowired
     @Qualifier("harnessRedisStore")
     protected RedisStore redisStore;
+    @Autowired
+    protected RemoteFilesystemSpec  pgRemoteFilesystemSpec;
 
     public MemoryConfig getDefaultModelConfig() {
         return MemoryConfig.builder()

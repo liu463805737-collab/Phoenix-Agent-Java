@@ -13,6 +13,8 @@ import io.agentscope.core.skill.repository.postgresql.PostgresSkillRepository;
 import io.agentscope.extensions.postgresql.state.PostgresAgentStateStore;
 import io.agentscope.extensions.redis.RedisDistributedStore;
 import io.agentscope.extensions.redis.store.RedisStore;
+import io.agentscope.harness.agent.IsolationScope;
+import io.agentscope.harness.agent.filesystem.spec.RemoteFilesystemSpec;
 import org.springframework.boot.data.redis.autoconfigure.DataRedisProperties;
 import org.springframework.boot.jdbc.autoconfigure.DataSourceProperties;
 import org.springframework.context.annotation.Bean;
@@ -24,6 +26,12 @@ import redis.clients.jedis.UnifiedJedis;
 
 @Configuration
 public class HarnessConfig {
+
+    @Bean
+    @DependsOn(value = "harnessRedisStore")
+    public RemoteFilesystemSpec pgRemoteFilesystemSpec(RedisStore redisStore) {
+       return new RemoteFilesystemSpec(redisStore).isolationScope(IsolationScope.USER);
+    }
     
     @Bean
     public RedisDistributedStore distributedStore(DataRedisProperties dataRedisProperties) {

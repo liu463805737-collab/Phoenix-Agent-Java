@@ -35,7 +35,6 @@ public class HumanInTheLoop extends AbstractHarnessAgent {
 // 2. 注册工具
         Toolkit toolkit = new Toolkit();
         toolkit.registerTool(new HumanOrderTools());
-
         // 3. 配置权限规则（核心：人工干预逻辑）
         PermissionContextState perms = PermissionContextState.builder()
                 .mode(PermissionMode.DEFAULT)
@@ -51,9 +50,11 @@ public class HumanInTheLoop extends AbstractHarnessAgent {
                 .build();
         HarnessAgent agent = HarnessAgent.builder()
                 .name(this.getSn())
+                .description("我的私人助理")
                 .sysPrompt("你是客服，只能调用 query_order、refund_order、drop_table 工具。")
                 .model(this.createChatModel()) // 请替换为你实际的模型配置
-                .workspace(Path.of("./workspace"))
+                .workspace(Path.of(".agentscope/workspace"))
+                .filesystem(pgRemoteFilesystemSpec)
                 .toolkit(toolkit)
                 .permissionContext(perms)
                 .disableShellTool()
