@@ -16,7 +16,12 @@ import {
   renameSessionApi,
   saveMessageApi,
 } from './chat';
-import { streamFrontChat, streamFrontChatSql } from './stream';
+import {
+  streamFrontChat,
+  streamFrontChatSql,
+  streamFrontHarnessChat,
+  confirmFrontHarnessChat,
+} from './stream';
 import type { StreamNodeResponse } from './stream';
 
 let msgCounter = 0;
@@ -222,9 +227,76 @@ export const realChatTransport: ChatTransport = {
     await saveMessageApi(sessionId, userMessage);
 
     const isSql = currentAgent?.type === 'sql';
+    const isHarness = currentAgent?.type === 'harness';
 
     const reply = await new Promise<ChatMessage>((resolve, reject) => {
-      if (isSql) {
+      if (isHarness) {
+        let fullText = '';
+        let abortRequested = false;
+
+        const onAbort = () => {
+          abortRequested = true;
+        };
+        signal?.addEventListener('abort', onAbort, { once: true });
+
+        const closeStream = streamFrontHarnessChat(
+          {
+            sessionId,
+            message: content,
+            harnessSn: currentAgent?.sn || '',
+          },
+          (response) => {
+            if (abortRequested) return;
+            if (response.error) return;
+            if (response.text) {
+              fullText += response.text;
+              onProgress?.(renderMarkdown(fullText));
+            }
+          },
+          (error) => {
+            signal?.removeEventListener('abort', onAbort);
+            if (abortRequested) return;
+            reject(error);
+          },
+          () => {
+            signal?.removeEventListener('abort', onAbort);
+            if (abortRequested) return;
+
+            const text = fullText || '已处理完成';
+            const html = renderMarkdown(text);
+            const assistantMessage = toApiMessage(
+              sessionId,
+              'assistant',
+              text,
+            );
+            saveMessageApi(sessionId, assistantMessage).catch(() => {});
+
+            resolve({
+              id: uid(),
+              role: 'assistant',
+              content: html,
+              createdAt: Date.now(),
+              messageType: 'text',
+            });
+          },
+        );
+
+        if (signal?.aborted) {
+          abortRequested = true;
+          closeStream();
+          signal?.removeEventListener('abort', onAbort);
+          reject(new DOMException('Aborted', 'AbortError'));
+          return;
+        }
+
+        const abortHandler = () => {
+          abortRequested = true;
+          closeStream();
+          signal?.removeEventListener('abort', abortHandler);
+          reject(new DOMException('Aborted', 'AbortError'));
+        };
+        signal?.addEventListener('abort', abortHandler, { once: true });
+      } else if (isSql) {
         let currentNodeName: string | null = null;
         let currentBlockIndex = -1;
         const nodeBlocks: StreamNodeResponse[][] = [];
@@ -474,3 +546,81 @@ export const realChatTransport: ChatTransport = {
     return reply;
   },
 };
+
+export async function handleHarnessConfirm(
+  sessionId: string,
+  agentSn: string,
+  allowed: boolean,
+  onNodeMessage?: (message: ChatMessage) => void,
+  onProgress?: (text: string) => void,
+): Promise<string> {
+  let currentNodeName: string | null = null;
+  let currentBlockIndex = -1;
+  const nodeBlocks: StreamNodeResponse[][] = [];
+  let markdownContent = '';
+
+  await confirmFrontHarnessChat(
+    { sessionId, agentSn, allowed },
+    (response) => {
+      if (response.error) return;
+
+      const isNewNode =
+        currentNodeName === null || response.nodeName !== currentNodeName;
+
+      if (isNewNode) {
+        if (currentBlockIndex >= 0 && nodeBlocks[currentBlockIndex]) {
+          const nodeHtml = generateNodeHtml(nodeBlocks[currentBlockIndex]!);
+          const storeMsg: ChatMessage = {
+            id: uid(),
+            role: 'assistant',
+            content: nodeHtml,
+            createdAt: Date.now(),
+            messageType: 'html',
+          };
+          onNodeMessage?.(storeMsg);
+        }
+        nodeBlocks.push([{ ...response, text: response.text }]);
+        currentBlockIndex = nodeBlocks.length - 1;
+        currentNodeName = response.nodeName;
+      } else {
+        if (currentBlockIndex >= 0 && nodeBlocks[currentBlockIndex]) {
+          nodeBlocks[currentBlockIndex]?.push({
+            ...response,
+            text: response.text,
+          });
+        } else {
+          nodeBlocks.push([{ ...response, text: response.text }]);
+          currentBlockIndex = nodeBlocks.length - 1;
+          currentNodeName = response.nodeName;
+        }
+      }
+
+      markdownContent = '';
+      for (const block of nodeBlocks) {
+        for (const nd of block) {
+          if (nd.textType === 'MARK_DOWN') {
+            markdownContent += nd.text || '';
+          }
+        }
+      }
+      if (markdownContent) {
+        onProgress?.(renderMarkdown(markdownContent));
+      }
+    },
+    () => {
+      if (currentBlockIndex >= 0 && nodeBlocks[currentBlockIndex]) {
+        const nodeHtml = generateNodeHtml(nodeBlocks[currentBlockIndex]!);
+        const storeMsg: ChatMessage = {
+          id: uid(),
+          role: 'assistant',
+          content: nodeHtml,
+          createdAt: Date.now(),
+          messageType: 'html',
+        };
+        onNodeMessage?.(storeMsg);
+      }
+    },
+  );
+
+  return markdownContent || nodeBlocks.map((b) => generateNodeHtml(b)).join('\n') || '已处理完成';
+}

@@ -121,6 +121,7 @@ function getTypeText(type?: string) {
     sql: '数据智能体',
     agent: '智能体',
     workflow: '流程智能体',
+    harness: 'Harness',
   };
   return type ? map[type] || type : '';
 }

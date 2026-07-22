@@ -24,6 +24,12 @@ export interface FrontChatStreamRequest {
   type: string;
 }
 
+export interface ConfirmButton {
+  text: string;
+  action: string;
+  type?: string;
+}
+
 export interface StreamNodeResponse {
   agentId?: string;
   threadId?: string;
@@ -32,6 +38,8 @@ export interface StreamNodeResponse {
   text: string;
   error?: boolean;
   complete?: boolean;
+  needConfirm?: boolean;
+  buttons?: ConfirmButton[];
 }
 
 export function streamFrontChat(
@@ -114,6 +122,185 @@ export function streamFrontChat(
 
   doFetch();
   return () => controller.abort();
+}
+
+export interface FrontHarnessChatRequest {
+  sessionId: string;
+  message: string;
+  harnessSn: string;
+}
+
+export interface FrontHarnessConfirmRequest {
+  sessionId: string;
+  agentSn: string;
+  allowed: boolean;
+  suggestedRules?: any[];
+}
+
+export function streamFrontHarnessChat(
+  request: FrontHarnessChatRequest,
+  onMessage: (response: StreamNodeResponse) => void,
+  onError: (error: Error) => void,
+  onComplete: () => void,
+): () => void {
+  const url = `${API_BASE_URL}/api/front/harness/chat`;
+  const controller = new AbortController();
+
+  const doFetch = async () => {
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'phoenix-token': getToken(),
+          'Content-Type': 'application/json',
+          Accept: 'text/event-stream',
+        },
+        body: JSON.stringify(request),
+        signal: controller.signal,
+      });
+      if (response.status === 401) {
+        handleUnauthorized();
+        throw new Error('未授权，请先登录');
+      }
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      if (!reader) throw new Error('No reader available');
+
+      let buffer = '';
+      let currentData = '';
+
+      const dispatchEvent = () => {
+        if (currentData) {
+          try {
+            const parsed = JSON.parse(currentData);
+            if (parsed.end) {
+              onComplete();
+              return;
+            }
+            const nodeResponse: StreamNodeResponse = {
+              agentId: request.harnessSn,
+              threadId: request.sessionId,
+              nodeName: 'Harness',
+              textType: 'MARK_DOWN',
+              text: parsed.content || '',
+              error: false,
+              complete: false,
+              needConfirm: parsed.needConfirm || false,
+              buttons: parsed.buttons || undefined,
+            };
+            onMessage(nodeResponse);
+          } catch {
+            // skip
+          }
+        }
+        currentData = '';
+      };
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const parts = buffer.split('\n');
+        buffer = parts.pop() || '';
+        for (const line of parts) {
+          if (line === '') {
+            dispatchEvent();
+          } else if (line.startsWith('data:')) {
+            currentData = line.slice(5).trim();
+          }
+        }
+      }
+      if (buffer.trim()) {
+        const line = buffer.trim();
+        if (line.startsWith('data:')) {
+          currentData = line.slice(5).trim();
+          dispatchEvent();
+        }
+      }
+    } catch (error: any) {
+      if (error.name === 'AbortError') return;
+      onError(error);
+    }
+  };
+
+  doFetch();
+  return () => controller.abort();
+}
+
+export async function confirmFrontHarnessChat(
+  request: FrontHarnessConfirmRequest,
+  onMessage?: (response: StreamNodeResponse) => void,
+  onComplete?: () => void,
+): Promise<void> {
+  const httpResponse = await fetch(`${API_BASE_URL}/api/front/harness/confirm`, {
+    method: 'POST',
+    headers: {
+      'phoenix-token': getToken(),
+      'Content-Type': 'application/json',
+      Accept: 'text/event-stream',
+    },
+    body: JSON.stringify(request),
+  });
+  if (httpResponse.status === 401) {
+    handleUnauthorized();
+    throw new Error('未授权，请先登录');
+  }
+  if (!httpResponse.ok) {
+    throw new Error(`Confirm request failed! status: ${httpResponse.status}`);
+  }
+  const reader = httpResponse.body?.getReader();
+  const decoder = new TextDecoder();
+  if (!reader) return;
+  let buffer = '';
+  let currentData = '';
+  const dispatchEvent = () => {
+    if (currentData) {
+      try {
+        const parsed = JSON.parse(currentData);
+        if (parsed.end) {
+          onComplete?.();
+          return;
+        }
+        const nodeResponse: StreamNodeResponse = {
+          agentId: request.agentSn,
+          threadId: request.sessionId,
+          nodeName: 'Harness',
+          textType: 'MARK_DOWN',
+          text: parsed.content || '',
+          error: false,
+          complete: false,
+        };
+        onMessage?.(nodeResponse);
+      } catch {
+        // skip
+      }
+    }
+    currentData = '';
+  };
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const parts = buffer.split('\n');
+    buffer = parts.pop() || '';
+    for (const line of parts) {
+      if (line === '') {
+        dispatchEvent();
+      } else if (line.startsWith('data:')) {
+        currentData = line.slice(5).trim();
+      }
+    }
+  }
+  if (buffer.trim()) {
+    const line = buffer.trim();
+    if (line.startsWith('data:')) {
+      currentData = line.slice(5).trim();
+      dispatchEvent();
+    }
+  }
 }
 
 export function streamFrontChatSql(

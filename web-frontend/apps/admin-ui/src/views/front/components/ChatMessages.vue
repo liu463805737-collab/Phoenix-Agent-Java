@@ -661,4 +661,5 @@ watch(activeSessionId, () => {
   background: #f4f4f5;
   border-radius: 4px;
 }
+
 </style>
