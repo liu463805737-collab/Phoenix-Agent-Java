@@ -72,7 +72,8 @@ export default defineComponent({
       required: true,
     },
   },
-  setup(props) {
+  emits: ['loaded'],
+  setup(props, { emit }) {
     const questions = ref<PresetQuestion[]>([]);
     const loading = ref(false);
     const activeQuestions = computed(() => {
@@ -89,6 +90,7 @@ export default defineComponent({
         ElMessage.error('加载预设问题失败');
       } finally {
         loading.value = false;
+        emit('loaded', { hasQuestions: activeQuestions.value.length > 0 });
       }
     };
 

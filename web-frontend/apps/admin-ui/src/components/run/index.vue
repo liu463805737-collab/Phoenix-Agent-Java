@@ -1041,6 +1041,12 @@ async function handlePresetQuestionClick(question: string) {
   nextTick(() => sendMessage());
 }
 
+function onPresetQuestionsLoaded(payload: { hasQuestions: boolean }) {
+  if (!payload.hasQuestions) {
+    inputControlsCollapsed.value = true;
+  }
+}
+
 async function stopStreaming() {
   if (!currentSession.value) {
     ElMessage.warning('当前没有活动的会话');
@@ -1450,6 +1456,7 @@ onMounted(async () => {
                 v-if="currentSession && agent.id"
                 :agentId="agent.id"
                 :onQuestionClick="handlePresetQuestionClick"
+                @loaded="onPresetQuestionsLoaded"
               />
               <div v-if="agent.type == 'sql'" class="switch-group">
                 <div class="switch-item">
