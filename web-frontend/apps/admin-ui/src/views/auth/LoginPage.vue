@@ -1,31 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-
-import { useAuthStore } from '#/store';
-
 import BrandPanel from './components/BrandPanel.vue';
 import LoginForm from './components/LoginForm.vue';
-
-const authStore = useAuthStore();
-
-const loginFormRef = ref<InstanceType<typeof LoginForm> | null>(null);
-
-async function handleSubmit(payload: {
-  password: string;
-  remember: boolean;
-  roleType: string;
-  username: string;
-}) {
-  try {
-    await authStore.authLogin({
-      username: payload.username,
-      password: payload.password,
-      roleType: payload.roleType,
-    });
-  } catch {
-    loginFormRef.value?.resetCaptcha();
-  }
-}
 </script>
 
 <template>
@@ -39,7 +14,7 @@ async function handleSubmit(payload: {
 
     <div class="login-shell">
       <BrandPanel />
-      <LoginForm ref="loginFormRef" @submit="handleSubmit" />
+      <LoginForm />
     </div>
   </div>
 </template>

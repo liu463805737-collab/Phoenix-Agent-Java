@@ -5,22 +5,14 @@ import type { SliderCaptchaActionType } from '@vben/common-ui';
 
 import { SliderCaptcha } from '@vben/common-ui';
 
+import { useAuthStore } from '#/store';
+
 import PolicyDialog from './PolicyDialog.vue';
 
 type PolicyTab = 'privacy' | 'terms';
 type LoginTab = 'admin' | 'user';
 
-const emit = defineEmits<{
-  (
-    e: 'submit',
-    payload: {
-      password: string;
-      remember: boolean;
-      roleType: LoginTab;
-      username: string;
-    },
-  ): void;
-}>();
+const authStore = useAuthStore();
 
 const form = reactive({
   username: '',
@@ -99,13 +91,14 @@ async function handleSubmit() {
 
   submitting.value = true;
   try {
-    await new Promise((resolve) => setTimeout(resolve, 480));
-    emit('submit', {
+    await authStore.authLogin({
       username: form.username.trim(),
       password: form.password,
-      remember: form.remember,
       roleType: activeTab.value,
     });
+  } catch {
+    resetCaptcha();
+    errorMsg.value = '登录失败，请检查账号和密码';
   } finally {
     submitting.value = false;
   }
