@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { useAgentStore, useChatStore } from '@phoenix/chat-shared';
@@ -40,6 +40,36 @@ watch(agentPanelCollapsed, (v) => {
 });
 watch(chatHistoryPanelCollapsed, (v) => {
   localStorage.setItem(LS_KEY_HISTORY, String(v));
+});
+
+const BREAKPOINT_HISTORY = 1366;
+const BREAKPOINT_AGENT = 1024;
+
+let mqHistory: MediaQueryList | null = null;
+let mqAgent: MediaQueryList | null = null;
+
+function onHistoryChange(e: MediaQueryListEvent | MediaQueryList) {
+  chatHistoryPanelCollapsed.value = e.matches;
+}
+
+function onAgentChange(e: MediaQueryListEvent | MediaQueryList) {
+  agentPanelCollapsed.value = e.matches;
+}
+
+onMounted(() => {
+  mqHistory = window.matchMedia(`(max-width: ${BREAKPOINT_HISTORY - 1}px)`);
+  mqAgent = window.matchMedia(`(max-width: ${BREAKPOINT_AGENT - 1}px)`);
+
+  onHistoryChange(mqHistory);
+  onAgentChange(mqAgent);
+
+  mqHistory.addEventListener('change', onHistoryChange);
+  mqAgent.addEventListener('change', onAgentChange);
+});
+
+onUnmounted(() => {
+  mqHistory?.removeEventListener('change', onHistoryChange);
+  mqAgent?.removeEventListener('change', onAgentChange);
 });
 const noAgents = ref(false);
 
