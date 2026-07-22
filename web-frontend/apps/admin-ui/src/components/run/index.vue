@@ -1369,7 +1369,7 @@ onMounted(async () => {
                 :agentId="agent.id"
                 :onQuestionClick="handlePresetQuestionClick"
               />
-              <div class="switch-group">
+              <div v-if="agent.type == 'sql'" class="switch-group">
                 <div class="switch-item">
                   <span class="switch-label">人工反馈</span>
                   <el-tooltip
