@@ -20,6 +20,7 @@ public class ConfirmRequest implements Serializable {
      * 会话 ID，用于后端定位到具体的 Agent 实例和对应的 Flux 事件流
      */
     private String sessionId;
+    private String agentSn;
 
     /**
      * 用户的决策：true 表示允许/确认，false 表示拒绝/取消

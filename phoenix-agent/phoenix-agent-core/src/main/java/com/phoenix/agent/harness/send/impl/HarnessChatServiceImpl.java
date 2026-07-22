@@ -1,5 +1,9 @@
 package com.phoenix.agent.harness.send.impl;
 
+import com.alibaba.cloud.ai.graph.NodeOutput;
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.phoenix.agent.harness.agent.HarnessStaticLoader;
 import com.phoenix.agent.harness.request.ConfirmRequest;
 import com.phoenix.agent.harness.request.HarnessRequest;
@@ -7,9 +11,11 @@ import com.phoenix.agent.harness.send.HarnessChatService;
 import com.phoenix.agent.harness.service.HitlCacheService;
 import io.agentscope.core.agent.RuntimeContext;
 import io.agentscope.core.event.AgentEvent;
+import io.agentscope.core.event.AgentEventType;
 import io.agentscope.core.event.ConfirmResult;
 import io.agentscope.core.event.CustomEvent;
 import io.agentscope.core.event.RequireUserConfirmEvent;
+import io.agentscope.core.event.TextBlockDeltaEvent;
 import io.agentscope.core.message.Msg;
 import io.agentscope.core.message.UserMessage;
 import io.agentscope.harness.agent.HarnessAgent;
@@ -29,14 +35,16 @@ public class HarnessChatServiceImpl implements HarnessChatService {
     private final HitlCacheService hitlCacheService;
     @Override
     public Mono<Msg> call(String sn, HarnessRequest request) {
-        HarnessAgent harnessAgent = harnessStaticLoader.loadAgent(sn);
+        HarnessAgent harnessAgent = getHarnessAgent(sn);
         return harnessAgent.call(buildUserMessage(request), buildRuntimeContext(request));
     }
 
     @Override
-    public Flux<AgentEvent> stream(String sn, HarnessRequest request) {
-        HarnessAgent harnessAgent = harnessStaticLoader.loadAgent(sn);
-        return harnessAgent.streamEvents(buildUserMessage(request), buildRuntimeContext(request));
+    public Flux<NodeOutput> stream(String sn, HarnessRequest request) {
+        HarnessAgent harnessAgent = getHarnessAgent(sn);
+        String sessionId = request.getSessionId();
+        return harnessAgent.streamEvents(buildUserMessage(request), buildRuntimeContext(request))
+                .map(event -> toNodeOutput(event, sessionId));
     }
 
     @Override
@@ -45,28 +53,44 @@ public class HarnessChatServiceImpl implements HarnessChatService {
     }
 
     @Override
-    public Flux<AgentEvent> confirmStream(String sn, ConfirmRequest request) {
-        // 1. 从 Redis 中获取挂起的上下文
+    public Flux<NodeOutput> confirmStream(String sn, ConfirmRequest request) {
         RequireUserConfirmEvent pendingConfirm = hitlCacheService.getAndRemovePendingConfirm(request.getSessionId());
         if (pendingConfirm == null) {
             Map<String, Object> context = new HashMap<>();
             context.put("confirm", "确认已过期或未找到任务");
-            AgentEvent agentEvent = new CustomEvent("confirm",context);
-            return Flux.just(agentEvent);
+            CustomEvent agentEvent = new CustomEvent("confirm", context);
+            Map<String, Object> data = new HashMap<>();
+            data.put("agent_event", agentEvent);
+            return Flux.just(NodeOutput.of("harness_agent", "harness", new OverAllState(data), null));
         }
-        // 2. 构造确认结果
         ConfirmResult result = new ConfirmResult(
                 request.isAllowed(),
                 pendingConfirm.getToolCalls().get(0),
                 request.isAllowed() ? request.getSuggestedRules() : null
         );
-        // 3. 唤醒 Agent（将结果通过 metadata 传入，ReActAgent 从 Msg.METADATA_CONFIRM_RESULTS 提取）
         UserMessage confirmMsg = UserMessage.builder()
                 .name("system")
                 .textContent("User confirmed, continue.")
                 .metadata(Map.of(Msg.METADATA_CONFIRM_RESULTS, List.of(result)))
                 .build();
-        return getHarnessAgent(sn).streamEvents(confirmMsg, RuntimeContext.builder().userId(request.getUserId()).sessionId(request.getSessionId()).build());
+        String sessionId = request.getSessionId();
+        return getHarnessAgent(sn).streamEvents(confirmMsg, RuntimeContext.builder().userId(request.getUserId()).sessionId(sessionId).build())
+                .map(event -> toNodeOutput(event, sessionId));
+    }
+
+    private NodeOutput toNodeOutput(AgentEvent event, String sessionId) {
+        if (event.getType() == AgentEventType.TEXT_BLOCK_DELTA && event instanceof TextBlockDeltaEvent textEvent) {
+            return new StreamingOutput<>(textEvent.getDelta(), "harness_agent", "harness", new OverAllState());
+        }
+        if (event.getType() == AgentEventType.AGENT_END) {
+            return NodeOutput.of(StateGraph.END, "harness", new OverAllState(), null);
+        }
+        if (event instanceof RequireUserConfirmEvent confirmEvent) {
+            hitlCacheService.savePendingConfirm(sessionId, confirmEvent);
+        }
+        Map<String, Object> data = new HashMap<>();
+        data.put("agent_event", event);
+        return NodeOutput.of("harness_agent", "harness", new OverAllState(data), null);
     }
 
     private RuntimeContext buildRuntimeContext(HarnessRequest request) {

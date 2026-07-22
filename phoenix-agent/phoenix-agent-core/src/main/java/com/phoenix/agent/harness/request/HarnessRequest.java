@@ -15,4 +15,6 @@ public class HarnessRequest implements Serializable {
     private String sessionId;
     @NotBlank
     private String message;
+    @NotBlank
+    private String harnessSn;
 }

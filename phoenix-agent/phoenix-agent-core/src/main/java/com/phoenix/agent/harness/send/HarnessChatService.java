@@ -1,8 +1,8 @@
 package com.phoenix.agent.harness.send;
 
+import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.phoenix.agent.harness.request.ConfirmRequest;
 import com.phoenix.agent.harness.request.HarnessRequest;
-import io.agentscope.core.event.AgentEvent;
 import io.agentscope.core.message.Msg;
 import io.agentscope.harness.agent.HarnessAgent;
 import reactor.core.publisher.Flux;
@@ -23,7 +23,7 @@ public interface HarnessChatService {
      * @param request request
      * @return
      */
-    Flux<AgentEvent> stream(String sn, HarnessRequest request);
+    Flux<NodeOutput> stream(String sn, HarnessRequest request);
 
     /**
      * 获取智能体
@@ -37,5 +37,5 @@ public interface HarnessChatService {
      * @param request 参数
      * @return
      */
-    Flux<AgentEvent> confirmStream(String sn, ConfirmRequest request);
+    Flux<NodeOutput> confirmStream(String sn, ConfirmRequest request);
 }
