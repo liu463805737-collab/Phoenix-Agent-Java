@@ -73,9 +73,8 @@ public class HarnessChatServiceImpl implements HarnessChatService {
                 .textContent("User confirmed, continue.")
                 .metadata(Map.of(Msg.METADATA_CONFIRM_RESULTS, List.of(result)))
                 .build();
-        String sessionId = request.getSessionId();
-        return getHarnessAgent(sn).streamEvents(confirmMsg, RuntimeContext.builder().userId(request.getUserId()).sessionId(sessionId).build())
-                .map(event -> toNodeOutput(event, sessionId));
+        return getHarnessAgent(sn).streamEvents(confirmMsg, RuntimeContext.builder().userId(request.getUserId()).sessionId(request.getSessionId()).build())
+                .map(event -> toNodeOutput(event, request.getSessionId()));
     }
 
     private NodeOutput toNodeOutput(AgentEvent event, String sessionId) {

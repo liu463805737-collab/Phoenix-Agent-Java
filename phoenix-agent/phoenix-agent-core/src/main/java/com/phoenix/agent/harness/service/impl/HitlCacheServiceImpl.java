@@ -23,7 +23,7 @@ public class HitlCacheServiceImpl implements HitlCacheService {
     public void savePendingConfirm(String sessionId, RequireUserConfirmEvent event) {
         String key = String.format(PENDING_CONFIRM_KEY, sessionId);
         String json = objectMapper.writeValueAsString(event);
-        redisTemplate.opsForValue().set(key, json, 30, TimeUnit.MINUTES);
+        redisTemplate.opsForValue().set(key, json, 2, TimeUnit.HOURS);
     }
 
     @Override
