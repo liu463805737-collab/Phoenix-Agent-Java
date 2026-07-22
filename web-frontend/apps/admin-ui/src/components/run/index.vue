@@ -3,6 +3,7 @@ import type { Agent } from '#/api/core/agent';
 import type { ChatMessage, ChatSession } from '#/api/core/chat';
 import type {
   ChatApiRequest,
+  ConfirmButton,
   GraphNodeResponse,
   GraphRequest,
   HarnessChatRequest,
@@ -41,9 +42,11 @@ import {
   FullScreen,
   Loading,
   Promotion,
+  WarningFilled,
 } from '@element-plus/icons-vue';
 
 import {
+  confirmHarnessChat,
   createSessionApi,
   getAgentApi,
   getSessionMessagesApi,
@@ -184,6 +187,10 @@ const inputControlsCollapsed = ref(false);
 const autoScroll = ref(true);
 const chatContainer = ref<HTMLElement | null>(null);
 const showHumanFeedback = ref(false);
+const showHarnessConfirm = ref(false);
+const pendingConfirmButtons = ref<ConfirmButton[]>([]);
+const pendingConfirmSessionId = ref('');
+const pendingConfirmAgentSn = ref('');
 const lastRequest = ref<GraphRequest | null>(null);
 const resultSetDisplayConfig = reactive<ResultSetDisplayConfig>({
   showSqlResults: false,
@@ -334,6 +341,7 @@ async function sendGraphRequest(request: GraphRequest, rejectedPlan: boolean) {
     lastRequest.value = request;
     isStreaming.value = true;
     nodeBlocks.value = [];
+    showHarnessConfirm.value = false;
 
     let currentNodeName: string | null = null;
     let currentBlockIndex = -1;
@@ -677,6 +685,13 @@ async function sendGraphRequest(request: GraphRequest, rejectedPlan: boolean) {
         }
       }
 
+      if (response.needConfirm && response.buttons && response.buttons.length > 0) {
+        showHarnessConfirm.value = true;
+        pendingConfirmButtons.value = response.buttons;
+        pendingConfirmSessionId.value = response.threadId;
+        pendingConfirmAgentSn.value = response.agentId;
+      }
+
       if (currentSession.value?.id === sessionId) {
         nodeBlocks.value = sessionState.nodeBlocks;
         if (autoScroll.value) scrollToBottom();
@@ -936,6 +951,56 @@ function scrollToBottom() {
       }
     });
   });
+}
+
+let harnessConfirmChunkIndex = -1;
+
+async function handleHarnessButtonClick(btn: ConfirmButton) {
+  const allowed = btn.action === 'confirm';
+  showHarnessConfirm.value = false;
+  harnessConfirmChunkIndex = -1;
+  isStreaming.value = true;
+  try {
+    await confirmHarnessChat(
+      {
+        sessionId: pendingConfirmSessionId.value,
+        agentSn: pendingConfirmAgentSn.value,
+        allowed,
+      },
+      async (response) => {
+        console.log('[handleHarnessButtonClick] response text:', response.text);
+        if (harnessConfirmChunkIndex < 0) {
+          nodeBlocks.value = [...nodeBlocks.value, [response]];
+          harnessConfirmChunkIndex = nodeBlocks.value.length - 1;
+        } else {
+          const block = [...nodeBlocks.value[harnessConfirmChunkIndex]!, response];
+          const blocks = [...nodeBlocks.value];
+          blocks[harnessConfirmChunkIndex] = block;
+          nodeBlocks.value = blocks;
+        }
+        if (autoScroll.value) scrollToBottom();
+      },
+      async () => {
+        if (harnessConfirmChunkIndex >= 0) {
+          const confirmBlock = nodeBlocks.value[harnessConfirmChunkIndex];
+          if (confirmBlock) {
+            const nodeHtml = generateNodeHtml(confirmBlock);
+            const aiMessage: ChatMessage = {
+              sessionId: pendingConfirmSessionId.value,
+              role: 'assistant',
+              content: nodeHtml,
+              messageType: 'html',
+            };
+            await saveMessageApi(pendingConfirmSessionId.value, aiMessage);
+          }
+        }
+        harnessConfirmChunkIndex = -1;
+        isStreaming.value = false;
+      },
+    );
+  } catch (error: any) {
+    ElMessage.error(`操作失败: ${error.message}`);
+  }
 }
 
 async function handleHumanFeedback(
@@ -1343,6 +1408,23 @@ onMounted(async () => {
           :request="lastRequest!"
           :handleFeedback="handleHumanFeedback"
         />
+
+        <div v-if="showHarnessConfirm && pendingConfirmButtons.length > 0" class="harness-confirm-area">
+          <div class="harness-confirm-header">
+            <el-icon><WarningFilled /></el-icon>
+            <span>请确认操作</span>
+          </div>
+          <div class="harness-confirm-actions">
+            <el-button
+              v-for="(btn, idx) in pendingConfirmButtons"
+              :key="idx"
+              :type="(btn.type as any) || 'primary'"
+              @click="handleHarnessButtonClick(btn)"
+            >
+              {{ btn.text }}
+            </el-button>
+          </div>
+        </div>
 
         <div class="input-area" v-if="currentSession">
           <div class="input-controls">
@@ -2054,6 +2136,30 @@ onMounted(async () => {
   text-align: center;
   background: #f4f4f5;
   border-radius: 4px;
+}
+
+.harness-confirm-area {
+  padding: 20px;
+  margin: 16px 0;
+  background: #fff7e6;
+  border: 1px solid #ffe7ba;
+  border-radius: 12px;
+}
+
+.harness-confirm-header {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 16px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #d48806;
+}
+
+.harness-confirm-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
 }
 
 .result-set-message {

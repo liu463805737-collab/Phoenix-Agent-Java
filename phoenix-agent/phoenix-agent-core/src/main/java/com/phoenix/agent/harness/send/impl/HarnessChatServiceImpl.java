@@ -79,17 +79,17 @@ public class HarnessChatServiceImpl implements HarnessChatService {
     }
 
     private NodeOutput toNodeOutput(AgentEvent event, String sessionId) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("agent_event", event);
         if (event.getType() == AgentEventType.TEXT_BLOCK_DELTA && event instanceof TextBlockDeltaEvent textEvent) {
-            return new StreamingOutput<>(textEvent.getDelta(), "harness_agent", "harness", new OverAllState());
+            return new StreamingOutput<>(textEvent.getDelta(), "harness_agent", "harness", new OverAllState(data));
         }
         if (event.getType() == AgentEventType.AGENT_END) {
-            return NodeOutput.of(StateGraph.END, "harness", new OverAllState(), null);
+            return NodeOutput.of(StateGraph.END, "harness", new OverAllState(data), null);
         }
         if (event instanceof RequireUserConfirmEvent confirmEvent) {
             hitlCacheService.savePendingConfirm(sessionId, confirmEvent);
         }
-        Map<String, Object> data = new HashMap<>();
-        data.put("agent_event", event);
         return NodeOutput.of("harness_agent", "harness", new OverAllState(data), null);
     }
 

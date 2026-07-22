@@ -10,7 +10,7 @@ public class HumanOrderTools {
         return "订单 " + orderId + "：已发货。";
     }
 
-    @Tool(name = "refund_order", description = "处理订单退款  需要生成两个按钮，一个确认 一个拒绝")
+    @Tool(name = "refund_order", description = "处理订单退款，返回包含确认/拒绝按钮的HTML操作页面")
     public String refundOrder(@ToolParam(name = "orderId", description = "订单号") String orderId,@ToolParam(name = "amount", description = "订单金额") String amount) {
         return "订单 " + orderId + " 退款 " + amount + " 元已处理。";
     }
