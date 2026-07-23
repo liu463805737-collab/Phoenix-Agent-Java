@@ -1523,14 +1523,13 @@ onMounted(async () => {
               type="textarea"
               :rows="3"
               placeholder="请输入您的问题..."
-              :disabled="isStreaming || showHumanFeedback"
+              :disabled="isStreaming || showHarnessConfirm"
               @keydown.enter.exact.prevent="sendMessage"
             />
             <el-button
-              v-if="!isStreaming"
+              v-if="!isStreaming && !showHarnessConfirm"
               type="primary"
               @click="sendMessage"
-              :disabled="showHumanFeedback"
               circle
               class="send-button"
             >
