@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref } from 'vue';
+import { nextTick, ref } from 'vue';
 
 import { useVbenModal } from '@vben/common-ui';
 
@@ -18,6 +18,7 @@ defineOptions({ name: 'GroupForm' });
 const emit = defineEmits(['success']);
 
 const assignGroupLoading = ref(false);
+const groupTableRef = ref();
 const allGroups = ref<GroupInfo[]>([]);
 const assignedGroupIds = ref<Set<string>>(new Set());
 const selectedGroupIds = ref<string[]>([]);
@@ -80,6 +81,16 @@ const [Modal, modalApi] = useVbenModal({
               .filter((id): id is string => id != null),
           );
           selectedGroupIds.value = [...assignedGroupIds.value];
+          nextTick(() => {
+            if (groupTableRef.value) {
+              groupTableRef.value.clearSelection();
+              allGroups.value.forEach((group) => {
+                if (assignedGroupIds.value.has(group.id ?? '')) {
+                  groupTableRef.value.toggleRowSelection(group, true);
+                }
+              });
+            }
+          });
         })
         .catch(() => {
           allGroups.value = [];
@@ -101,6 +112,7 @@ const [Modal, modalApi] = useVbenModal({
     </div>
     <div v-loading="assignGroupLoading" class="min-h-[120px]">
       <ElTable
+        ref="groupTableRef"
         :data="allGroups"
         style="width: 100%"
         stripe
