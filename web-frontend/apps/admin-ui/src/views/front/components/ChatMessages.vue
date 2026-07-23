@@ -8,7 +8,7 @@ import ResultSetDisplay from '#/components/run/ResultSetDisplay.vue';
 
 const chat = useChatStore();
 const agentStore = useAgentStore();
-const { activeMessages, activeSession, activeSessionId, sending, loadingMessages } =
+const { activeMessages, activeSession, activeSessionId, isActiveSessionSending, loadingMessages } =
   storeToRefs(chat);
 const { agents } = storeToRefs(agentStore);
 
@@ -114,7 +114,7 @@ watch(activeSessionId, () => {
       </div>
 
       <div
-        v-if="sending && !activeMessages.some((m) => m.streaming)"
+        v-if="isActiveSessionSending && !activeMessages.some((m) => m.streaming)"
         class="chat-message assistant chat-message--typing"
       >
         <div class="chat-message__avatar">
@@ -138,7 +138,7 @@ watch(activeSessionId, () => {
       </div>
 
       <div
-        v-else-if="activeMessages.length === 0 && !sending"
+        v-else-if="activeMessages.length === 0 && !isActiveSessionSending"
         class="chat-messages__empty"
       >
         当前会话还没有消息，发送一条试试

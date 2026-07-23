@@ -9,7 +9,7 @@ import PresetQuestions from './PresetQuestions.vue';
 
 const chat = useChatStore();
 const agentStore = useAgentStore();
-const { sending, activeSessionId } = storeToRefs(chat);
+const { isActiveSessionSending, activeSessionId } = storeToRefs(chat);
 const { activeAgent } = storeToRefs(agentStore);
 
 const inputValue = ref('');
@@ -34,7 +34,7 @@ watch(inputValue, () => {
 });
 
 async function handlePresetQuestionClick(question: string) {
-  if (sending.value) {
+  if (isActiveSessionSending.value) {
     ElMessage.warning('智能体正在处理中，请稍后...');
     return;
   }
@@ -60,7 +60,7 @@ async function handlePresetQuestionClick(question: string) {
 async function handleSubmit() {
   const value = inputValue.value.trim();
   if (!value) return;
-  if (sending.value) return;
+  if (isActiveSessionSending.value) return;
   inputValue.value = '';
   resize();
   await chat.send(value);
@@ -123,7 +123,7 @@ function handleKeydown(event: KeyboardEvent) {
       <div class="composer__actions">
         <span class="composer__actions-spacer" />
         <el-tooltip
-          v-if="!sending"
+          v-if="!isActiveSessionSending"
           :content="!inputValue.trim() ? '请输入问题' : '发送'"
           placement="top"
           :show-after="300"
@@ -156,7 +156,7 @@ function handleKeydown(event: KeyboardEvent) {
             type="button"
             class="composer__send composer__send--stop"
             aria-label="停止"
-            @click="chat.stopSending()"
+            @click="chat.stopSending(activeSessionId ?? undefined)"
           >
             <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
               <rect x="3" y="3" width="10" height="10" rx="2" fill="currentColor" />
