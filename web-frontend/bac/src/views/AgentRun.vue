@@ -162,10 +162,6 @@
 
             <!-- 流式响应显示区域 -->
             <div v-if="isStreaming" class="streaming-response">
-              <div class="streaming-header">
-                <el-icon class="loading-icon"><Loading /></el-icon>
-                <span>智能体正在处理中...</span>
-              </div>
               <div class="agent-response-container">
                 <template v-for="(nodeBlock, index) in nodeBlocks" :key="index">
                   <!-- 如果是 Markdown 报告节点，使用 Markdown 或 HTML 组件 -->
@@ -215,6 +211,13 @@
                   <!-- 其他节点使用原来的 HTML 渲染方式 -->
                   <div v-else v-html="generateNodeHtml(nodeBlock)"></div>
                 </template>
+              </div>
+              <div v-if="isStreaming" class="streaming-footer">
+                <div class="streaming-indicator">
+                  <span class="streaming-dot"></span>
+                  <span class="streaming-dot"></span>
+                  <span class="streaming-dot"></span>
+                </div>
               </div>
             </div>
           </div>
@@ -339,7 +342,7 @@
               <el-icon><Promotion /></el-icon>
             </el-button>
             <el-button
-              v-else
+              v-if="isStreaming"
               type="danger"
               @click="stopStreaming"
               circle
@@ -1627,11 +1630,6 @@ export default defineComponent({
   border-bottom: 1px solid #f0f0f0;
 }
 
-.loading-icon {
-  color: #409eff;
-  animation: spin 1s linear infinite;
-}
-
 .streaming-header span {
   font-weight: 500;
   color: #409eff;
@@ -1640,6 +1638,47 @@ export default defineComponent({
 .stop-button-inline {
   width: 48px;
   height: 48px;
+}
+
+.streaming-indicator {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.streaming-footer {
+  padding-top: 12px;
+}
+
+.streaming-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #409eff;
+  animation: bounce 1.4s ease-in-out infinite both;
+}
+
+.streaming-dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.streaming-dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+.streaming-dot:nth-child(3) {
+  animation-delay: 0s;
+}
+
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: scale(0.6);
+    opacity: 0.4;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 /* 节点容器样式 */
