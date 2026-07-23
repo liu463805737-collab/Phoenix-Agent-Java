@@ -1,0 +1,95 @@
+package com.phoenix.platform.controller;
+
+import cn.dev33.satoken.stp.StpUtil;
+import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
+import com.phoenix.agent.harness.request.ConfirmRequest;
+import com.phoenix.agent.harness.request.HarnessRequest;
+import com.phoenix.agent.harness.send.HarnessChatService;
+import io.agentscope.core.event.AgentEvent;
+import io.agentscope.core.event.RequireUserConfirmEvent;
+import io.agentscope.core.event.TextBlockDeltaEvent;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * @author burce.liu
+ */
+@Slf4j
+@RestController
+@AllArgsConstructor
+@CrossOrigin(origins = "*")
+@RequestMapping("/api/front/harness")
+public class HarnessFrontController {
+    private final HarnessChatService harnessChatService;
+
+    @PostMapping(value = "/confirm", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<Map<String, Object>> confirm(@RequestBody ConfirmRequest confirmRequest) {
+        String userId = StpUtil.getLoginIdAsString();
+        confirmRequest.setUserId(userId);
+        return harnessChatService.confirmStream(confirmRequest.getAgentSn(), confirmRequest).map(output -> {
+            Map<String, Object> eventMap = new LinkedHashMap<>();
+            eventMap.put("content", "");
+            eventMap.put("end", false);
+            if (output instanceof StreamingOutput<?> streamingOutput && streamingOutput.chunk() != null) {
+                eventMap.put("content", streamingOutput.chunk());
+            }
+            if (!output.isEND()) {
+                output.state().value("agent_event", AgentEvent.class).ifPresent(event -> {
+                    if (event instanceof TextBlockDeltaEvent textEvent) {
+                        eventMap.put("content", textEvent.getDelta());
+                    }
+                });
+            }
+            if (output.isEND()) {
+                eventMap.put("end", true);
+            }
+            return eventMap;
+        });
+    }
+
+    @PostMapping(value = "/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<Map<String, Object>> harnessChat(@RequestBody HarnessRequest  harnessRequest) {
+        String userId = StpUtil.getLoginIdAsString();
+        HarnessRequest request = HarnessRequest.builder().userId(userId).sessionId(harnessRequest.getSessionId()).message(harnessRequest.getMessage()).build();
+        return harnessChatService.stream(harnessRequest.getHarnessSn(), request)
+                .map(output -> {
+                    Map<String, Object> eventMap = new LinkedHashMap<>();
+                    eventMap.put("content", "");
+                    eventMap.put("end", false);
+                    if (output instanceof StreamingOutput<?> streamingOutput && streamingOutput.chunk() != null) {
+                        eventMap.put("content", streamingOutput.chunk());
+                    }
+                    if (output.isEND()) {
+                        eventMap.put("end", true);
+                    }
+                    output.state().value("agent_event", AgentEvent.class).ifPresent(event -> {
+                        if (event instanceof RequireUserConfirmEvent confirmEvent) {
+                            eventMap.put("needConfirm", true);
+                            eventMap.put("toolCalls", confirmEvent.getToolCalls());
+                            List<Map<String, Object>> buttons = new ArrayList<>();
+                            Map<String, Object> confirmBtn = new LinkedHashMap<>();
+                            confirmBtn.put("text", "确认");
+                            confirmBtn.put("action", "confirm");
+                            confirmBtn.put("type", "primary");
+                            buttons.add(confirmBtn);
+                            Map<String, Object> cancelBtn = new LinkedHashMap<>();
+                            cancelBtn.put("text", "取消");
+                            cancelBtn.put("action", "cancel");
+                            cancelBtn.put("type", "danger");
+                            buttons.add(cancelBtn);
+                            eventMap.put("buttons", buttons);
+                        }
+                    });
+                    return eventMap;
+                });
+    }
+
+}
