@@ -143,43 +143,4 @@ public class AgentChatController {
                 })
                 .doOnComplete(() -> log.info("Stream completed successfully, threadId: {}", request.getThreadId()));
     }
-
-
-    @PostMapping(value = "/harness/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<Map<String, Object>> harnessChat(@RequestBody HarnessRequest harnessRequest) {
-        String userId = StpUtil.getLoginIdAsString();
-        HarnessRequest request = HarnessRequest.builder().userId(userId).sessionId(harnessRequest.getSessionId()).message(harnessRequest.getMessage()).build();
-        return harnessChatService.stream(harnessRequest.getHarnessSn(), request)
-                .map(output -> {
-                    Map<String, Object> eventMap = new LinkedHashMap<>();
-                    eventMap.put("content", "");
-                    eventMap.put("end", false);
-                    if (output instanceof StreamingOutput<?> streamingOutput && streamingOutput.chunk() != null) {
-                        eventMap.put("content", streamingOutput.chunk());
-                    }
-                    if (output.isEND()) {
-                        eventMap.put("end", true);
-                    }
-                    output.state().value("agent_event", AgentEvent.class).ifPresent(event -> {
-                        if (event instanceof RequireUserConfirmEvent confirmEvent) {
-                            eventMap.put("needConfirm", true);
-                            eventMap.put("toolCalls", confirmEvent.getToolCalls());
-                            List<Map<String, Object>> buttons = new ArrayList<>();
-                            Map<String, Object> confirmBtn = new LinkedHashMap<>();
-                            confirmBtn.put("text", "确认");
-                            confirmBtn.put("action", "confirm");
-                            confirmBtn.put("type", "primary");
-                            buttons.add(confirmBtn);
-                            Map<String, Object> cancelBtn = new LinkedHashMap<>();
-                            cancelBtn.put("text", "取消");
-                            cancelBtn.put("action", "cancel");
-                            cancelBtn.put("type", "danger");
-                            buttons.add(cancelBtn);
-                            eventMap.put("buttons", buttons);
-                        }
-                    });
-                    return eventMap;
-                });
-    }
-
 }
