@@ -141,9 +141,9 @@ export const useChatStore = defineStore('phoenix-chat-shared/chat', () => {
     const trimmed = content.trim();
     if (!trimmed) return;
     if (!activeSessionId.value) return;
-    const sessionId = activeSessionId.value;
-    if (sendingSessions.value.has(sessionId)) return;
+    if (sendingSessions.value.has(activeSessionId.value)) return;
     await persistCurrentSessionIfNeeded();
+    const sessionId = activeSessionId.value;
     // 乐观写入用户消息
     const msgs = messagesByS.value[sessionId] ?? [];
     const optimistic: ChatMessage = {

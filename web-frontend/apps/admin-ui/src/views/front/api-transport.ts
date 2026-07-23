@@ -276,8 +276,13 @@ export const apiChatTransport: ChatTransport = {
     onProgress?: (text: string) => void,
     onNodeMessage?: (message: ChatMessage) => void,
   ): Promise<ChatMessage> {
-    const { sessionId, content, agentId } = payload;
+    let { sessionId, content, agentId } = payload;
 
+    if (!agentId) {
+      const chatStore = useChatStore();
+      const session = chatStore.sessions.find((s) => s.id === sessionId);
+      agentId = session?.agentId || useAgentStore().activeAgentId;
+    }
     if (!agentId) {
       throw new Error('agentId is required for sending messages');
     }
