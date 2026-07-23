@@ -330,6 +330,23 @@ export const apiChatTransport: ChatTransport = {
           async (response) => {
             if (abortRequested) return;
             if (response.error) return;
+            if (response.needConfirm && response.buttons) {
+              onNodeMessage?.({
+                id: uid(),
+                role: 'assistant',
+                content: fullText || '',
+                createdAt: Date.now(),
+                messageType: 'harness-confirm',
+                metadata: {
+                  needConfirm: true,
+                  buttons: response.buttons,
+                  toolCalls: response.toolCalls,
+                  agentSn: currentAgent?.sn || '',
+                  sessionId,
+                },
+              });
+              return;
+            }
             if (response.text) {
               fullText += response.text;
               onProgress?.(markdownToHtml(fullText));

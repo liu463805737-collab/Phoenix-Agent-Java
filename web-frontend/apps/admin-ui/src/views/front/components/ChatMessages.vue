@@ -2,9 +2,11 @@
 import { computed, nextTick, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useAgentStore, useChatStore } from '@phoenix/chat-shared';
+import { ElMessage } from 'element-plus';
 import ReportMessage from './report/ReportMessage.vue';
 import type { ResultData } from '#/api/core/resultSet';
 import ResultSetDisplay from '#/components/run/ResultSetDisplay.vue';
+import { confirmFrontHarnessChat } from '#/api/front/chat';
 
 const chat = useChatStore();
 const agentStore = useAgentStore();
@@ -51,6 +53,89 @@ watch(activeMessages, () => {
 watch(activeSessionId, () => {
   void scrollToBottom();
 });
+
+let msgCounter = 0;
+function uid(): string {
+  msgCounter++;
+  return `m-${Date.now().toString(36)}-${msgCounter}`;
+}
+
+const confirming = ref(false);
+
+async function handleConfirmAction(
+  msg: any,
+  btn: { text: string; action: string; type?: string },
+) {
+  if (confirming.value) return;
+  confirming.value = true;
+  const metadata = msg.metadata || {};
+  const { sessionId: confirmSessionId, agentSn } = metadata;
+  if (!confirmSessionId || !agentSn) {
+    confirming.value = false;
+    return;
+  }
+
+  // 隐藏确认/取消按钮
+  const allMsgs = chat.messagesByS[confirmSessionId] ?? [];
+  const msgIdx = allMsgs.findIndex((m: any) => m.id === msg.id);
+  if (msgIdx >= 0) {
+    allMsgs[msgIdx] = { ...allMsgs[msgIdx], messageType: 'text' };
+    chat.messagesByS = { ...chat.messagesByS, [confirmSessionId]: [...allMsgs] };
+  }
+
+  const allowed = btn.action === 'confirm';
+  let streamMsgId: string | null = null;
+  let fullText = '';
+
+  try {
+    await confirmFrontHarnessChat(
+      { sessionId: confirmSessionId, agentSn, allowed },
+      (response) => {
+        if (response.error) return;
+        if (!response.text) return;
+
+        fullText += response.text;
+        const msgs = chat.messagesByS[confirmSessionId] ?? [];
+
+        if (!streamMsgId) {
+          streamMsgId = uid();
+          msgs.push({
+            id: streamMsgId,
+            role: 'assistant',
+            content: '',
+            createdAt: Date.now(),
+            streaming: true,
+          });
+        }
+
+        const idx = msgs.findIndex((m: any) => m.id === streamMsgId);
+        if (idx >= 0) {
+          msgs[idx] = { ...msgs[idx], content: fullText };
+          chat.messagesByS = {
+            ...chat.messagesByS,
+            [confirmSessionId]: [...msgs],
+          };
+        }
+      },
+      () => {
+        if (!streamMsgId) return;
+        const msgs = chat.messagesByS[confirmSessionId] ?? [];
+        const idx = msgs.findIndex((m: any) => m.id === streamMsgId);
+        if (idx >= 0) {
+          msgs[idx] = { ...msgs[idx], streaming: false };
+          chat.messagesByS = {
+            ...chat.messagesByS,
+            [confirmSessionId]: [...msgs],
+          };
+        }
+      },
+    );
+  } catch (error: any) {
+    ElMessage.error(`操作失败: ${error.message}`);
+  } finally {
+    confirming.value = false;
+  }
+}
 </script>
 
 <template>
@@ -93,6 +178,30 @@ watch(activeSessionId, () => {
               :resultData="JSON.parse(msg.content) as ResultData"
               :pageSize="20"
             />
+          </div>
+          <div
+            v-else-if="(msg as any).messageType === 'harness-confirm'"
+            class="chat-message__confirm"
+          >
+            <div
+              v-if="msg.content"
+              class="chat-message__confirm-text"
+              v-html="renderMessage(msg)"
+            ></div>
+            <div class="chat-message__confirm-buttons">
+              <button
+                v-for="(btn, bidx) in (msg as any).metadata?.buttons || []"
+                :key="bidx"
+                :class="[
+                  'chat-message__confirm-btn',
+                  btn.type === 'danger' ? 'chat-message__confirm-btn--danger' : 'chat-message__confirm-btn--primary',
+                ]"
+                :disabled="confirming"
+                @click="handleConfirmAction(msg, btn)"
+              >
+                {{ btn.text }}
+              </button>
+            </div>
           </div>
           <div
             v-else
@@ -458,6 +567,60 @@ watch(activeSessionId, () => {
     opacity: 1;
     transform: translateY(-2px);
   }
+}
+
+.chat-message__confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 14px;
+  background: hsl(var(--card));
+  border-radius: 10px;
+}
+
+.chat-message__confirm-text {
+  font-size: 14px;
+  line-height: 1.65;
+  color: hsl(var(--foreground));
+}
+
+.chat-message__confirm-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.chat-message__confirm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  padding: 0 16px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  border-radius: 6px;
+  transition: opacity 0.15s ease;
+}
+
+.chat-message__confirm-btn:hover {
+  opacity: 0.85;
+}
+
+.chat-message__confirm-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.chat-message__confirm-btn--primary {
+  color: #fff;
+  background: hsl(var(--primary));
+}
+
+.chat-message__confirm-btn--danger {
+  color: #fff;
+  background: #f56c6c;
 }
 
 @keyframes pc-dots {

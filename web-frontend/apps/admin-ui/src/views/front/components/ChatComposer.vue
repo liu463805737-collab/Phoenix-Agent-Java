@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useAgentStore, useChatStore } from '@phoenix/chat-shared';
 import { ElMessage, ElIcon, ElTooltip } from 'element-plus';
@@ -15,6 +15,13 @@ const { activeAgent } = storeToRefs(agentStore);
 const inputValue = ref('');
 const textareaRef = ref<HTMLTextAreaElement | null>(null);
 const presetCollapsed = ref(true);
+
+const hasPendingConfirm = computed(() => {
+  const sessionId = activeSessionId.value;
+  if (!sessionId) return false;
+  const msgs = chat.messagesByS[sessionId] ?? [];
+  return msgs.some((m: any) => m.messageType === 'harness-confirm');
+});
 
 const MIN_HEIGHT = 48;
 const MAX_HEIGHT = 200;
@@ -36,6 +43,10 @@ watch(inputValue, () => {
 async function handlePresetQuestionClick(question: string) {
   if (isActiveSessionSending.value) {
     ElMessage.warning('智能体正在处理中，请稍后...');
+    return;
+  }
+  if (hasPendingConfirm.value) {
+    ElMessage.warning('请先处理当前确认请求');
     return;
   }
 
@@ -61,6 +72,7 @@ async function handleSubmit() {
   const value = inputValue.value.trim();
   if (!value) return;
   if (isActiveSessionSending.value) return;
+  if (hasPendingConfirm.value) return;
   inputValue.value = '';
   resize();
   await chat.send(value);
@@ -69,6 +81,7 @@ async function handleSubmit() {
 function handleKeydown(event: KeyboardEvent) {
   if (event.key !== 'Enter') return;
   if (event.shiftKey || event.isComposing) return;
+  if (hasPendingConfirm.value) return;
   event.preventDefault();
   handleSubmit();
 }
@@ -131,7 +144,7 @@ function handleKeydown(event: KeyboardEvent) {
           <button
             type="submit"
             class="composer__send"
-            :disabled="!inputValue.trim()"
+            :disabled="!inputValue.trim() || hasPendingConfirm"
             aria-label="发送"
           >
             <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
