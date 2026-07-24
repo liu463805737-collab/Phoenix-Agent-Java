@@ -4,6 +4,7 @@ import com.phoenix.data.dto.ModelConfigDTO;
 import com.phoenix.data.enums.ModelType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.audio.transcription.TranscriptionModel;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.document.Document;
@@ -30,6 +31,7 @@ public class AiModelRegistry {
     private volatile ChatClient currentChatClient;
 
     private volatile EmbeddingModel currentEmbeddingModel;
+    private volatile TranscriptionModel currentTranscriptionModel;
 
     /**
      * 获取全局 ChatClient（懒加载 + 双重检查锁缓存）
@@ -88,6 +90,27 @@ public class AiModelRegistry {
             }
         }
         return currentEmbeddingModel;
+    }
+    /**
+     * 获取全局 EmbeddingModel（懒加载 + 双重检查锁缓存，无可用模型时使用 Dummy 兜底）
+     */
+    public TranscriptionModel getTranscriptionModel() {
+        if (currentTranscriptionModel == null) {
+            synchronized (this) {
+                if (currentTranscriptionModel == null) {
+                    log.info("Initializing global TranscriptionModel...");
+                    try {
+                        ModelConfigDTO config = modelConfigDataService.getActiveConfigByType(ModelType.AUDIO);
+                        if (config != null) {
+                            currentTranscriptionModel = modelFactory.createTranscriptionModel(config);
+                        }
+                    } catch (Exception e) {
+                        log.error("Failed to initialize EmbeddingModel: {}", e.getMessage());
+                    }
+                }
+            }
+        }
+        return currentTranscriptionModel;
     }
 
     /**
