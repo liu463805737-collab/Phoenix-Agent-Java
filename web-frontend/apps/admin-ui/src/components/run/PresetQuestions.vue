@@ -176,6 +176,7 @@ export default defineComponent({
   gap: 8px;
   max-height: calc(3 * (28px + 8px));
   overflow-y: auto;
+  padding: 1px;
 }
 
 .question-item {

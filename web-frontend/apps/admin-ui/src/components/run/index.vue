@@ -1239,7 +1239,6 @@ onMounted(async () => {
           flex: 1;
           flex-direction: column;
           overflow: hidden;
-          background-color: white;
         "
       >
         <div class="chat-container" ref="chatContainer">
@@ -1599,10 +1598,10 @@ onMounted(async () => {
 .chat-container {
   flex: 1;
   padding: 20px;
-  margin-bottom: 20px;
+  margin-bottom: 0;
   overflow-y: auto;
   background: #f8f9fa;
-  border-radius: 8px;
+  margin-left: 16px;
 }
 
 .empty-state {
@@ -1855,10 +1854,10 @@ onMounted(async () => {
 
 .input-area {
   flex-shrink: 0;
-  padding: 16px;
+  padding: 2px 16px 16px 16px;
   background: white;
   border: 1px solid #e8e8e8;
-  border-radius: 8px;
+  margin-left: 16px;
 }
 
 .input-controls {
