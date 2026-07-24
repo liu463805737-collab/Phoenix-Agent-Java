@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
 import org.springframework.ai.audio.transcription.AudioTranscriptionResponse;
 import org.springframework.ai.audio.transcription.TranscriptionModel;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,7 +20,7 @@ public class AudioTranscriptionServiceImpl implements AudioTranscriptionService 
     public String transcribeAudio(MultipartFile audioFile) {
         TranscriptionModel transcriptionModel = aiModelRegistry.getTranscriptionModel();
         // 2. 封装请求
-        org.springframework.core.io.Resource audioResource = audioFile.getResource();
+        Resource audioResource = audioFile.getResource();
         AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(audioResource);
         // 3. 调用模型
         AudioTranscriptionResponse response = transcriptionModel.call(prompt);
