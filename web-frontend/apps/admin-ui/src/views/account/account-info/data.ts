@@ -56,6 +56,7 @@ export function useColumns(): VxeTableGridColumns {
     {
       align: 'center',
       field: 'operation',
+      fixed: 'right',
       slots: { default: 'action' },
       title: '操作',
       width: 240,
