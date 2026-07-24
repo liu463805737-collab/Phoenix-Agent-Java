@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { ElMessage } from 'element-plus';
 import { computed, ref } from 'vue';
 
 import { useVbenModal } from '@vben/common-ui';
@@ -51,18 +52,23 @@ const [Modal, modalApi] = useVbenModal({
         delete values.password;
       }
       try {
-        await (formData.value?.id
+        const {success, msg} = await (formData.value?.id
           ? updateUserApi(values)
           : createUserApi(values));
-        modalApi.close();
-        emit('success');
+        if(success) {
+          modalApi.close();
+          emit('success');
+          ElMessage.success(isEdit.value ? '更新成功' : '新增成功')
+        } else {
+          ElMessage.error(msg || '操作失败')
+        }
+
       } finally {
         modalApi.lock(false);
       }
     }
   },
   onOpenChange(isOpen) {
-    debugger;
     if (isOpen) {
       const modalData = modalApi.getData<any>();
       if (modalData) {
