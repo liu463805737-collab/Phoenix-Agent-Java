@@ -16,7 +16,9 @@ public enum ModelType {
 	/**
 	 * 嵌入模型
 	 */
-	EMBEDDING("EMBEDDING");
+	EMBEDDING("EMBEDDING"),
+
+	AUDIO("AUDIO");
 
 	private final String code;
 

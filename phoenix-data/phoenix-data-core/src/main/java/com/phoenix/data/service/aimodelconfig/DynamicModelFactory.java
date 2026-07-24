@@ -9,14 +9,13 @@ import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.http.HttpHost;
+import org.springframework.ai.audio.transcription.TranscriptionModel;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.openai.OpenAiChatModel;
-import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.OpenAiEmbeddingModel;
-import org.springframework.ai.openai.OpenAiEmbeddingOptions;
+import org.springframework.ai.openai.*;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
@@ -93,6 +92,29 @@ public class DynamicModelFactory {
         return new OpenAiEmbeddingModel(openAiApi, MetadataMode.EMBED,
                 OpenAiEmbeddingOptions.builder().model(config.getModelName()).dimensions(512).build(),
                 RetryUtils.DEFAULT_RETRY_TEMPLATE);
+    }
+
+    /**
+     * 创建 TranscriptionModel 实例，支持配置路径和代理
+     */
+    public TranscriptionModel createTranscriptionModel(ModelConfigDTO config) {
+        log.info("Creating NEW TranscriptionModel instance. Provider: {}, Model: {}, BaseUrl: {}", config.getProvider(),
+                config.getModelName(), config.getBaseUrl());
+        checkBasic(config);
+        String apiKey = StringUtils.hasText(config.getApiKey()) ? config.getApiKey() : "";
+        OpenAiAudioApi aiAudioApi = OpenAiAudioApi.builder()
+                .baseUrl(config.getBaseUrl())
+                .apiKey(apiKey)
+                .restClientBuilder(getProxiedRestClientBuilder(config))
+                .webClientBuilder(getProxiedWebClientBuilder(config))
+                .build();
+// 1. 手动构建 Options，指定 Qwen 模型
+        OpenAiAudioTranscriptionOptions options = OpenAiAudioTranscriptionOptions.builder()
+                .model(config.getModelName()) // 指定模型
+                .language("zh")                         // 指定中文
+                .responseFormat(OpenAiAudioApi.TranscriptResponseFormat.TEXT)
+                .build();
+        return new OpenAiAudioTranscriptionModel(aiAudioApi, options);
     }
 
     /**
