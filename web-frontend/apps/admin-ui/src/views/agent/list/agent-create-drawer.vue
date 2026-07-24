@@ -32,6 +32,7 @@ import {
   ElSwitch,
   ElTable,
   ElTableColumn,
+  ElTag,
 } from 'element-plus';
 
 import {
@@ -669,7 +670,7 @@ const [Drawer, drawerApi] = useVbenDrawer({
       >
         <ElMenu
           :default-active="activeMenu"
-          class="border-none"
+          class="!border-none"
           @select="handleMenuSelect"
         >
           <ElMenuItemGroup title="基本信息">

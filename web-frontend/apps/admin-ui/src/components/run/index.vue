@@ -183,6 +183,11 @@ const requestOptions = reactive({
 });
 const showReportFullscreen = ref(false);
 const fullscreenReportContent = ref('');
+const fullscreenReportFormat = ref<'markdown' | 'html'>('markdown');
+const messageReportFormat = reactive<Record<string, 'markdown' | 'html'>>({});
+function getMessageFormat(messageId: number | undefined): 'markdown' | 'html' {
+  return (messageId != null && messageReportFormat[messageId]) || 'markdown';
+}
 const inputControlsCollapsed = ref(false);
 const autoScroll = ref(true);
 const chatContainer = ref<HTMLElement | null>(null);
@@ -814,8 +819,9 @@ async function downloadHtmlReportFromMessageByServer(content: string) {
   }
 }
 
-function openReportFullscreen(content: string) {
+function openReportFullscreen(content: string, msgId?: number) {
   fullscreenReportContent.value = content;
+  fullscreenReportFormat.value = getMessageFormat(msgId);
   showReportFullscreen.value = true;
 }
 
@@ -1291,7 +1297,8 @@ onMounted(async () => {
                     <el-icon><Document /></el-icon>
                     <span>报告已生成</span>
                     <el-radio-group
-                      v-model="requestOptions.reportFormat"
+                      :model-value="getMessageFormat(message.id)"
+                      @change="(val: any) => { if (message.id != null) messageReportFormat[message.id] = val }"
                       size="small"
                       class="report-format-inline"
                     >
@@ -1323,7 +1330,7 @@ onMounted(async () => {
                     <el-tooltip content="全屏查看报告" placement="top">
                       <el-button
                         type="info"
-                        @click="openReportFullscreen(message.content)"
+                        @click="openReportFullscreen(message.content, message.id)"
                       >
                         <el-icon><FullScreen /></el-icon>
                         全屏
@@ -1333,7 +1340,7 @@ onMounted(async () => {
                 </div>
                 <div class="markdown-report-content">
                   <markdown-agent-container
-                    v-if="requestOptions.reportFormat === 'markdown'"
+                    v-if="getMessageFormat(message.id) === 'markdown'"
                     class="md-body"
                     :content="message.content"
                     :options="options"
@@ -1561,7 +1568,7 @@ onMounted(async () => {
           <div class="report-fullscreen-header">
             <span class="report-fullscreen-title">
               {{
-                requestOptions.reportFormat === 'markdown'
+                fullscreenReportFormat === 'markdown'
                   ? 'Markdown 报告'
                   : 'HTML 报告'
               }}
@@ -1577,7 +1584,7 @@ onMounted(async () => {
           </div>
           <div class="report-fullscreen-content">
             <markdown-agent-container
-              v-if="requestOptions.reportFormat === 'markdown'"
+              v-if="fullscreenReportFormat === 'markdown'"
               class="md-body report-fullscreen-body"
               :content="fullscreenReportContent"
               :options="options"
