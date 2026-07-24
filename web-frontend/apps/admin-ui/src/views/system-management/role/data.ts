@@ -77,7 +77,6 @@ export function useColumns<T = SystemUserApi.SystemUser>(
     {
       align: 'center',
       field: 'operation',
-      fixed: 'right',
       slots: { default: 'action' },
       title: '操作',
       width: 250,

@@ -4,28 +4,25 @@ import { computed, ref } from 'vue';
 import { useVbenModal } from '@vben/common-ui';
 
 import {
-  createGroupInfoApi,
-  updateGroupInfoApi,
-} from '#/api';
+  createPlatformInfoApi,
+  updatePlatformInfoApi,
+} from '#/api/core/platform-info';
 
 import { useVbenForm } from '#/adapter/form';
 
 import { useSchema } from './data';
 
-defineOptions({ name: 'GroupInfoForm' });
-
 const emit = defineEmits(['success']);
 const formData = ref<any>();
 
 const getTitle = computed(() => {
-  return formData.value?.id ? '编辑组' : '新增组';
+  return formData.value?.id ? '编辑三方平台' : '新增三方平台';
 });
 
 const [Form, formApi] = useVbenForm({
   layout: 'horizontal',
   schema: useSchema(),
   showDefaultActions: false,
-  wrapperClass: 'grid-cols-1',
 });
 
 const [Modal, modalApi] = useVbenModal({
@@ -36,8 +33,8 @@ const [Modal, modalApi] = useVbenModal({
       const values = await formApi.getValues();
       try {
         await (formData.value?.id
-          ? updateGroupInfoApi(values)
-          : createGroupInfoApi(values));
+          ? updatePlatformInfoApi(values)
+          : createPlatformInfoApi(values));
         modalApi.close();
         emit('success');
       } finally {
@@ -50,7 +47,7 @@ const [Modal, modalApi] = useVbenModal({
       const modalData = modalApi.getData<any>();
       if (modalData) {
         formData.value = modalData;
-        formApi.setValues({ status: '0', ...formData.value });
+        formApi.setValues(formData.value);
       }
     }
   },
@@ -59,6 +56,6 @@ const [Modal, modalApi] = useVbenModal({
 
 <template>
   <Modal :title="getTitle">
-    <Form class="mx-4" />
+    <Form />
   </Modal>
 </template>

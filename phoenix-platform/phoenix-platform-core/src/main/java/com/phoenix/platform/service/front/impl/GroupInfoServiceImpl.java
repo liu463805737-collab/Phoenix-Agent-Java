@@ -62,4 +62,14 @@ public class GroupInfoServiceImpl extends ServiceImpl<GroupInfoMapper, GroupInfo
 		accountGroupInfoService.remove(queryWrapper);
 		return this.removeById(id);
 	}
+
+	@Override
+	public boolean toggleStatus(String id) {
+		GroupInfo group = this.getById(id);
+		if (group == null) {
+			return false;
+		}
+		group.setStatus(group.getStatus() == null || group.getStatus() == 0 ? 1 : 0);
+		return this.updateById(group);
+	}
 }

@@ -7,6 +7,7 @@ export interface GroupInfo {
   sn?: string;
   name?: string;
   description?: string;
+  status?: number;
   createTime?: string;
   creator?: string;
   updateTime?: string;
@@ -46,4 +47,12 @@ export async function deleteGroupInfoApi(id: string) {
   return requestClient.delete(`/platform/group-info/${id}`, {
     responseReturn: 'body',
   });
+}
+
+export async function toggleStatusGroupInfoApi(id: string) {
+  return requestClient.put(
+    `/platform/group-info/${id}/toggle-status`,
+    {},
+    { responseReturn: 'body' },
+  );
 }

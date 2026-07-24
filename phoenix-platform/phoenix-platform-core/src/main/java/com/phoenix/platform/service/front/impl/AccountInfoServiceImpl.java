@@ -214,28 +214,7 @@ public class AccountInfoServiceImpl extends ServiceImpl<AccountInfoMapper, Accou
             return ReturnVo.fail("用户名或密码错误");
         }
         StpUtil.login(account.getId());
-        List<GroupInfo> groupInfos = groupInfoService.getByLoginId(account.getId());
-        List<LoginVO.LoginGroupVO> groupVOS = new ArrayList<>();
-        if (CollUtil.isNotEmpty(groupInfos)) {
-            groupInfos.forEach(groupInfo -> {
-                LoginVO.LoginGroupVO groupVO = new LoginVO.LoginGroupVO();
-                groupVO.setSn(groupInfo.getSn());
-                groupVO.setName(groupInfo.getName());
-                groupVOS.add(groupVO);
-            });
-        }
-        String token = StpUtil.getTokenValue();
-        LoginVO loginVO = LoginVO.builder()
-                .token(token)
-                .userCode(account.getCode())
-                .email(account.getEmail())
-                .userId(account.getId())
-                .username(account.getUsername())
-                .realName(account.getRealName())
-                .groups(groupVOS)
-                .build();
-        StpUtil.getSession().set(ACCOUNT_LOGIN, loginVO);
-        return ReturnVo.ok(loginVO);
+        return buildLoginResult(account);
     }
 
     @Override
@@ -270,6 +249,10 @@ public class AccountInfoServiceImpl extends ServiceImpl<AccountInfoMapper, Accou
         }
 
         StpUtil.login(account.getId());
+        return buildLoginResult(account);
+    }
+
+    private ReturnVo<LoginVO> buildLoginResult(AccountInfo account) {
         List<GroupInfo> groupInfos = groupInfoService.getByLoginId(account.getId());
         List<LoginVO.LoginGroupVO> groupVOS = new ArrayList<>();
         if (CollUtil.isNotEmpty(groupInfos)) {

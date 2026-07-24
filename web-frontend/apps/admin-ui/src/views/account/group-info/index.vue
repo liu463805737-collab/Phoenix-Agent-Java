@@ -5,9 +5,9 @@ import { useVbenVxeGrid, VbenTableAction } from '#/adapter/vxe-table';
 import type { VxeGridProps } from '#/adapter/vxe-table';
 import type { VbenFormProps } from '@vben/common-ui';
 
-import { ElButton, ElMessage, ElMessageBox } from 'element-plus';
+import { ElButton, ElMessage, ElMessageBox, ElTag } from 'element-plus';
 
-import { deleteGroupInfoApi, getGroupInfoPageApi } from '#/api';
+import { getGroupInfoPageApi, toggleStatusGroupInfoApi } from '#/api';
 
 import AssignAgentForm from './assign-agent-form.vue';
 import AssignPeopleForm from './assign-people-form.vue';
@@ -79,19 +79,20 @@ function refreshGrid() {
   gridApi.query();
 }
 
-function onDelete(row: any) {
+function onToggleStatus(row: any) {
+  const isEnabled = row.status === 1;
   ElMessageBox.confirm(
-    `确定要禁用组 "${row.name}" 吗？此操作不可恢复。`,
-    '删除禁用',
+    `确定要${isEnabled ? '禁用' : '启用'}组 "${row.name}" 吗？`,
+    isEnabled ? '禁用' : '启用',
     {
-      confirmButtonText: '确定禁用',
+      confirmButtonText: isEnabled ? '确定禁用' : '确定启用',
       cancelButtonText: '取消',
-      confirmButtonType: 'danger',
+      confirmButtonType: isEnabled ? 'danger' : 'primary',
     },
   )
     .then(() => {
-      deleteGroupInfoApi(row.id).then(() => {
-        ElMessage.success('组禁用成功');
+      toggleStatusGroupInfoApi(row.id).then(() => {
+        ElMessage.success(`组${isEnabled ? '禁用' : '启用'}成功`);
         refreshGrid();
       });
     })
@@ -99,6 +100,7 @@ function onDelete(row: any) {
 }
 
 function getActions(row: any) {
+  const isEnabled = row.status === 0;
   return [
     {
       text: '分配人员',
@@ -116,12 +118,12 @@ function getActions(row: any) {
       onClick: () => onEdit(row),
     },
     {
-      text: '禁用',
-      icon: 'lucide:ban',
-      danger: true,
+      text: isEnabled ? '禁用' : '启用',
+      icon: isEnabled ? 'lucide:ban' : 'lucide:check-circle',
+      danger: isEnabled,
       popConfirm: {
-        title: `确定要禁用组【${row.name}】吗？`,
-        confirm: () => onDelete(row),
+        title: `确定要${isEnabled ? '禁用' : '启用'}组【${row.name}】吗？`,
+        confirm: () => onToggleStatus(row),
         okText: '确定',
         cancelText: '取消',
       },
@@ -138,6 +140,14 @@ function getActions(row: any) {
     <Grid table-title="组管理">
       <template #toolbar-tools>
         <ElButton type="primary" @click="onCreate">新增</ElButton>
+      </template>
+      <template #statusSlot="{ row }">
+        <ElTag
+          :type="row.status === 0 || row.status === '0' ? 'success' : 'danger'"
+          size="small"
+        >
+          {{ row.status === 0 || row.status === '0' ? '启用' : '禁用' }}
+        </ElTag>
       </template>
       <template #action="{ row }">
         <VbenTableAction align="center" :actions="getActions(row)" />

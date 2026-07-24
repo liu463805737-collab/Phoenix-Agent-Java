@@ -192,16 +192,11 @@ async function handleSyncAll() {
 
 async function handleSyncSubDept(row: any) {
   try {
-    await ElMessageBox.confirm(`确定要同步【${row.name}】的下级部门吗？`, '同步确认', {
-      confirmButtonText: '确定同步',
-      cancelButtonText: '取消',
-      type: 'warning',
-    });
     await syncSubDepartmentsApi(row.id);
     ElMessage.success('同步下级部门成功');
     gridApi.query();
   } catch {
-    // cancelled or error
+    ElMessage.error('同步下级部门失败');
   }
 }
 
@@ -213,17 +208,14 @@ function getActions(row: any) {
   return [
     {
       text: '新增',
-      icon: 'lucide:plus',
       onClick: () => handleAddChild(row),
     },
     {
       text: '编辑',
-      icon: 'lucide:edit',
       onClick: () => onEdit(row),
     },
     {
       text: '同步下级',
-      icon: 'lucide:refresh-cw',
       popConfirm: {
         title: `确定同步【${row.name}】的下级部门？`,
         confirm: () => handleSyncSubDept(row),
@@ -233,7 +225,6 @@ function getActions(row: any) {
     },
     {
       text: '删除',
-      icon: 'lucide:trash-2',
       danger: true,
       popConfirm: {
         title: `确定要删除【${row.name}】吗？`,
@@ -254,7 +245,7 @@ onMounted(() => {
   <ColPage
     :left-max-width="50"
     :left-min-width="10"
-    :left-width="15"
+    :left-width="17"
     :split-handle="false"
     :split-line="false"
     :resizable="true"
@@ -283,15 +274,16 @@ onMounted(() => {
             ]"
             @click="handleSelect(company)"
           >
-            <div class="flex items-center gap-2 font-medium text-foreground">
+            <div class="flex items-center gap-2 text-sm text-foreground">
               <ElIcon><IconifyIcon icon="lucide:building-2" /></ElIcon>
-              <span>{{ company.cname }}</span>
+              <span class="font-semibold truncate">{{ company.cname }}</span>
             </div>
-            <div class="flex gap-2 pl-7 pt-1">
-              <ElTag size="small" type="info">{{ company.code }}</ElTag>
+            <div class="flex items-center pl-7 pt-1">
+              <span v-if="company.code" class="text-xs text-muted-foreground">{{ company.code }}</span>
               <ElTag
                 size="small"
                 :type="company.status === 1 ? 'success' : 'danger'"
+                class="ml-auto"
               >
                 {{ company.status === 1 ? '启用' : '禁用' }}
               </ElTag>

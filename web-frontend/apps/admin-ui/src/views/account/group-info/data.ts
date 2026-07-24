@@ -24,11 +24,17 @@ export function useColumns(): VxeTableGridColumns {
       minWidth: 200,
       showOverflow: true,
     },
+    {
+      field: 'status',
+      title: '状态',
+      width: 80,
+      align: 'center',
+      slots: { default: 'statusSlot' },
+    },
     { field: 'createTime', title: '创建时间', width: 180, align: 'center' },
     {
       align: 'center',
       field: 'operation',
-      fixed: 'right',
       slots: { default: 'action' },
       title: '操作',
       width: 380,
@@ -67,6 +73,18 @@ export function useSchema(): VbenFormSchema[] {
         type: 'textarea',
         rows: 3,
         placeholder: '请输入组描述',
+      },
+    },
+    {
+      fieldName: 'status',
+      label: '状态',
+      component: 'Select',
+      defaultValue: '0',
+      componentProps: {
+        options: [
+          { label: '启用', value: '0' },
+          { label: '禁用', value: '1' },
+        ],
       },
     },
   ];

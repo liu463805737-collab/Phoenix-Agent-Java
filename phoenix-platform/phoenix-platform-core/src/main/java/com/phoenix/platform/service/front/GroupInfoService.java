@@ -24,4 +24,11 @@ public interface GroupInfoService extends IService<GroupInfo> {
 	 */
 	List<GroupInfo> getByLoginId(String loginId);
 
+	/**
+	 * 切换组织启用/禁用状态
+	 * @param id 组织ID
+	 * @return
+	 */
+	boolean toggleStatus(String id);
+
 }

@@ -51,6 +51,11 @@ public class GroupInfoController {
         return ReturnVo.ok(groupInfoService.deleteById(id));
     }
 
+    @PutMapping("/{id}/toggle-status")
+    public ReturnVo<Boolean> toggleStatus(@PathVariable String id) {
+        return ReturnVo.ok(groupInfoService.toggleStatus(id));
+    }
+
     @DeleteMapping("/{groupId}/agent/{agentId}")
     public ReturnVo<Boolean> removeAgent(@PathVariable String groupId, @PathVariable String agentId) {
         return ReturnVo.ok(groupAgentInfoService.deleteByGroupIdAndAgentId(groupId, agentId));
