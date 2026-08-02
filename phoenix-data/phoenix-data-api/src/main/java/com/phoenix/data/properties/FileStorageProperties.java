@@ -39,6 +39,13 @@ public class FileStorageProperties {
 	private String urlPrefix = "/uploads";
 
 	/**
+	 * 生成的访问 URL 的基础前缀（可选）。
+	 * 例如：{@code http://localhost:8066} 或 {@code https://your-domain.com}。
+	 * 如果未配置，则返回相对路径（urlPrefix + filePath）。
+	 */
+	private String urlBase = "";
+
+	/**
 	 * 头像图片大小上限（字节）。默认 2MB。
 	 */
 	private long imageSize = 2L * 1024 * 1024;
