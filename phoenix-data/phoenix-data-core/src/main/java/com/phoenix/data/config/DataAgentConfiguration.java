@@ -115,15 +115,16 @@ public class DataAgentConfiguration implements DisposableBean {
 	}
 
 	/**
-	 * 配置 Netty 服务器的 idle-timeout 和 read-timeout，防止长时间无数据推送时连接被断开。
-	 * @param idleTimeout Netty 空闲超时时间（秒），默认 600
-	 * @param readTimeout Netty 读取超时时间（秒），默认 600
+	 * 配置 Netty 服务器的 idle-timeout 和 read-timeout，
+	 * 防止长时间无数据推送（如长报告生成、慢 SQL / Python 执行）时连接被提前断开。
+	 * @param idleTimeout Netty 空闲超时时间（秒），默认 3600
+	 * @param readTimeout Netty 读取超时时间（秒），默认 3600
 	 * @return WebServerFactoryCustomizer 实例
 	 */
 	@Bean
 	public WebServerFactoryCustomizer<NettyReactiveWebServerFactory> serverTimeoutCustomizer(
-			@Value("${server.netty.idle-timeout:600}") long idleTimeout,
-			@Value("${server.netty.read-timeout:600}") long readTimeout) {
+			@Value("${server.netty.idle-timeout:3600}") long idleTimeout,
+			@Value("${server.netty.read-timeout:3600}") long readTimeout) {
 
 		return factory -> factory.addServerCustomizers(httpServer -> httpServer
 			.idleTimeout(Duration.ofSeconds(idleTimeout))
