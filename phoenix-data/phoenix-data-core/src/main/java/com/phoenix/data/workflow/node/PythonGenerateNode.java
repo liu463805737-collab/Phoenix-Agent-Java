@@ -156,7 +156,7 @@ public class PythonGenerateNode extends AabstractNodeAction {
 		ChatResponse[] lastResponse = new ChatResponse[1];
 
 		Flux<ChatResponse> currentCall = (depth == 0)
-				? llmService.call(systemPrompt, userPrompt, dataAgentProperties.getLlmMaxOutputTokens())
+				? llmService.call(systemPrompt, userPrompt)
 				: llmService.callUser(buildRegeneratePrompt(systemPrompt, userPrompt, depth),
 						dataAgentProperties.getLlmMaxOutputTokens());
 		currentCall = currentCall.doOnNext(r -> lastResponse[0] = r);

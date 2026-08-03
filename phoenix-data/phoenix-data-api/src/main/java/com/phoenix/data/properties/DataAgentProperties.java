@@ -71,7 +71,7 @@ public class DataAgentProperties {
 	/**
 	 * LLM 单次生成的最大输出 token 数，覆盖模型默认 maxTokens，用于减少长内容被截断导致的递归续写
 	 */
-	private int llmMaxOutputTokens = 8192;
+	private int llmMaxOutputTokens = 20000;
 
 	/**
 	 * 报告模板相关配置

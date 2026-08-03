@@ -1,6 +1,7 @@
 package com.phoenix.data.workflow.node;
 
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.util.StrUtil;
 import com.phoenix.data.dto.planner.ExecutionStep;
 import com.phoenix.data.dto.planner.Plan;
 import com.phoenix.data.entity.UserPromptConfig;
@@ -14,7 +15,6 @@ import com.phoenix.data.utils.FluxUtil;
 import com.phoenix.data.util.StateUtil;
 import com.alibaba.cloud.ai.graph.GraphResponse;
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -50,7 +50,7 @@ public class ReportGeneratorNode extends AabstractNodeAction {
 
 	private final UserPromptService promptConfigService;
 
-	private final DataAgentProperties dataAgentProperties;
+	private int llmMaxOutputTokens = 50000;
 
 	@Override
 	public String getChName() {
@@ -62,15 +62,12 @@ public class ReportGeneratorNode extends AabstractNodeAction {
 	 *
 	 * @param llmService LLM 服务
 	 * @param promptConfigService 提示词配置服务
-	 * @param dataAgentProperties 数据智能体配置
 	 */
-	public ReportGeneratorNode(LlmService llmService, UserPromptService promptConfigService,
-			DataAgentProperties dataAgentProperties) {
+	public ReportGeneratorNode(LlmService llmService, UserPromptService promptConfigService) {
 		this.llmService = llmService;
 		this.converter = new BeanOutputConverter<>(new ParameterizedTypeReference<>() {
 		});
 		this.promptConfigService = promptConfigService;
-		this.dataAgentProperties = dataAgentProperties;
 	}
 
 	/**
@@ -202,7 +199,7 @@ public class ReportGeneratorNode extends AabstractNodeAction {
 
 		ChatResponse[] lastResponse = new ChatResponse[1];
 
-		Flux<ChatResponse> currentCall = llmService.callUser(prompt, dataAgentProperties.getLlmMaxOutputTokens())
+		Flux<ChatResponse> currentCall = llmService.callUser(prompt, llmMaxOutputTokens)
 			.doOnNext(r -> {
 				lastResponse[0] = r;
 				fullReport.append(ChatResponseUtil.getText(r));
@@ -293,17 +290,19 @@ public class ReportGeneratorNode extends AabstractNodeAction {
 		sb.append("## 执行计划概述\n");
 		sb.append("**思考过程**: ").append(plan.getThoughtProcess()).append("\n\n");
 
-		sb.append("## 详细执行步骤\n");
+		sb.append("## 分析过程（简要）\n");
 		List<ExecutionStep> executionPlan = plan.getExecutionPlan();
 		for (int i = 0; i < executionPlan.size(); i++) {
 			ExecutionStep step = executionPlan.get(i);
-			sb.append("### 步骤 ").append(i + 1).append(": 步骤编号 ").append(step.getStep()).append("\n");
-			sb.append("**工具**: ").append(step.getToolToUse()).append("\n");
-			if (step.getToolParameters() != null) {
-				sb.append("**参数描述**: ").append(step.getToolParameters().getInstruction()).append("\n");
+			String purpose = step.getToolParameters() != null ? step.getToolParameters().getInstruction() : "";
+			// 截断到 80 字符，保留步骤用途，避免大段重复指令撑大输入
+			if (StrUtil.isNotBlank(purpose) && purpose.length() > 80) {
+				purpose = purpose.substring(0, 80) + "...";
 			}
-			sb.append("\n");
+			sb.append("- 步骤").append(i + 1).append(" [").append(step.getToolToUse()).append("]: ").append(purpose)
+				.append("\n");
 		}
+		sb.append("\n");
 
 		return sb.toString();
 	}
@@ -339,13 +338,10 @@ public class ReportGeneratorNode extends AabstractNodeAction {
 				sb.append("### ").append(stepKey).append("\n");
 				sb.append("**步骤编号**: ").append(step.getStep()).append("\n");
 				sb.append("**使用工具**: ").append(step.getToolToUse()).append("\n");
-				if (step.getToolParameters() != null) {
-					sb.append("**参数描述**: ").append(step.getToolParameters().getInstruction()).append("\n");
-					if (step.getToolParameters().getSqlQuery() != null) {
-						sb.append("**执行SQL**: \n```sql\n")
-							.append(step.getToolParameters().getSqlQuery())
-							.append("\n```\n");
-					}
+				if (step.getToolParameters() != null && step.getToolParameters().getSqlQuery() != null) {
+					sb.append("**执行SQL**: \n```sql\n")
+						.append(step.getToolParameters().getSqlQuery())
+						.append("\n```\n");
 				}
 
 				if (stepResult != null && !stepResult.trim().isEmpty()) {
