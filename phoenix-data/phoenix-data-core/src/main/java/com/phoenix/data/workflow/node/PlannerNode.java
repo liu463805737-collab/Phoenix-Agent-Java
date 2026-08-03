@@ -32,6 +32,8 @@ import static com.phoenix.data.constant.Constant.*;
 @AllArgsConstructor
 public class PlannerNode extends AabstractNodeAction {
 
+	private static final int MAX_CONTINUATION_DEPTH = 5;
+
 	private final LlmService llmService;
 
 	@Override
@@ -101,8 +103,67 @@ public class PlannerNode extends AabstractNodeAction {
 		String plannerPrompt = PromptConstant.getPlannerPromptTemplate().render(params);
 		log.debug("Planner prompt: as follows \n{}\n", plannerPrompt);
 
-		// 调用LLM生成计划
-		return llmService.callUser(plannerPrompt);
+		// 递归续写：检测到 finish_reason=length 时自动续写，直到计划完整或达到最大深度
+		return callWithContinuation(plannerPrompt, 0);
+	}
+
+	/**
+	 * 递归续写：检测到 finish_reason=length 时自动续写，直到计划完整或达到最大深度。
+	 *
+	 * @param prompt LLM 调用 prompt
+	 * @param depth 当前递归深度
+	 * @return 合并后的 LLM 响应流
+	 */
+	private Flux<ChatResponse> callWithContinuation(String prompt, int depth) {
+		if (depth >= MAX_CONTINUATION_DEPTH) {
+			log.warn("Plan continuation reached max depth ({}), plan may still be incomplete", MAX_CONTINUATION_DEPTH);
+			return Flux.empty();
+		}
+
+		StringBuilder accumulated = new StringBuilder();
+		ChatResponse[] lastResponse = new ChatResponse[1];
+
+		Flux<ChatResponse> currentCall = llmService.callUser(prompt)
+			.doOnNext(r -> {
+				lastResponse[0] = r;
+				accumulated.append(ChatResponseUtil.getText(r));
+			});
+
+		return Flux.concat(currentCall,
+				Flux.defer(() -> {
+					if (isTruncated(lastResponse[0])) {
+						log.warn("Plan truncated by token limit, initiating continuation (depth={})", depth + 1);
+						return callWithContinuation(buildContinuationPrompt(accumulated.toString(), depth + 1),
+								depth + 1);
+					}
+					return Flux.empty();
+				}));
+	}
+
+	/**
+	 * 判断 LLM 响应是否因 token 上限被截断。
+	 *
+	 * @param response 最后一条响应
+	 * @return 是否被截断
+	 */
+	private boolean isTruncated(ChatResponse response) {
+		return response != null && response.getResult() != null && response.getResult().getMetadata() != null
+				&& "LENGTH".equals(response.getResult().getMetadata().getFinishReason());
+	}
+
+	/**
+	 * 构建续写 prompt，携带最后一段已输出内容作为上下文。
+	 *
+	 * @param lastSegment 当前轮已输出的内容
+	 * @param continuationCount 第几次续写
+	 * @return 续写 prompt
+	 */
+	private String buildContinuationPrompt(String lastSegment, int continuationCount) {
+		String tail = (lastSegment != null && lastSegment.length() > 500)
+				? lastSegment.substring(lastSegment.length() - 500) : lastSegment;
+		return "执行计划 JSON 因长度限制被截断（第" + continuationCount
+				+ "次续写），请直接从断点处继续生成 JSON，不要重复已经输出的内容，也不要输出多余的解释或 markdown 标记。\n\n"
+				+ "已输出的最后内容（仅供参考，不要重复）：\n" + tail + "\n\n请继续：";
 	}
 
 	/**
