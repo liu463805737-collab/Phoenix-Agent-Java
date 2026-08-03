@@ -171,29 +171,31 @@ public class ReportGeneratorNode extends AabstractNodeAction {
 		String reportPrompt = PromptHelper.buildReportGeneratorPromptWithOptimization(userRequirementsAndPlan,
 				analysisStepsAndData, summaryAndRecommendations, optimizationConfigs, currDate);
 		log.debug("Report Node Prompt: \n {} \n", reportPrompt);
-		return generateWithContinuation(reportPrompt, 0);
+		return generateWithContinuation(reportPrompt, reportPrompt, new StringBuilder(), 0);
 	}
 
 	/**
 	 * 递归续写：检测到 finish_reason=length 时自动续写，直到完整或达到最大深度。
 	 *
-	 * @param prompt LLM 调用 prompt
+	 * @param prompt 本轮 LLM 调用 prompt
+	 * @param originalPrompt 报告的整体要求（原始 prompt），供续写时把握结构与内容方向
+	 * @param fullReport 已生成报告的累计内容（跨多轮续写共享）
 	 * @param depth 当前递归深度
 	 * @return 合并后的 LLM 响应流
 	 */
-	private Flux<ChatResponse> generateWithContinuation(String prompt, int depth) {
+	private Flux<ChatResponse> generateWithContinuation(String prompt, String originalPrompt, StringBuilder fullReport,
+			int depth) {
 		if (depth >= 5) {
 			log.warn("Report continuation reached max depth (5), report may still be incomplete");
 			return Flux.empty();
 		}
 
-		StringBuilder accumulated = new StringBuilder();
 		ChatResponse[] lastResponse = new ChatResponse[1];
 
 		Flux<ChatResponse> currentCall = llmService.callUser(prompt)
 			.doOnNext(r -> {
 				lastResponse[0] = r;
-				accumulated.append(ChatResponseUtil.getText(r));
+				fullReport.append(ChatResponseUtil.getText(r));
 			});
 
 		return Flux.concat(
@@ -204,25 +206,59 @@ public class ReportGeneratorNode extends AabstractNodeAction {
 							&& lastResponse[0].getResult().getMetadata() != null
 							&& "LENGTH".equals(lastResponse[0].getResult().getMetadata().getFinishReason())) {
 						log.warn("Report truncated by token limit, initiating continuation (depth={})", depth + 1);
-						String continuationPrompt = buildContinuationPrompt(accumulated.toString(), depth + 1);
-						return generateWithContinuation(continuationPrompt, depth + 1);
+						String continuationPrompt = buildContinuationPrompt(fullReport.toString(), originalPrompt,
+								depth + 1);
+						return generateWithContinuation(continuationPrompt, originalPrompt, fullReport, depth + 1);
 					}
 					return Flux.empty();
 				}));
 	}
 
 	/**
-	 * 构建续写 prompt，携带最后一段已输出内容作为上下文。
+	 * 构建续写 prompt：携带报告整体要求与已生成内容的末尾部分，供大模型从断点之后继续写。
 	 *
-	 * @param lastSegment 当前轮已输出的内容
+	 * @param fullReport 已生成的报告完整内容
+	 * @param originalPrompt 报告的整体要求（原始 prompt）
 	 * @param continuationCount 第几次续写
 	 * @return 续写 prompt
 	 */
-	private String buildContinuationPrompt(String lastSegment, int continuationCount) {
-		String tail = (lastSegment != null && lastSegment.length() > 300)
-				? lastSegment.substring(lastSegment.length() - 300) : lastSegment;
-		return "报告内容因长度限制被截断（第" + continuationCount + "次续写），请直接从断点处继续生成，不要重复已经输出的内容。\n\n"
-				+ "已输出的最后内容（仅供参考，不要重复）：\n" + tail + "\n\n请继续：";
+	private String buildContinuationPrompt(String fullReport, String originalPrompt, int continuationCount) {
+		String tail = extractContinuationTail(fullReport, 2000);
+		return "你正在续写一份因为输出长度限制而被截断的分析报告（第" + continuationCount
+				+ "次续写）。请从断点之后继续生成，保持原有的报告结构、语气和内容风格。\n\n"
+				+ "## 报告的整体要求（用于把握结构与内容方向）\n" + originalPrompt + "\n\n"
+				+ "## 已经生成的报告内容（末尾部分，供你定位断点，请勿重复输出）\n" + tail + "\n\n"
+				+ "请直接输出从断点之后继续生成的报告内容：\n" + "1. 保持原有结构（章节/小标题层级）、语气和内容风格；\n"
+				+ "2. 不要重复已经输出的内容；\n" + "3. 不要提问、不要解释；\n"
+				+ "4. 直接以报告正文开头，不要用 markdown 代码块包裹。";
+	}
+
+	/**
+	 * 提取报告末尾内容用于续写定位断点，尽量从最近的 markdown 小节标题或段落边界开始。
+	 *
+	 * @param fullReport 已生成的报告完整内容
+	 * @param maxLength 保留的最大字符数
+	 * @return 末尾内容片段
+	 */
+	private String extractContinuationTail(String fullReport, int maxLength) {
+		if (fullReport == null || fullReport.isEmpty()) {
+			return "";
+		}
+		if (fullReport.length() <= maxLength) {
+			return fullReport;
+		}
+		String tail = fullReport.substring(fullReport.length() - maxLength);
+		// 从最近的 markdown 标题（\n#）处开始，让模型看到当前小节标题
+		int headingIndex = tail.lastIndexOf("\n#");
+		if (headingIndex > 0) {
+			return tail.substring(headingIndex + 1);
+		}
+		// 否则从最后的空行分段处开始
+		int paragraphIndex = tail.lastIndexOf("\n\n");
+		if (paragraphIndex > 0) {
+			return tail.substring(paragraphIndex + 1);
+		}
+		return tail;
 	}
 
 	/**
