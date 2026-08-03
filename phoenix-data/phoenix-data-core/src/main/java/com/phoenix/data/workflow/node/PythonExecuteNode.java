@@ -12,6 +12,7 @@ import com.phoenix.data.utils.JsonParseUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import tools.jackson.databind.ObjectMapper;
 
@@ -77,6 +78,11 @@ public class PythonExecuteNode extends AabstractNodeAction {
 			// 检查重试次数
 			int triesCount = StateUtil.getObjectValue(state, PYTHON_TRIES_COUNT, Integer.class, 0);
 
+			// 校验生成的代码是否是真正的 Python 代码，避免续写产生的中文提示文本被当作代码执行
+			if (isLikelyNonCode(pythonCode)) {
+				throw new RuntimeException("生成的代码不是有效的 Python 代码，可能因截断或未正确生成: " + pythonCode);
+			}
+
 			CodePoolExecutorService.TaskRequest taskRequest = new CodePoolExecutorService.TaskRequest(pythonCode,
 					objectMapper.writeValueAsString(sqlResults), null);
 
@@ -111,13 +117,21 @@ public class PythonExecuteNode extends AabstractNodeAction {
 				throw new RuntimeException(errorMsg);
 			}
 
-			// Python输出的JSON字符串可能有Unicode转义形式，需要解析回汉字
+			// Python输出必须是合法JSON，否则判定代码生成失败（如占位/说明文本），触发重试或降级
 			String stdout = taskResponse.stdOut();
-			Object value = jsonParseUtil.tryConvertToObject(stdout, Object.class);
-			if (value != null) {
-				stdout = objectMapper.writeValueAsString(value);
+			String finalStdout;
+			if (!StringUtils.hasText(stdout)) {
+				throw new RuntimeException("Python执行结果为空，代码可能未正确输出数据");
 			}
-			String finalStdout = stdout;
+			try {
+				// 先用廉价解析校验JSON合法性，占位/说明文本直接判定失败，避免浪费LLM修复
+				objectMapper.readTree(stdout);
+				Object value = jsonParseUtil.tryConvertToObject(stdout, Object.class);
+				finalStdout = value != null ? objectMapper.writeValueAsString(value) : stdout;
+			}
+			catch (Exception e) {
+				throw new RuntimeException("Python输出不是合法JSON，判定代码生成失败: " + e.getMessage(), e);
+			}
 
 			log.info("Python Execute Success! StdOut: {}", finalStdout);
 
@@ -141,12 +155,16 @@ public class PythonExecuteNode extends AabstractNodeAction {
 			return Map.of(PYTHON_EXECUTE_NODE_OUTPUT, generator);
 		}
 		catch (Exception e) {
-			String errorMessage = e.getMessage();
+			String errorMessage = e.getMessage() != null ? e.getMessage() : e.toString();
 			log.error("Python Execute Exception: {}", errorMessage);
+
+			// 已超过最大重试次数时同样进入降级模式，避免流程被强制终止
+			int currentTries = StateUtil.getObjectValue(state, PYTHON_TRIES_COUNT, Integer.class, 0);
+			boolean fallbackMode = currentTries >= codeExecutorProperties.getPythonMaxTriesCount();
 
 			// Prepare error result
 			Map<String, Object> errorResult = Map.of(PYTHON_EXECUTE_NODE_OUTPUT, errorMessage, PYTHON_IS_SUCCESS,
-					false);
+					false, PYTHON_FALLBACK_MODE, fallbackMode);
 
 			// Create error display flux
 			Flux<ChatResponse> errorDisplayFlux = Flux.create(emitter -> {
@@ -161,6 +179,30 @@ public class PythonExecuteNode extends AabstractNodeAction {
 
 			return Map.of(PYTHON_EXECUTE_NODE_OUTPUT, generator);
 		}
+	}
+
+	/**
+	 * 判断生成的代码是否明显不是 Python 代码。
+	 * 跳过空行和注释行后，若首个代码行以汉字开头，基本可断定是续写产生的中文提示文本而非代码。
+	 *
+	 * @param code 生成的代码
+	 * @return 是否明显不是有效的 Python 代码
+	 */
+	private boolean isLikelyNonCode(String code) {
+		if (code == null || code.isBlank()) {
+			return true;
+		}
+		for (String line : code.split("\n")) {
+			String trimmed = line.stripLeading();
+			if (trimmed.isEmpty() || trimmed.startsWith("#")) {
+				continue;
+			}
+			if (!trimmed.isEmpty() && Character.UnicodeScript.of(trimmed.codePointAt(0)) == Character.UnicodeScript.HAN) {
+				return true;
+			}
+			break;
+		}
+		return false;
 	}
 
 }

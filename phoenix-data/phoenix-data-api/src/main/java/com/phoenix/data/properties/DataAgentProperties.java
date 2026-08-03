@@ -53,7 +53,7 @@ public class DataAgentProperties {
 	/**
 	 * 单次规划最大长度限制
 	 */
-	private int maxplanlength = 2000;
+	private int maxplanlength = 4000;
 
 	// 每张表的最大预估列数
 	private int maxColumnsPerTable = 150;
@@ -67,6 +67,11 @@ public class DataAgentProperties {
 	 * 执行SQL结果图表化超时时间，默认30000ms
 	 */
 	private Long enrichSqlResultTimeout = 30000L;
+
+	/**
+	 * LLM 单次生成的最大输出 token 数，覆盖模型默认 maxTokens，用于减少长内容被截断导致的递归续写
+	 */
+	private int llmMaxOutputTokens = 8192;
 
 	/**
 	 * 报告模板相关配置

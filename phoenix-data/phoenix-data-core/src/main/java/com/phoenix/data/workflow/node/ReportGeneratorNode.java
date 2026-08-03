@@ -6,6 +6,7 @@ import com.phoenix.data.dto.planner.Plan;
 import com.phoenix.data.entity.UserPromptConfig;
 import com.phoenix.data.enums.TextType;
 import com.phoenix.data.prompt.PromptHelper;
+import com.phoenix.data.properties.DataAgentProperties;
 import com.phoenix.data.service.llm.LlmService;
 import com.phoenix.data.service.prompt.UserPromptService;
 import com.phoenix.data.util.ChatResponseUtil;
@@ -49,6 +50,8 @@ public class ReportGeneratorNode extends AabstractNodeAction {
 
 	private final UserPromptService promptConfigService;
 
+	private final DataAgentProperties dataAgentProperties;
+
 	@Override
 	public String getChName() {
 		return "生成报表";
@@ -59,12 +62,15 @@ public class ReportGeneratorNode extends AabstractNodeAction {
 	 *
 	 * @param llmService LLM 服务
 	 * @param promptConfigService 提示词配置服务
+	 * @param dataAgentProperties 数据智能体配置
 	 */
-	public ReportGeneratorNode(LlmService llmService, UserPromptService promptConfigService) {
+	public ReportGeneratorNode(LlmService llmService, UserPromptService promptConfigService,
+			DataAgentProperties dataAgentProperties) {
 		this.llmService = llmService;
 		this.converter = new BeanOutputConverter<>(new ParameterizedTypeReference<>() {
 		});
 		this.promptConfigService = promptConfigService;
+		this.dataAgentProperties = dataAgentProperties;
 	}
 
 	/**
@@ -171,20 +177,24 @@ public class ReportGeneratorNode extends AabstractNodeAction {
 		String reportPrompt = PromptHelper.buildReportGeneratorPromptWithOptimization(userRequirementsAndPlan,
 				analysisStepsAndData, summaryAndRecommendations, optimizationConfigs, currDate);
 		log.debug("Report Node Prompt: \n {} \n", reportPrompt);
-		return generateWithContinuation(reportPrompt, reportPrompt, new StringBuilder(), 0);
+
+		// 续写时只携带报告结构要求（用户需求+计划+总结），不再重复发送庞大的执行数据，加快续写速度
+		String continuationContext = "## 用户需求与计划\n" + userRequirementsAndPlan + "\n\n## 总结与推荐\n"
+				+ summaryAndRecommendations + "\n";
+		return generateWithContinuation(reportPrompt, continuationContext, new StringBuilder(), 0);
 	}
 
 	/**
 	 * 递归续写：检测到 finish_reason=length 时自动续写，直到完整或达到最大深度。
 	 *
 	 * @param prompt 本轮 LLM 调用 prompt
-	 * @param originalPrompt 报告的整体要求（原始 prompt），供续写时把握结构与内容方向
+	 * @param continuationContext 报告的结构要求（用户需求、计划、总结），供续写时把握结构与内容方向
 	 * @param fullReport 已生成报告的累计内容（跨多轮续写共享）
 	 * @param depth 当前递归深度
 	 * @return 合并后的 LLM 响应流
 	 */
-	private Flux<ChatResponse> generateWithContinuation(String prompt, String originalPrompt, StringBuilder fullReport,
-			int depth) {
+	private Flux<ChatResponse> generateWithContinuation(String prompt, String continuationContext,
+			StringBuilder fullReport, int depth) {
 		if (depth >= 5) {
 			log.warn("Report continuation reached max depth (5), report may still be incomplete");
 			return Flux.empty();
@@ -192,7 +202,7 @@ public class ReportGeneratorNode extends AabstractNodeAction {
 
 		ChatResponse[] lastResponse = new ChatResponse[1];
 
-		Flux<ChatResponse> currentCall = llmService.callUser(prompt)
+		Flux<ChatResponse> currentCall = llmService.callUser(prompt, dataAgentProperties.getLlmMaxOutputTokens())
 			.doOnNext(r -> {
 				lastResponse[0] = r;
 				fullReport.append(ChatResponseUtil.getText(r));
@@ -206,31 +216,38 @@ public class ReportGeneratorNode extends AabstractNodeAction {
 							&& lastResponse[0].getResult().getMetadata() != null
 							&& "LENGTH".equals(lastResponse[0].getResult().getMetadata().getFinishReason())) {
 						log.warn("Report truncated by token limit, initiating continuation (depth={})", depth + 1);
-						String continuationPrompt = buildContinuationPrompt(fullReport.toString(), originalPrompt,
-								depth + 1);
-						return generateWithContinuation(continuationPrompt, originalPrompt, fullReport, depth + 1);
+						// 最后两轮续写进入收尾模式，确保报告能完整结束
+						boolean finalRound = depth + 1 >= 4;
+						String continuationPrompt = buildContinuationPrompt(fullReport.toString(),
+								continuationContext, depth + 1, finalRound);
+						return generateWithContinuation(continuationPrompt, continuationContext, fullReport, depth + 1);
 					}
 					return Flux.empty();
 				}));
 	}
 
 	/**
-	 * 构建续写 prompt：携带报告整体要求与已生成内容的末尾部分，供大模型从断点之后继续写。
+	 * 构建续写 prompt：携带报告结构要求与已生成内容的末尾部分，供大模型从断点之后继续写。
 	 *
 	 * @param fullReport 已生成的报告完整内容
-	 * @param originalPrompt 报告的整体要求（原始 prompt）
+	 * @param continuationContext 报告的结构要求
 	 * @param continuationCount 第几次续写
+	 * @param finalRound 是否为最后一次续写（需强制收尾）
 	 * @return 续写 prompt
 	 */
-	private String buildContinuationPrompt(String fullReport, String originalPrompt, int continuationCount) {
+	private String buildContinuationPrompt(String fullReport, String continuationContext, int continuationCount,
+			boolean finalRound) {
 		String tail = extractContinuationTail(fullReport, 2000);
-		return "你正在续写一份因为输出长度限制而被截断的分析报告（第" + continuationCount
-				+ "次续写）。请从断点之后继续生成，保持原有的报告结构、语气和内容风格。\n\n"
-				+ "## 报告的整体要求（用于把握结构与内容方向）\n" + originalPrompt + "\n\n"
-				+ "## 已经生成的报告内容（末尾部分，供你定位断点，请勿重复输出）\n" + tail + "\n\n"
-				+ "请直接输出从断点之后继续生成的报告内容：\n" + "1. 保持原有结构（章节/小标题层级）、语气和内容风格；\n"
-				+ "2. 不要重复已经输出的内容；\n" + "3. 不要提问、不要解释；\n"
-				+ "4. 直接以报告正文开头，不要用 markdown 代码块包裹。";
+		String closingInstruction = finalRound
+				? "4. **这是最后一次续写机会**：请直接用简洁的结论与建议收尾，确保报告完整结束，不要再展开新的长章节；\n"
+				: "4. 若剩余内容不多，直接给出收尾（结论与建议）结束报告；\n";
+		return "你正在续写一份因为输出长度限制而被截断的分析报告（第" + continuationCount + "次续写）。\n\n"
+				+ "【已生成报告的末尾部分】\n" + tail + "\n\n"
+				+ "【报告整体要求】\n" + continuationContext + "\n\n"
+				+ "【要求】\n" + "1. 直接从断点之后继续输出报告正文的 Markdown 内容，保持原有结构、语气和内容风格；\n"
+				+ "2. 不要重复已输出的任何内容；\n"
+				+ "3. 严禁提问、严禁要求提供更多上下文、严禁解释你在做什么，只输出报告内容；\n"
+				+ closingInstruction;
 	}
 
 	/**
