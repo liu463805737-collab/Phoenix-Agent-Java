@@ -16,6 +16,9 @@ import io.agentscope.core.event.ConfirmResult;
 import io.agentscope.core.event.CustomEvent;
 import io.agentscope.core.event.RequireUserConfirmEvent;
 import io.agentscope.core.event.TextBlockDeltaEvent;
+import io.agentscope.core.event.ThinkingBlockDeltaEvent;
+import io.agentscope.core.event.ThinkingBlockStartEvent;
+import io.agentscope.core.event.ThinkingBlockEndEvent;
 import io.agentscope.core.message.Msg;
 import io.agentscope.core.message.UserMessage;
 import io.agentscope.harness.agent.HarnessAgent;
@@ -80,15 +83,24 @@ public class HarnessChatServiceImpl implements HarnessChatService {
     private NodeOutput toNodeOutput(AgentEvent event, String sessionId) {
         Map<String, Object> data = new HashMap<>();
         data.put("agent_event", event);
+        // 1. 确认事件优先处理（可能同时是 AGENT_END，必须放在前面）
+        if (event instanceof RequireUserConfirmEvent confirmEvent) {
+            hitlCacheService.savePendingConfirm(sessionId, confirmEvent);
+            return NodeOutput.of("harness_agent", "harness", new OverAllState(data), null);
+        }
+        // 2. 文本增量事件
         if (event.getType() == AgentEventType.TEXT_BLOCK_DELTA && event instanceof TextBlockDeltaEvent textEvent) {
             return new StreamingOutput<>(textEvent.getDelta(), "harness_agent", "harness", new OverAllState(data));
         }
+        // 2b. 思考内容增量事件（DeepSeek-R1 等深度思考模型）
+        if (event.getType() == AgentEventType.THINKING_BLOCK_DELTA && event instanceof ThinkingBlockDeltaEvent thinkingEvent) {
+            return new StreamingOutput<>(thinkingEvent.getDelta(), "harness_agent", "harness", new OverAllState(data));
+        }
+        // 3. 结束事件
         if (event.getType() == AgentEventType.AGENT_END) {
             return NodeOutput.of(StateGraph.END, "harness", new OverAllState(data), null);
         }
-        if (event instanceof RequireUserConfirmEvent confirmEvent) {
-            hitlCacheService.savePendingConfirm(sessionId, confirmEvent);
-        }
+        // 4. 其他事件
         return NodeOutput.of("harness_agent", "harness", new OverAllState(data), null);
     }
 

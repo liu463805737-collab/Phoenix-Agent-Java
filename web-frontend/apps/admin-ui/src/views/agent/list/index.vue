@@ -315,7 +315,11 @@ onMounted(loadAgents);
               </div>
 
               <div class="agent-avatar">
-                <ElAvatar :size="48" style="font-size:20px;font-weight:600;color:#fff;background:#2f6bff">
+                <ElAvatar
+                  :size="48"
+                  :src="agent.avatar"
+                  style="font-size:20px;font-weight:600;color:#fff;background:#2f6bff"
+                >
                   {{ agent.name?.charAt(0) || 'A' }}
                 </ElAvatar>
               </div>

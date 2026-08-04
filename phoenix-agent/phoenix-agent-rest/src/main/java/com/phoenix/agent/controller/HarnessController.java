@@ -8,8 +8,12 @@ import com.phoenix.agent.harness.request.HarnessRequest;
 import com.phoenix.agent.harness.send.HarnessChatService;
 import com.phoenix.privilege.entity.PrivilegeUser;
 import io.agentscope.core.event.AgentEvent;
+import io.agentscope.core.event.CustomEvent;
 import io.agentscope.core.event.RequireUserConfirmEvent;
 import io.agentscope.core.event.TextBlockDeltaEvent;
+import io.agentscope.core.event.ThinkingBlockDeltaEvent;
+import io.agentscope.core.event.ThinkingBlockStartEvent;
+import io.agentscope.core.event.ThinkingBlockEndEvent;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -47,9 +51,31 @@ public class HarnessController {
                 eventMap.put("content", streamingOutput.chunk());
             }
             if (!output.isEND()) {
+                output.state().value("error_message", String.class).ifPresent(msg -> eventMap.putIfAbsent("content", msg));
                 output.state().value("agent_event", AgentEvent.class).ifPresent(event -> {
-                    if (event instanceof TextBlockDeltaEvent textEvent) {
+                    if (event instanceof RequireUserConfirmEvent confirmEvent) {
+                        eventMap.put("needConfirm", true);
+                        eventMap.put("toolCalls", confirmEvent.getToolCalls());
+                        List<Map<String, Object>> buttons = new ArrayList<>();
+                        Map<String, Object> confirmBtn = new LinkedHashMap<>();
+                        confirmBtn.put("text", "确认");
+                        confirmBtn.put("action", "confirm");
+                        confirmBtn.put("type", "primary");
+                        buttons.add(confirmBtn);
+                        Map<String, Object> cancelBtn = new LinkedHashMap<>();
+                        cancelBtn.put("text", "取消");
+                        cancelBtn.put("action", "cancel");
+                        cancelBtn.put("type", "danger");
+                        buttons.add(cancelBtn);
+                        eventMap.put("buttons", buttons);
+                    } else if (event instanceof TextBlockDeltaEvent textEvent) {
                         eventMap.put("content", textEvent.getDelta());
+                    } else if (event instanceof ThinkingBlockDeltaEvent thinkingEvent) {
+                        eventMap.put("content", thinkingEvent.getDelta());
+                    } else if (event instanceof ThinkingBlockStartEvent || event instanceof ThinkingBlockEndEvent) {
+                        // 思考开始/结束事件，无需处理，静默忽略
+                    } else if (!(event instanceof CustomEvent)) {
+                        log.warn("Unhandled agent_event type in confirm: {}", event.getClass().getSimpleName());
                     }
                 });
             }
@@ -91,6 +117,14 @@ public class HarnessController {
                             cancelBtn.put("type", "danger");
                             buttons.add(cancelBtn);
                             eventMap.put("buttons", buttons);
+                        } else if (event instanceof TextBlockDeltaEvent textEvent) {
+                            eventMap.put("content", textEvent.getDelta());
+                        } else if (event instanceof ThinkingBlockDeltaEvent thinkingEvent) {
+                            // eventMap.put("content", thinkingEvent.getDelta());
+                        } else if (event instanceof ThinkingBlockStartEvent || event instanceof ThinkingBlockEndEvent) {
+                            // 思考开始/结束事件，无需处理，静默忽略
+                        } else if (!(event instanceof CustomEvent)) {
+                            log.warn("Unhandled agent_event type: {}", event.getClass().getSimpleName());
                         }
                     });
                     return eventMap;

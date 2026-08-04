@@ -31,6 +31,11 @@ public class GraphController {
     private final GraphService graphService;
 
     /**
+     * SSE 心跳保活间隔，防止长报告生成期间连接被空闲超时断开
+     */
+    private static final java.time.Duration SSE_KEEP_ALIVE_INTERVAL = java.time.Duration.ofSeconds(20);
+
+    /**
      * 流式搜索接口，返回SSE事件流
      *
      * @param agentId              智能体ID
@@ -68,7 +73,8 @@ public class GraphController {
                 .build();
         graphService.graphStreamProcess(sink, request);
 
-        return sink.asFlux().filter(sse -> {
+        // share() 将 unicast sink 转成热发布，供合并的心跳流复用同一份数据源
+        Flux<ServerSentEvent<GraphNodeResponse>> stream = sink.asFlux().filter(sse -> {
                     // 1. 如果 event 是 "complete" 或 "error"，直接放行（不管 text 是否为空）
                     if (STREAM_EVENT_COMPLETE.equals(sse.event()) || STREAM_EVENT_ERROR.equals(sse.event())) {
                         return true;
@@ -76,6 +82,14 @@ public class GraphController {
                     // 判断字符串是否为空
                     return sse.data() != null && sse.data().getText() != null && !sse.data().getText().isEmpty();
                 })
+                .share();
+
+        // 心跳保活：报告生成期间可能长时间无数据推送，定时发送 SSE 注释，避免代理/服务端空闲超时断开连接
+        Flux<ServerSentEvent<GraphNodeResponse>> heartbeat = Flux.interval(SSE_KEEP_ALIVE_INTERVAL)
+                .map(i -> ServerSentEvent.<GraphNodeResponse>builder().comment("keep-alive").build())
+                .takeUntilOther(stream.then());
+
+        return Flux.merge(stream, heartbeat)
                 .doOnSubscribe(subscription -> log.info("Client subscribed to stream, threadId: {}", request.getThreadId()))
                 .doOnCancel(() -> {
                     log.info("Client disconnected from stream, threadId: {}", request.getThreadId());

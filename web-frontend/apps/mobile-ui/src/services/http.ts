@@ -19,9 +19,9 @@ export function handleUnauthorized(): void {
   import('vant').then(({ showFailToast }) => {
     showFailToast('登录已过期，请重新登录');
   });
-  import('../router').then(({ default: router }) => {
-    router.push('/login');
-  });
+  setTimeout(() => {
+    window.location.replace('/login');
+  }, 500);
 }
 
 export async function request<T>(

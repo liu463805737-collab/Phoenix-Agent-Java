@@ -1,247 +1,155 @@
 <script lang="ts" setup>
-import type { PlatformInfo } from '#/api';
-
-import { onMounted, ref } from 'vue';
-
 import { Page, useVbenModal } from '@vben/common-ui';
-import { IconifyIcon } from '@vben/icons';
+import type { VbenFormProps } from '@vben/common-ui';
+import { useVbenVxeGrid, VbenTableAction } from '#/adapter/vxe-table';
+import type { VxeGridProps } from '#/adapter/vxe-table';
 
-import {
-  ElButton,
-  ElCard,
-  ElIcon,
-  ElMessage,
-  ElPagination,
-  ElTable,
-  ElTableColumn,
-  ElTag,
-} from 'element-plus';
+import { ElButton, ElMessage, ElTag } from 'element-plus';
 
-import { useVbenForm } from '#/adapter/form';
-import { VbenTableAction } from '#/adapter/vxe-table';
 import {
   deletePlatformInfoApi,
   getPlatformInfoPageApi,
 } from '#/api/core/platform-info';
+
 import { useColumns, useSearchFormSchema, typeLabels } from './data';
 import Form from './form.vue';
-
-const columns = useColumns();
-const searchFormSchema = useSearchFormSchema();
-
-const loading = ref(false);
-const tableData = ref<PlatformInfo[]>([]);
-const total = ref(0);
-const page = ref(1);
-const pageSize = ref(10);
-
-const [FilterForm] = useVbenForm({
-  commonConfig: { componentProps: { clearable: true } },
-  layout: 'inline',
-  wrapperClass: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3',
-  submitButtonOptions: { content: '查询' },
-  schema: searchFormSchema,
-  handleSubmit: (values) => {
-    page.value = 1;
-    const params = Object.fromEntries(
-        Object.entries(values).filter(([, v]) => v !== '' && v != null),
-    );
-    loadData(params);
-  },
-  handleReset: () => {
-    page.value = 1;
-    loadData({});
-  },
-});
 
 const [FormModal, formModalApi] = useVbenModal({
   connectedComponent: Form,
   destroyOnClose: true,
 });
 
-async function loadData(params: Record<string, any> = {}) {
-  loading.value = true;
-  try {
-    const res = (await getPlatformInfoPageApi(
-        page.value,
-        pageSize.value,
-        params,
-    )) as any;
-    const pageResult = res?.data || res;
-    tableData.value = pageResult?.records || [];
-    total.value = pageResult?.totalRow || 0;
-  } catch {
-    tableData.value = [];
-    total.value = 0;
-  } finally {
-    loading.value = false;
-  }
-}
+const formOptions: VbenFormProps = {
+  showCollapseButton: false,
+  submitOnEnter: true,
+  commonConfig: {
+    labelWidth: 60,
+  },
+  wrapperClass: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4',
+  actionWrapperClass: 'pl-2 !justify-end md:!justify-start',
+  actionPosition: 'left',
+  actionLayout: 'inline',
+  submitButtonOptions: { content: '查询' },
+  resetButtonOptions: { plain: true },
+  schema: useSearchFormSchema(),
+};
+
+const gridOptions: VxeGridProps = {
+  columns: useColumns(),
+  columnConfig: { resizable: true },
+  height: 'auto',
+  keepSource: true,
+  border: false,
+  stripe: true,
+  showOverflow: false,
+  proxyConfig: {
+    ajax: {
+      query: async ({ page }, formValues) => {
+        const res = (await getPlatformInfoPageApi(
+          page.currentPage,
+          page.pageSize,
+          formValues,
+        )) as any;
+        const data = res?.data || res;
+        return { records: data?.records || [], totalRow: data?.totalRow || 0 };
+      },
+    },
+  },
+  pagerConfig: {
+    pageSize: 10,
+    pageSizes: [10, 20, 50, 100],
+  },
+};
+
+const [Grid, gridApi] = useVbenVxeGrid({ formOptions, gridOptions });
 
 function onCreate() {
   formModalApi.setData({}).open();
 }
 
-function onEdit(row: PlatformInfo) {
+function onEdit(row: any) {
   formModalApi.setData({ ...row }).open();
 }
 
-function getActions(row: PlatformInfo) {
+function refreshGrid() {
+  gridApi.query();
+}
+
+function onDelete(row: any) {
+  deletePlatformInfoApi(row.id)
+    .then(() => {
+      ElMessage.success('平台删除成功');
+      refreshGrid();
+    })
+    .catch(() => {
+      ElMessage.error('删除失败');
+    });
+}
+
+function getActions(row: any) {
   return [
     {
       text: '编辑',
+      icon: 'lucide:edit',
       onClick: () => onEdit(row),
     },
     {
       text: '删除',
+      icon: 'lucide:trash-2',
       danger: true,
       popConfirm: {
         title: `确定要删除【${row.name}】吗？`,
-        confirm: () => handleDelete(row.id!, row.name!),
+        confirm: () => onDelete(row),
         okText: '确定',
         cancelText: '取消',
       },
     },
   ];
 }
-
-async function handleDelete(id: string, name: string) {
-  try {
-    await deletePlatformInfoApi(id);
-    ElMessage.success('平台删除成功');
-    loadData();
-  } catch {
-    ElMessage.error('删除失败');
-  }
-}
-
-function handlePageChange(val: number) {
-  page.value = val;
-  loadData();
-}
-
-function handleSizeChange(val: number) {
-  pageSize.value = val;
-  page.value = 1;
-  loadData();
-}
-
-function refreshGrid() {
-  loadData();
-}
-
-onMounted(() => {
-  loadData();
-});
 </script>
 
 <template>
   <Page auto-content-height>
-    <div class="page-container">
-      <ElCard class="search-section" :body-style="{ padding: '12px 20px' }">
-        <FilterForm />
-      </ElCard>
+    <FormModal @success="refreshGrid" />
+    <Grid table-title="三方平台列表">
+      <template #toolbar-tools>
+        <ElButton type="primary" @click="onCreate">新增</ElButton>
+      </template>
 
-      <ElCard class="table-section" :body-style="{ padding: '20px' }">
-        <div class="table-toolbar">
-          <ElButton type="primary" @click="onCreate">
-            <ElIcon><IconifyIcon icon="lucide:plus" /></ElIcon>
-            新增
-          </ElButton>
-          <ElButton @click="loadData">
-            <ElIcon><IconifyIcon icon="lucide:refresh-cw" /></ElIcon>
-            刷新
-          </ElButton>
-        </div>
+      <template #typeSlot="{ row }">
+        <ElTag type="primary" size="small">
+          {{ typeLabels[row.type] || row.type }}
+        </ElTag>
+      </template>
 
-        <ElTable
-          :data="tableData"
-          stripe
-          v-loading="loading"
-          empty-text="暂无数据"
+      <template #statusSlot="{ row }">
+        <ElTag
+          :type="row.status === '1' ? 'success' : 'danger'"
+          size="small"
         >
-          <template v-for="col in columns" :key="col.label">
-            <ElTableColumn v-if="!col.slot" v-bind="col" />
-            <ElTableColumn v-else v-bind="col">
-              <template #default="scope">
-                <template v-if="col.slot === 'type'">
-                  <ElTag type="primary" size="small">
-                    {{ typeLabels[scope.row.type] || scope.row.type }}
-                  </ElTag>
-                </template>
-                <template v-else-if="col.slot === 'status'">
-                  <ElTag
-                    :type="scope.row.status === '1' ? 'success' : 'danger'"
-                    size="small"
-                  >
-                    {{ scope.row.status === '1' ? '启用' : '禁用' }}
-                  </ElTag>
-                </template>
-                <template v-else-if="col.slot === 'secret'">
-                  <span class="secret-text">{{ scope.row.corpsecret?.slice(0, 8) }}******</span>
-                </template>
-                <template v-else-if="col.slot === 'time'">
-                  {{ scope.row.createTime?.replace('T', ' ')?.slice(0, 16) }}
-                </template>
-              </template>
-            </ElTableColumn>
-          </template>
-          <ElTableColumn label="操作" width="200">
-            <template #default="{ row }">
-              <VbenTableAction :actions="getActions(row as PlatformInfo)" />
-            </template>
-          </ElTableColumn>
-        </ElTable>
+          {{ row.status === '1' ? '启用' : '禁用' }}
+        </ElTag>
+      </template>
 
-        <div class="pagination-wrapper">
-          <ElPagination
-            v-model:current-page="page"
-            v-model:page-size="pageSize"
-            :total="total"
-            :page-sizes="[10, 20, 50, 100]"
-            layout="total, sizes, prev, pager, next, jumper"
-            background
-            @current-change="handlePageChange"
-            @size-change="handleSizeChange"
-          />
-        </div>
-      </ElCard>
-      <FormModal @success="refreshGrid" />
-    </div>
+      <template #secretSlot="{ row }">
+        <span class="secret-text">{{ row.corpsecret?.slice(0, 8) }}******</span>
+      </template>
+
+      <template #timeSlot="{ row }">
+        {{ row.createTime?.replace('T', ' ')?.slice(0, 16) }}
+      </template>
+
+      <template #action="{ row }">
+        <VbenTableAction
+          align="center"
+          :actions="getActions(row)"
+        />
+      </template>
+    </Grid>
   </Page>
 </template>
 
 <style scoped>
-.page-container {
-  @apply bg-background-deep;
-}
-
-.search-section {
-  border-radius: 12px;
-  margin-bottom: 16px;
-}
-
-.search-section :deep(.vben-form) {
-  align-items: center;
-}
-
-.table-section {
-  border-radius: 12px;
-}
-
-.table-toolbar {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-}
-
-.pagination-wrapper {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 1rem;
-}
-
 .secret-text {
   font-family: monospace;
   font-size: 12px;

@@ -12,9 +12,9 @@ function handleUnauthorized(): void {
   import('vant').then(({ showFailToast }) => {
     showFailToast('登录已过期，请重新登录');
   });
-  import('../router').then(({ default: router }) => {
-    router.push('/login');
-  });
+  setTimeout(() => {
+    window.location.replace('/login');
+  }, 500);
 }
 
 export interface FrontChatStreamRequest {
@@ -96,6 +96,10 @@ export function streamFrontChat(
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
+        if (!(value instanceof Uint8Array)) {
+          console.error('[SSE] streamFrontChat: received non-Uint8Array chunk', typeof value);
+          continue;
+        }
         buffer += decoder.decode(value, { stream: true });
         const parts = buffer.split('\n');
         buffer = parts.pop() || '';
@@ -202,6 +206,10 @@ export function streamFrontHarnessChat(
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
+        if (!(value instanceof Uint8Array)) {
+          console.error('[SSE] streamFrontHarnessChat: received non-Uint8Array chunk', typeof value);
+          continue;
+        }
         buffer += decoder.decode(value, { stream: true });
         const parts = buffer.split('\n');
         buffer = parts.pop() || '';
@@ -300,9 +308,11 @@ export async function confirmFrontHarnessChat(
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-      if (!value) {
-        throw new Error('Received empty chunk from SSE stream');
+      if (!(value instanceof Uint8Array)) {
+        console.error('[SSE] confirmFrontHarnessChat: received non-Uint8Array chunk', typeof value);
+        throw new Error(`SSE stream received invalid chunk type: ${typeof value}`);
       }
+      if (value.length === 0) continue;
       buffer += decoder.decode(value, { stream: true });
       const parts = buffer.split('\n');
       buffer = parts.pop() || '';
@@ -324,6 +334,18 @@ export async function confirmFrontHarnessChat(
   } catch (error: any) {
     // SSE 流读取过程中的异常，包装为更友好的错误信息
     if (error.name === 'AbortError') return;
+    // 连接异常中断但已有部分数据：刷出剩余内容后优雅结束，避免弹出错误提示
+    if (currentData || buffer?.trim()) {
+      if (buffer?.trim()) {
+        const line = buffer.trim();
+        if (line.startsWith('data:')) {
+          currentData = line.slice(5).trim();
+          dispatchEvent();
+        }
+      }
+      onComplete?.();
+      return;
+    }
     throw new Error(`SSE stream error: ${error.message}`);
   }
 }
@@ -396,6 +418,10 @@ export function streamFrontChatSql(
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
+        if (!(value instanceof Uint8Array)) {
+          console.error('[SSE] streamFrontChatSql: received non-Uint8Array chunk', typeof value);
+          continue;
+        }
         buffer += decoder.decode(value, { stream: true });
         const parts = buffer.split('\n');
         buffer = parts.pop() || '';

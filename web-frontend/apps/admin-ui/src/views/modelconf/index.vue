@@ -324,8 +324,10 @@ async function handleTestConnection(config: ModelConfig) {
   try {
     testingId.value = config.id;
     const result = await testModelConfigConnectionApi(config);
-    if (result) {
+    if (result && result?.success == true) {
       ElMessage.success('连接测试成功！');
+    }else {
+      ElMessage.error(result?.message);
     }
   } catch {
     ElMessage.error('连接测试过程中发生错误');

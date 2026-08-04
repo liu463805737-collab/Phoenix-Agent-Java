@@ -59,10 +59,20 @@ public class PythonAnalyzeNode extends AabstractNodeAction {
 		// 检查是否进入降级模式
 		boolean isFallbackMode = StateUtil.getObjectValue(state, PYTHON_FALLBACK_MODE, Boolean.class, false);
 
-		if (isFallbackMode) {
+		// Python 执行结果为空时同样降级处理，避免用空数据调用 LLM 分析产生误导性结论
+		boolean pythonOutputEmpty = pythonOutput == null || pythonOutput.isBlank();
+
+		if (isFallbackMode || pythonOutputEmpty) {
 			// 降级模式
-			String fallbackMessage = "Python 高级分析功能暂时不可用，出现错误";
-			log.warn("Python分析节点检测到降级模式，返回固定提示信息");
+			String fallbackMessage = pythonOutputEmpty
+					? "Python 执行结果为空，无法进行高级分析，已降级处理"
+					: "Python 高级分析功能暂时不可用，出现错误";
+			if (pythonOutputEmpty) {
+				log.warn("Python执行结果为空，Python分析节点进入降级模式");
+			}
+			else {
+				log.warn("Python分析节点检测到降级模式，返回固定提示信息");
+			}
 
 			Flux<ChatResponse> fallbackFlux = Flux.just(ChatResponseUtil.createResponse(fallbackMessage));
 

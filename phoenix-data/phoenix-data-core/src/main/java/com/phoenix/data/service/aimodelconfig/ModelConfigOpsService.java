@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 /**
@@ -163,20 +164,64 @@ public class ModelConfigOpsService {
 	 * 提取更友好的错误信息（处理常见的 HTTP 状态码）
 	 */
 	private String parseErrorMessage(Exception e) {
-		// 如果是 401，通常是 Key 错
-		if (e.getMessage().contains("401")) {
-			return "鉴权失败 (401)，请检查 API Key 是否正确。";
+		String rawMsg = e.getMessage();
+		if (rawMsg == null) {
+			return "未知错误";
 		}
-		// 如果是 404，通常是 BaseUrl 或 Path 错
-		if (e.getMessage().contains("404")) {
-			return "接口未找到 (404)，请检查 Base URL 或者路径配置地址。";
+		String httpStatus = extractHttpStatus(rawMsg);
+		String apiErrorMessage = extractApiErrorMessage(rawMsg);
+		if (httpStatus != null && apiErrorMessage != null) {
+			return formatErrorByStatus(httpStatus) + " " + apiErrorMessage;
 		}
-		// 如果是 429，额度没了
-		if (e.getMessage().contains("429")) {
-			return "请求过多或余额不足 (429)，请检查厂商额度。";
+		if (apiErrorMessage != null) {
+			return apiErrorMessage;
 		}
-		// 其他错误直接返回原样
-		return e.getMessage();
+		if (httpStatus != null) {
+			return formatErrorByStatus(httpStatus);
+		}
+		return rawMsg;
+	}
+
+	private String extractHttpStatus(String rawMsg) {
+		int spaceIdx = rawMsg.indexOf(" ");
+		if (spaceIdx < 0) {
+			return null;
+		}
+		String statusPart = rawMsg.substring(0, spaceIdx).trim();
+		if (statusPart.matches("\\d{3}")) {
+			return statusPart;
+		}
+		return null;
+	}
+
+	private String extractApiErrorMessage(String rawMsg) {
+		int jsonStart = rawMsg.indexOf("{");
+		if (jsonStart < 0) {
+			return null;
+		}
+		String jsonPart = rawMsg.substring(jsonStart);
+		try {
+			JsonNode node = objectMapper.readTree(jsonPart);
+			JsonNode error = node.get("error");
+			if (error != null) {
+				JsonNode message = error.get("message");
+				if (message != null && message.isTextual()) {
+					return message.asText();
+				}
+			}
+		}
+		catch (Exception ignored) {
+		}
+		return null;
+	}
+
+	private String formatErrorByStatus(String status) {
+		return switch (status) {
+			case "401" -> "鉴权失败 (401)，请检查 API Key 是否正确。";
+			case "404" -> "接口未找到 (404)，请检查 Base URL 或者路径配置地址。";
+			case "429" -> "请求过多或余额不足 (429)，请检查厂商额度。";
+			default -> "请求失败 (" + status + ")";
+		};
 	}
 
 }

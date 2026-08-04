@@ -32,6 +32,31 @@ public interface LlmService {
 	Flux<ChatResponse> callUser(String user);
 
 	/**
+	 * 调用大模型，指定最大输出 token 数（用于长内容生成，减少截断）
+	 * @param system 系统提示词
+	 * @param user 用户提示词
+	 * @param maxOutputTokens 最大输出 token 数
+	 * @return ChatResponse 响应流
+	 */
+	Flux<ChatResponse> call(String system, String user, int maxOutputTokens);
+
+	/**
+	 * 仅传入系统提示词调用大模型，指定最大输出 token 数
+	 * @param system 系统提示词
+	 * @param maxOutputTokens 最大输出 token 数
+	 * @return ChatResponse 响应流
+	 */
+	Flux<ChatResponse> callSystem(String system, int maxOutputTokens);
+
+	/**
+	 * 仅传入用户提示词调用大模型，指定最大输出 token 数
+	 * @param user 用户提示词
+	 * @param maxOutputTokens 最大输出 token 数
+	 * @return ChatResponse 响应流
+	 */
+	Flux<ChatResponse> callUser(String user, int maxOutputTokens);
+
+	/**
 	 * 将响应流阻塞转换为字符串（已废弃）
 	 * @deprecated 建议直接使用流式处理
 	 * @param responseFlux ChatResponse 响应流
