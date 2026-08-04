@@ -51,8 +51,6 @@ public class PythonGenerateNode extends AabstractNodeAction {
 
 	private final CodeExecutorProperties codeExecutorProperties;
 
-	private final DataAgentProperties dataAgentProperties;
-
 	private final LlmService llmService;
 
 	@Override
@@ -64,13 +62,11 @@ public class PythonGenerateNode extends AabstractNodeAction {
 	 * 构造 Python 生成节点。
 	 *
 	 * @param codeExecutorProperties 代码执行器配置
-	 * @param dataAgentProperties    数据智能体配置
 	 * @param llmService LLM 服务
 	 */
-	public PythonGenerateNode(CodeExecutorProperties codeExecutorProperties, DataAgentProperties dataAgentProperties,
+	public PythonGenerateNode(CodeExecutorProperties codeExecutorProperties,
 			LlmService llmService) {
 		this.codeExecutorProperties = codeExecutorProperties;
-		this.dataAgentProperties = dataAgentProperties;
 		this.llmService = llmService;
 		this.objectMapper = new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL);
 	}
@@ -157,8 +153,7 @@ public class PythonGenerateNode extends AabstractNodeAction {
 
 		Flux<ChatResponse> currentCall = (depth == 0)
 				? llmService.call(systemPrompt, userPrompt)
-				: llmService.callUser(buildRegeneratePrompt(systemPrompt, userPrompt, depth),
-						dataAgentProperties.getLlmMaxOutputTokens());
+				: llmService.callUser(buildRegeneratePrompt(systemPrompt, userPrompt, depth));
 		currentCall = currentCall.doOnNext(r -> lastResponse[0] = r);
 
 		return currentCall.collectList()

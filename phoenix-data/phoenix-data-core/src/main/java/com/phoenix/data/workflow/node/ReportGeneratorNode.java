@@ -2,20 +2,19 @@ package com.phoenix.data.workflow.node;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.StrUtil;
+import com.alibaba.cloud.ai.graph.GraphResponse;
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.phoenix.data.dto.planner.ExecutionStep;
 import com.phoenix.data.dto.planner.Plan;
 import com.phoenix.data.entity.UserPromptConfig;
 import com.phoenix.data.enums.TextType;
 import com.phoenix.data.prompt.PromptHelper;
-import com.phoenix.data.properties.DataAgentProperties;
 import com.phoenix.data.service.llm.LlmService;
 import com.phoenix.data.service.prompt.UserPromptService;
 import com.phoenix.data.util.ChatResponseUtil;
-import com.phoenix.data.utils.FluxUtil;
 import com.phoenix.data.util.StateUtil;
-import com.alibaba.cloud.ai.graph.GraphResponse;
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
+import com.phoenix.data.utils.FluxUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.converter.BeanOutputConverter;
@@ -49,8 +48,6 @@ public class ReportGeneratorNode extends AabstractNodeAction {
 	private final BeanOutputConverter<Plan> converter;
 
 	private final UserPromptService promptConfigService;
-
-	private int llmMaxOutputTokens = 50000;
 
 	@Override
 	public String getChName() {
@@ -199,7 +196,7 @@ public class ReportGeneratorNode extends AabstractNodeAction {
 
 		ChatResponse[] lastResponse = new ChatResponse[1];
 
-		Flux<ChatResponse> currentCall = llmService.callUser(prompt, llmMaxOutputTokens)
+		Flux<ChatResponse> currentCall = llmService.callUser(prompt)
 			.doOnNext(r -> {
 				lastResponse[0] = r;
 				fullReport.append(ChatResponseUtil.getText(r));

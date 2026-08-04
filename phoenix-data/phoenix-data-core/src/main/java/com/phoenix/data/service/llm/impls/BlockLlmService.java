@@ -1,6 +1,7 @@
 package com.phoenix.data.service.llm.impls;
 
 import com.phoenix.data.service.aimodelconfig.AiModelRegistry;
+import com.phoenix.data.service.llm.AbstractLlmService;
 import com.phoenix.data.service.llm.LlmService;
 import lombok.AllArgsConstructor;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -12,7 +13,7 @@ import reactor.core.publisher.Mono;
  * 阻塞式 LLM 服务实现，使用同步方式调用大模型并返回响应。
  */
 @AllArgsConstructor
-public class BlockLlmService implements LlmService {
+public class BlockLlmService extends AbstractLlmService implements LlmService {
 
 	private final AiModelRegistry registry;
 
@@ -25,7 +26,7 @@ public class BlockLlmService implements LlmService {
 	@Override
 	public Flux<ChatResponse> call(String system, String user) {
 		return Mono
-			.fromCallable(() -> registry.getChatClient().prompt().system(system).user(user).call().chatResponse())
+			.fromCallable(() -> registry.getChatClient().prompt().options(this.setMaxtokens(system, user)).system(system).user(user).call().chatResponse())
 			.flux();
 	}
 
@@ -36,7 +37,7 @@ public class BlockLlmService implements LlmService {
 	 */
 	@Override
 	public Flux<ChatResponse> callSystem(String system) {
-		return Mono.fromCallable(() -> registry.getChatClient().prompt().system(system).call().chatResponse()).flux();
+		return Mono.fromCallable(() -> registry.getChatClient().prompt().options(this.setMaxtokens(system, null)).system(system).call().chatResponse()).flux();
 	}
 
 	/**
@@ -46,7 +47,7 @@ public class BlockLlmService implements LlmService {
 	 */
 	@Override
 	public Flux<ChatResponse> callUser(String user) {
-		return Mono.fromCallable(() -> registry.getChatClient().prompt().user(user).call().chatResponse()).flux();
+		return Mono.fromCallable(() -> registry.getChatClient().prompt().options(this.setMaxtokens(null, user)).user(user).call().chatResponse()).flux();
 	}
 
 	/**
