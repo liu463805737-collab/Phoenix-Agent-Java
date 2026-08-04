@@ -3,7 +3,6 @@ package com.phoenix.data.service.llm.impls;
 import com.phoenix.data.service.aimodelconfig.AiModelRegistry;
 import com.phoenix.data.service.llm.AbstractLlmService;
 import com.phoenix.data.service.llm.LlmService;
-import lombok.AllArgsConstructor;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import reactor.core.publisher.Flux;
@@ -11,10 +10,12 @@ import reactor.core.publisher.Flux;
 /**
  * 流式 LLM 服务实现，使用流式方式调用大模型并返回响应流。
  */
-@AllArgsConstructor
 public class StreamLlmService extends AbstractLlmService implements LlmService {
 
-    private final AiModelRegistry registry;
+
+    public StreamLlmService(AiModelRegistry registry) {
+        super(registry);
+    }
 
     /**
      * 使用系统提示词和用户提示词流式调用大模型
@@ -25,7 +26,7 @@ public class StreamLlmService extends AbstractLlmService implements LlmService {
      */
     @Override
     public Flux<ChatResponse> call(String system, String user) {
-        return registry.getChatClient().prompt().options(this.setMaxtokens(system, user)).system(system).user(user).stream().chatResponse();
+        return this.getChatClientRequestSpec(system, user).stream().chatResponse();
     }
 
     /**
@@ -36,7 +37,7 @@ public class StreamLlmService extends AbstractLlmService implements LlmService {
      */
     @Override
     public Flux<ChatResponse> callSystem(String system) {
-        return registry.getChatClient().prompt().options(this.setMaxtokens(system, null)).system(system).stream().chatResponse();
+        return this.getChatClientRequestSpec(system, null).stream().chatResponse();
     }
 
     /**
@@ -47,7 +48,7 @@ public class StreamLlmService extends AbstractLlmService implements LlmService {
      */
     @Override
     public Flux<ChatResponse> callUser(String user) {
-        return registry.getChatClient().prompt().options(this.setMaxtokens(null, user)).user(user).stream().chatResponse();
+        return this.getChatClientRequestSpec(null, user).stream().chatResponse();
     }
 
     /**
@@ -60,12 +61,7 @@ public class StreamLlmService extends AbstractLlmService implements LlmService {
      */
     @Override
     public Flux<ChatResponse> call(String system, String user, int maxOutputTokens) {
-        return registry.getChatClient().prompt()
-                .options(OpenAiChatOptions.builder().maxTokens(maxOutputTokens).build())
-                .system(system)
-                .user(user)
-                .stream()
-                .chatResponse();
+        return this.getChatClientRequestSpec(system, user, maxOutputTokens).stream().chatResponse();
     }
 
     /**
@@ -77,9 +73,7 @@ public class StreamLlmService extends AbstractLlmService implements LlmService {
      */
     @Override
     public Flux<ChatResponse> callSystem(String system, int maxOutputTokens) {
-        return registry.getChatClient().prompt()
-                .options(OpenAiChatOptions.builder().maxTokens(maxOutputTokens).build())
-                .system(system)
+        return  this.getChatClientRequestSpec(system, null, maxOutputTokens)
                 .stream()
                 .chatResponse();
     }
@@ -93,9 +87,7 @@ public class StreamLlmService extends AbstractLlmService implements LlmService {
      */
     @Override
     public Flux<ChatResponse> callUser(String user, int maxOutputTokens) {
-        return registry.getChatClient().prompt()
-                .options(OpenAiChatOptions.builder().maxTokens(maxOutputTokens).build())
-                .user(user)
+        return this.getChatClientRequestSpec(null, user, maxOutputTokens)
                 .stream()
                 .chatResponse();
     }

@@ -12,10 +12,11 @@ import reactor.core.publisher.Mono;
 /**
  * 阻塞式 LLM 服务实现，使用同步方式调用大模型并返回响应。
  */
-@AllArgsConstructor
 public class BlockLlmService extends AbstractLlmService implements LlmService {
 
-	private final AiModelRegistry registry;
+	public BlockLlmService(AiModelRegistry registry) {
+		super(registry);
+	}
 
 	/**
 	 * 使用系统提示词和用户提示词同步调用大模型
@@ -26,7 +27,7 @@ public class BlockLlmService extends AbstractLlmService implements LlmService {
 	@Override
 	public Flux<ChatResponse> call(String system, String user) {
 		return Mono
-			.fromCallable(() -> registry.getChatClient().prompt().options(this.setMaxtokens(system, user)).system(system).user(user).call().chatResponse())
+			.fromCallable(() -> this.getChatClientRequestSpec(system, user).call().chatResponse())
 			.flux();
 	}
 
@@ -37,7 +38,7 @@ public class BlockLlmService extends AbstractLlmService implements LlmService {
 	 */
 	@Override
 	public Flux<ChatResponse> callSystem(String system) {
-		return Mono.fromCallable(() -> registry.getChatClient().prompt().options(this.setMaxtokens(system, null)).system(system).call().chatResponse()).flux();
+		return Mono.fromCallable(() -> this.getChatClientRequestSpec(system, null).call().chatResponse()).flux();
 	}
 
 	/**
@@ -47,7 +48,7 @@ public class BlockLlmService extends AbstractLlmService implements LlmService {
 	 */
 	@Override
 	public Flux<ChatResponse> callUser(String user) {
-		return Mono.fromCallable(() -> registry.getChatClient().prompt().options(this.setMaxtokens(null, user)).user(user).call().chatResponse()).flux();
+		return Mono.fromCallable(() -> this.getChatClientRequestSpec(null, user).call().chatResponse()).flux();
 	}
 
 	/**
@@ -59,10 +60,7 @@ public class BlockLlmService extends AbstractLlmService implements LlmService {
 	 */
 	@Override
 	public Flux<ChatResponse> call(String system, String user, int maxOutputTokens) {
-		return Mono.fromCallable(() -> registry.getChatClient().prompt()
-			.options(OpenAiChatOptions.builder().maxTokens(maxOutputTokens).build())
-			.system(system)
-			.user(user)
+		return Mono.fromCallable(() -> this.getChatClientRequestSpec(system, user, maxOutputTokens)
 			.call()
 			.chatResponse()).flux();
 	}
@@ -75,9 +73,7 @@ public class BlockLlmService extends AbstractLlmService implements LlmService {
 	 */
 	@Override
 	public Flux<ChatResponse> callSystem(String system, int maxOutputTokens) {
-		return Mono.fromCallable(() -> registry.getChatClient().prompt()
-			.options(OpenAiChatOptions.builder().maxTokens(maxOutputTokens).build())
-			.system(system)
+		return Mono.fromCallable(() -> this.getChatClientRequestSpec(system, null, maxOutputTokens)
 			.call()
 			.chatResponse()).flux();
 	}
@@ -90,9 +86,7 @@ public class BlockLlmService extends AbstractLlmService implements LlmService {
 	 */
 	@Override
 	public Flux<ChatResponse> callUser(String user, int maxOutputTokens) {
-		return Mono.fromCallable(() -> registry.getChatClient().prompt()
-			.options(OpenAiChatOptions.builder().maxTokens(maxOutputTokens).build())
-			.user(user)
+		return Mono.fromCallable(() -> this.getChatClientRequestSpec(null, user, maxOutputTokens)
 			.call()
 			.chatResponse()).flux();
 	}
