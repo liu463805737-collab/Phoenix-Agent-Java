@@ -35,6 +35,7 @@ import com.phoenix.platform.service.thirdparty.ThirdPartyLoginFactory;
 import com.phoenix.platform.service.thirdparty.ThirdPartyLoginStrategy;
 import com.phoenix.common.vo.front.LoginVO;
 import com.phoenix.privilege.constant.LoginConstant;
+import com.phoenix.privilege.service.IPrivilegeDepartmentService;
 import com.phoenix.tools.vo.ReturnVo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -62,6 +63,7 @@ public class AccountInfoServiceImpl extends ServiceImpl<AccountInfoMapper, Accou
     private final AgentService agentService;
     private final PlatformInfoService platformInfoService;
     private final ThirdPartyLoginFactory thirdPartyLoginFactory;
+    private final IPrivilegeDepartmentService departmentService;
 
     @Override
     public List<Agent> getMyAgents() {
@@ -273,6 +275,10 @@ public class AccountInfoServiceImpl extends ServiceImpl<AccountInfoMapper, Accou
                 .realName(account.getRealName())
                 .groups(groupVOS)
                 .build();
+        if (StrUtil.isNotBlank(account.getDeptId())) {
+            List<String> descendantIds = departmentService.getDescendantIds(account.getDeptId());
+            loginVO.setDeptIds(descendantIds);
+        }
         StpUtil.getSession().set(ACCOUNT_LOGIN, loginVO);
         return ReturnVo.ok(loginVO);
     }

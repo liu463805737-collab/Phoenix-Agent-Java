@@ -6,6 +6,7 @@ import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
+import com.alibaba.fastjson2.JSON;
 import com.phoenix.common.vo.front.LoginVO;
 import com.phoenix.data.dto.GraphRequest;
 import com.phoenix.data.enums.TextType;
@@ -203,8 +204,8 @@ public class GraphServiceImpl implements GraphService {
         String loginVo = "";
         if (loginVO != null) {
             loginVo = """
-                    登录人相关信息：姓名：%s, 工号：%s, 账号：%s,  邮箱：%s \n
-                    """.formatted(loginVO.getRealName(), loginVO.getUserCode(), loginVO.getUsername(), loginVO.getEmail());
+                    登录人相关信息：姓名：%s, 工号：%s, 账号：%s,  邮箱：%s, 部门ids:%s \n
+                    """.formatted(loginVO.getRealName(), loginVO.getUserCode(), loginVO.getUsername(), loginVO.getEmail(), JSON.toJSONString(loginVO.getDeptIds()));
         }
         return loginVo;
     }
