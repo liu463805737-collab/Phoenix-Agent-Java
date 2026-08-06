@@ -20,12 +20,9 @@ import org.springframework.boot.jdbc.autoconfigure.DataSourceProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
-import org.springframework.util.StringUtils;
 import redis.clients.jedis.ConnectionPoolConfig;
 import redis.clients.jedis.JedisPooled;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
 @Configuration
@@ -133,17 +130,5 @@ public class HarnessConfig {
                 .embeddingModel(embeddings)
                 .embeddingStore(harnessPgVectorStore)
                 .build();
-    }
-
-    private String buildRedisUrl(DataRedisProperties dataRedisProperties) {
-        StringBuilder uri = new StringBuilder("redis://");
-        if (StringUtils.hasText(dataRedisProperties.getPassword())) {
-            uri.append(":").append(URLEncoder.encode(dataRedisProperties.getPassword(), StandardCharsets.UTF_8)).append("@");
-        }
-        uri.append(dataRedisProperties.getHost()).append(":").append(dataRedisProperties.getPort());
-        if (dataRedisProperties.getDatabase() > 0) {
-            uri.append("/").append(dataRedisProperties.getDatabase());
-        }
-        return uri.toString();
     }
 }
