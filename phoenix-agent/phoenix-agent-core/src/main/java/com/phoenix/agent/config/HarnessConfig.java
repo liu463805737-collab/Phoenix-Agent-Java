@@ -1,5 +1,8 @@
 package com.phoenix.agent.config;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 import com.phoenix.data.dto.ModelConfigDTO;
 import com.phoenix.data.enums.ModelType;
 import com.phoenix.data.service.aimodelconfig.ModelConfigDataService;
@@ -117,7 +120,7 @@ public class HarnessConfig {
     private String buildRedisUrl(DataRedisProperties dataRedisProperties) {
         StringBuilder uri = new StringBuilder("redis://");
         if (StringUtils.hasText(dataRedisProperties.getPassword())) {
-            uri.append(":").append(dataRedisProperties.getPassword()).append("@");
+            uri.append(":").append(URLEncoder.encode(dataRedisProperties.getPassword(), StandardCharsets.UTF_8)).append("@");
         }
         uri.append(dataRedisProperties.getHost()).append(":").append(dataRedisProperties.getPort());
         if (dataRedisProperties.getDatabase() > 0) {
