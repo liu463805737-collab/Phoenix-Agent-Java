@@ -18,11 +18,12 @@ import lombok.NoArgsConstructor;
 public class RagFileInfo extends BaseModel {
     @Id(keyType = KeyType.Generator, value = KeyGenerators.snowFlakeId)
     private String id;
-    // pdf word md
+    // pdf word md text
     private String fileType;
     private String categoryId;
     private String name;
     private String title;
+    private String content;
     private String description;
     private String path;
     // 1为按页生成docment 2按照段落生成docment
