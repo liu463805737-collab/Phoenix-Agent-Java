@@ -1,18 +1,29 @@
-<!--
- * Copyright 2025 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
--->
+<script setup lang="ts">
+import type { GraphRequest } from '#/api/core/graph';
+
+import { ref } from 'vue';
+
+import { ChatDotRound, Check, Close } from '@element-plus/icons-vue';
+import { ElButton, ElIcon, ElInput } from 'element-plus';
+
+defineOptions({ name: 'HumanFeedback' });
+
+const props = defineProps<{
+  request: GraphRequest;
+}>();
+
+const emit = defineEmits<{
+  (e: 'feedback', request: GraphRequest, rejectedPlan: boolean, content: string): void;
+}>();
+
+const feedbackInput = ref('');
+
+const submitFeedback = (rejectedPlan: boolean) => {
+  const feedbackContent = feedbackInput.value.trim() || 'Accept';
+  emit('feedback', props.request, rejectedPlan, feedbackContent);
+  feedbackInput.value = '';
+};
+</script>
 
 <template>
   <div class="human-feedback-area">
@@ -42,58 +53,6 @@
     </div>
   </div>
 </template>
-
-<script lang="ts">
-import { ref, defineComponent } from 'vue';
-import type { PropType } from 'vue';
-import type { GraphRequest } from '#/api/core/graph';
-import { ElButton, ElIcon, ElInput } from 'element-plus';
-import { ChatDotRound, Check, Close } from '@element-plus/icons-vue';
-
-export default defineComponent({
-  name: 'HumanFeedback',
-  components: {
-    ElButton,
-    ElIcon,
-    ElInput,
-    ChatDotRound,
-    Check,
-    Close,
-  },
-  props: {
-    request: {
-      type: Object as PropType<GraphRequest>,
-      required: true,
-    },
-    handleFeedback: {
-      type: Function as PropType<
-        (
-          request: GraphRequest,
-          rejectedPlan: boolean,
-          content: string,
-        ) => Promise<void>
-      >,
-      required: true,
-    },
-  },
-  setup(props) {
-    const feedbackInput = ref('');
-
-    const submitFeedback = (rejectedPlan: boolean) => {
-      // 准备反馈内容，如果用户输入为空则使用默认值
-      const feedbackContent = feedbackInput.value.trim() || 'Accept';
-      props.handleFeedback(props.request, rejectedPlan, feedbackContent);
-      // 重置输入
-      feedbackInput.value = '';
-    };
-
-    return {
-      feedbackInput,
-      submitFeedback,
-    };
-  },
-});
-</script>
 
 <style scoped>
 .human-feedback-area {
@@ -129,7 +88,6 @@ export default defineComponent({
   justify-content: flex-end;
 }
 
-/* 响应式设计 */
 @media (max-width: 768px) {
   .feedback-actions {
     flex-direction: column;

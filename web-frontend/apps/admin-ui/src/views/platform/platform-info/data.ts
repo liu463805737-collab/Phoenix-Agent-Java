@@ -1,6 +1,7 @@
 import type { VbenFormSchema } from '#/adapter/form';
 
 import { z } from '#/adapter/form';
+import type { VxeTableGridColumns } from '#/adapter/vxe-table';
 
 export const platformTypeOptions = [
   { value: 'dingtalk', label: '钉钉' },
@@ -28,6 +29,7 @@ export function useSearchFormSchema(): VbenFormSchema[] {
       component: 'Select',
       label: '平台类型',
       componentProps: {
+        clearable: true,
         placeholder: '请选择平台类型',
         options: platformTypeOptions,
         style: { width: '200px' },
@@ -36,24 +38,48 @@ export function useSearchFormSchema(): VbenFormSchema[] {
   ];
 }
 
-export interface ColumnDef {
-  prop?: string;
-  label: string;
-  width?: number;
-  minWidth?: number;
-  slot?: string;
-}
-
-export function useColumns(): ColumnDef[] {
+export function useColumns(): VxeTableGridColumns {
   return [
-    { prop: 'name', label: '平台名称', minWidth: 150 },
-    { label: '平台类型', width: 110, slot: 'type' },
-    { label: '状态', width: 80, slot: 'status' },
-    { prop: 'corpid', label: '企业ID', width: 180 },
-    { label: 'Secret', width: 220, slot: 'secret' },
-    { prop: 'agentid', label: 'AgentId', width: 100 },
-    { prop: 'appKey', label: 'AppKey', width: 200 },
-    { label: '创建时间', width: 170, slot: 'time' },
+    { field: 'name', title: '平台名称', minWidth: 150, align: 'left', resizable: true },
+    {
+      field: 'type',
+      title: '平台类型',
+      width: 110,
+      align: 'center',
+      slots: { default: 'typeSlot' },
+    },
+    {
+      field: 'status',
+      title: '状态',
+      width: 80,
+      align: 'center',
+      slots: { default: 'statusSlot' },
+    },
+    { field: 'corpid', title: '企业ID', width: 180, align: 'left' },
+    {
+      field: 'corpsecret',
+      title: 'Secret',
+      width: 220,
+      align: 'left',
+      slots: { default: 'secretSlot' },
+    },
+    { field: 'agentid', title: 'AgentId', width: 100, align: 'left' },
+    { field: 'appKey', title: 'AppKey', width: 200, align: 'left' },
+    {
+      field: 'createTime',
+      title: '创建时间',
+      width: 170,
+      align: 'center',
+      slots: { default: 'timeSlot' },
+    },
+    {
+      align: 'center',
+      field: 'operation',
+      fixed: 'right',
+      slots: { default: 'action' },
+      title: '操作',
+      width: 160,
+    },
   ];
 }
 

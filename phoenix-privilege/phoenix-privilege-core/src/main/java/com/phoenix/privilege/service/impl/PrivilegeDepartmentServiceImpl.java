@@ -289,6 +289,22 @@ public class PrivilegeDepartmentServiceImpl extends ServiceImpl<PrivilegeDepartm
 	}
 
 	@Override
+	public List<String> getDescendantIds(String deptId) {
+		List<String> result = new ArrayList<>();
+		Deque<String> stack = new ArrayDeque<>();
+		stack.push(deptId);
+		while (!stack.isEmpty()) {
+			String current = stack.pop();
+			result.add(current);
+			List<PrivilegeDepartment> children = getByPid(current);
+			for (PrivilegeDepartment child : children) {
+				stack.push(child.getId());
+			}
+		}
+		return result;
+	}
+
+	@Override
 	public boolean deleteById(String id) {
 		long childCount = QueryChain.of(getMapper()).eq(PrivilegeDepartment::getPid, id).count();
 		if (childCount > 0) {

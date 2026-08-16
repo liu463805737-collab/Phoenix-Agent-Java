@@ -24,6 +24,12 @@ export default defineConfig(async () => {
       ],
       server: {
         proxy: {
+          '/api/upload': {
+            changeOrigin: true,
+            // 不 rewrite，保留 /api 前缀，让后端 FileUploadController 能正确匹配
+            target: targetUrl,
+            ws: true,
+          },
           '/api': {
             changeOrigin: true,
             rewrite: (path) => path.replace(/^\/api/, ''),

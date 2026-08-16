@@ -22,4 +22,6 @@ public interface IPrivilegeDepartmentService extends IService<PrivilegeDepartmen
 
 	boolean deleteById(String id);
 
+	List<String> getDescendantIds(String deptId);
+
 }

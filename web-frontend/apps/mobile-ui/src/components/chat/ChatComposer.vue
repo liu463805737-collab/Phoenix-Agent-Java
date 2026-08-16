@@ -3,11 +3,13 @@ import { nextTick, ref, watch } from 'vue';
 
 interface Props {
   disabled?: boolean;
+  streaming?: boolean;
 }
-const props = withDefaults(defineProps<Props>(), { disabled: false });
+const props = withDefaults(defineProps<Props>(), { disabled: false, streaming: false });
 
 const emit = defineEmits<{
   (e: 'submit', content: string): void;
+  (e: 'stop'): void;
 }>();
 
 const value = ref('');
@@ -56,6 +58,18 @@ function handleKeydown(event: KeyboardEvent) {
         @keydown="handleKeydown"
       />
       <button
+        v-if="streaming"
+        type="button"
+        class="composer__send composer__send--stop"
+        aria-label="停止"
+        @click="emit('stop')"
+      >
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+          <rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" />
+        </svg>
+      </button>
+      <button
+        v-else
         type="submit"
         class="composer__send"
         :class="{ 'is-ready': !!value.trim() && !props.disabled }"
@@ -146,6 +160,15 @@ function handleKeydown(event: KeyboardEvent) {
 
   &:disabled {
     cursor: not-allowed;
+  }
+}
+
+.composer__send--stop {
+  color: #fff;
+  background: #ee0a24;
+
+  &:active {
+    transform: scale(0.94);
   }
 }
 </style>

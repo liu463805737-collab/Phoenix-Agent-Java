@@ -190,6 +190,10 @@ export function streamFrontChat(
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
+        if (!(value instanceof Uint8Array)) {
+          console.error('[SSE] streamFrontChat: received non-Uint8Array chunk', typeof value);
+          continue;
+        }
         buffer += decoder.decode(value, { stream: true });
         const parts = buffer.split('\n');
         buffer = parts.pop() || '';
@@ -300,6 +304,10 @@ export function streamFrontHarnessChat(
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
+        if (!(value instanceof Uint8Array)) {
+          console.error('[SSE] streamFrontChat: received non-Uint8Array chunk', typeof value);
+          continue;
+        }
         buffer += decoder.decode(value, { stream: true });
         const parts = buffer.split('\n');
         buffer = parts.pop() || '';
@@ -377,26 +385,48 @@ export async function confirmFrontHarnessChat(
     }
     currentData = '';
   };
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const parts = buffer.split('\n');
-    buffer = parts.pop() || '';
-    for (const line of parts) {
-      if (line === '') {
-        await dispatchEvent();
-      } else if (line.startsWith('data:')) {
-        currentData = line.slice(5).trim();
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!(value instanceof Uint8Array)) {
+        console.error('[SSE] admin-front: received non-Uint8Array chunk', typeof value);
+        throw new Error(`SSE stream received invalid chunk type: ${typeof value}`);
+      }
+      if (value.length === 0) continue;
+      buffer += decoder.decode(value, { stream: true });
+      const parts = buffer.split('\n');
+      buffer = parts.pop() || '';
+      for (const line of parts) {
+        if (line === '') {
+          await dispatchEvent();
+        } else if (line.startsWith('data:')) {
+          currentData = line.slice(5).trim();
+        }
       }
     }
-  }
-  if (buffer) {
-    const line = buffer.trim();
-    if (line.startsWith('data:')) {
-      currentData = line.slice(5).trim();
-      await dispatchEvent();
+    if (buffer) {
+      const line = buffer.trim();
+      if (line.startsWith('data:')) {
+        currentData = line.slice(5).trim();
+        await dispatchEvent();
+      }
     }
+  } catch (error: any) {
+    if (error.name === 'AbortError') return;
+    // 连接异常中断但已有部分数据：刷出剩余内容后优雅结束
+    if (currentData || buffer?.trim()) {
+      if (buffer) {
+        const line = buffer.trim();
+        if (line.startsWith('data:')) {
+          currentData = line.slice(5).trim();
+          await dispatchEvent();
+        }
+      }
+      await onComplete?.();
+      return;
+    }
+    throw new Error(`SSE stream error: ${error.message}`);
   }
 }
 
@@ -466,6 +496,10 @@ export function streamFrontChatSql(
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
+        if (!(value instanceof Uint8Array)) {
+          console.error('[SSE] streamFrontChat: received non-Uint8Array chunk', typeof value);
+          continue;
+        }
         buffer += decoder.decode(value, { stream: true });
         const parts = buffer.split('\n');
         buffer = parts.pop() || '';

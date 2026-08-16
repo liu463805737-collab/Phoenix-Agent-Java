@@ -39,7 +39,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder;
+import org.springframework.boot.reactor.netty.NettyReactiveWebServerFactory;
 import org.springframework.boot.restclient.RestClientCustomizer;
+import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -49,6 +51,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
+
+import reactor.netty.http.server.HttpServer;
 
 import java.time.Duration;
 import java.util.*;
@@ -108,6 +112,23 @@ public class DataAgentConfiguration implements DisposableBean {
 		return WebClient.builder()
 			.clientConnector(new ReactorClientHttpConnector(
 					HttpClient.create().responseTimeout(Duration.ofSeconds(responseTimeout))));
+	}
+
+	/**
+	 * 配置 Netty 服务器的 idle-timeout 和 read-timeout，
+	 * 防止长时间无数据推送（如长报告生成、慢 SQL / Python 执行）时连接被提前断开。
+	 * @param idleTimeout Netty 空闲超时时间（秒），默认 3600
+	 * @param readTimeout Netty 读取超时时间（秒），默认 3600
+	 * @return WebServerFactoryCustomizer 实例
+	 */
+	@Bean
+	public WebServerFactoryCustomizer<NettyReactiveWebServerFactory> serverTimeoutCustomizer(
+			@Value("${server.netty.idle-timeout:3600}") long idleTimeout,
+			@Value("${server.netty.read-timeout:3600}") long readTimeout) {
+
+		return factory -> factory.addServerCustomizers(httpServer -> httpServer
+			.idleTimeout(Duration.ofSeconds(idleTimeout))
+			.readTimeout(Duration.ofSeconds(readTimeout)));
 	}
 
 	/**

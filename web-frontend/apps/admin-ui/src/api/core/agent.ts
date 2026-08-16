@@ -210,9 +210,12 @@ export async function deletePromptConfigApi(id: number) {
 export async function uploadAvatarApi(file: File): Promise<UploadResult> {
   const formData = new FormData();
   formData.append('file', file);
+  const token = localStorage.getItem('phoenix-token');
+  const headers: Record<string, string> = token ? { 'phoenix-token': token } : {};
   const response = await fetch('/api/upload/avatar', {
     method: 'POST',
     body: formData,
+    headers,
   });
   if (!response.ok) {
     const text = await response.text().catch(() => '');

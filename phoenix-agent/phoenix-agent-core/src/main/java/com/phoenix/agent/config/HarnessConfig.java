@@ -20,9 +20,10 @@ import org.springframework.boot.jdbc.autoconfigure.DataSourceProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
-import org.springframework.util.StringUtils;
+import redis.clients.jedis.ConnectionPoolConfig;
 import redis.clients.jedis.JedisPooled;
-import redis.clients.jedis.UnifiedJedis;
+
+import java.time.Duration;
 
 @Configuration
 public class HarnessConfig {
@@ -30,21 +31,38 @@ public class HarnessConfig {
     @Bean
     @DependsOn(value = "harnessRedisStore")
     public RemoteFilesystemSpec pgRemoteFilesystemSpec(RedisStore redisStore) {
-       return new RemoteFilesystemSpec(redisStore).isolationScope(IsolationScope.USER);
+        return new RemoteFilesystemSpec(redisStore).isolationScope(IsolationScope.USER);
     }
-    
+
     @Bean
     public RedisDistributedStore distributedStore(DataRedisProperties dataRedisProperties) {
-        String url = this.buildRedisUrl(dataRedisProperties);
         return RedisDistributedStore.fromJedis(
-                new JedisPooled(url), "phoenix:session:");
+                this.createJedisPooled(dataRedisProperties), "phoenix:session:");
+    }
+
+    private JedisPooled createJedisPooled(DataRedisProperties dataRedisProperties) {
+        ConnectionPoolConfig poolConfig = new ConnectionPoolConfig();
+        poolConfig.setMaxTotal(dataRedisProperties.getLettuce().getPool().getMaxActive());
+        poolConfig.setMaxIdle(dataRedisProperties.getLettuce().getPool().getMaxIdle());
+        poolConfig.setMinIdle(dataRedisProperties.getLettuce().getPool().getMinIdle());
+        poolConfig.setMaxWait(dataRedisProperties.getLettuce().getPool().getMaxWait());  // Jedis 4.x 直接支持 Duration
+        // 生产环境建议开启
+        poolConfig.setTestWhileIdle(true);
+        poolConfig.setTimeBetweenEvictionRuns(Duration.ofSeconds(30));
+        JedisPooled jedisPooled = new JedisPooled(
+                poolConfig,           // 连接池配置
+                dataRedisProperties.getHost(),                 // 主机
+                dataRedisProperties.getPort(),                // 端口
+                dataRedisProperties.getTimeout().toSecondsPart(),  // 连接超时（毫秒）
+                dataRedisProperties.getPassword(),             // 密码
+                dataRedisProperties.getDatabase()        // 数据库索引
+        );
+        return jedisPooled;
     }
 
     @Bean(name = "harnessRedisStore")
     public RedisStore redisStore(DataRedisProperties dataRedisProperties) {
-        String url = this.buildRedisUrl(dataRedisProperties);
-        UnifiedJedis redisClient = new UnifiedJedis(url);
-        return new RedisStore(redisClient, "phoenix:agentscope:store:");
+        return new RedisStore(this.createJedisPooled(dataRedisProperties), "phoenix:agentscope:store:");
     }
 
 
@@ -112,17 +130,5 @@ public class HarnessConfig {
                 .embeddingModel(embeddings)
                 .embeddingStore(harnessPgVectorStore)
                 .build();
-    }
-
-    private String buildRedisUrl(DataRedisProperties dataRedisProperties) {
-        StringBuilder uri = new StringBuilder("redis://");
-        if (StringUtils.hasText(dataRedisProperties.getPassword())) {
-            uri.append(":").append(dataRedisProperties.getPassword()).append("@");
-        }
-        uri.append(dataRedisProperties.getHost()).append(":").append(dataRedisProperties.getPort());
-        if (dataRedisProperties.getDatabase() > 0) {
-            uri.append("/").append(dataRedisProperties.getDatabase());
-        }
-        return uri.toString();
     }
 }

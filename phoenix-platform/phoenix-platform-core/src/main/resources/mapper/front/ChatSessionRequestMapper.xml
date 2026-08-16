@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.phoenix.platform.mapper.front.ChatSessionRequestMapper">
+
+	<!--
+		分页查询：查询用户对每个智能体的请求记录（消息级明细）
+		关联表：
+		  - tbl_data_chat_session   s  (会话)
+		  - tbl_data_chat_message   m  (消息)
+		  - tbl_platform_account_info a (用户/账户)
+		  - tbl_data_agent          d  (智能体名称)
+	-->
+	<select id="selectPageByQuery" resultType="com.phoenix.platform.vo.ChatSessionRequestVO">
+		SELECT
+			s.id                     AS sessionId,
+			s.agent_id              AS agentId,
+			d.name                  AS agentName,
+			s.title                 AS title,
+			s.user_id               AS userId,
+			a.username              AS username,
+			a.real_name             AS realName,
+			m.role                 AS role,
+			m.content              AS content,
+			m.message_type          AS messageType,
+			m.create_time          AS createTime
+		FROM tbl_data_chat_session s
+		LEFT JOIN tbl_data_chat_message m ON s.id = m.session_id
+		INNER JOIN tbl_platform_account_info a ON a.id = s.user_id
+		LEFT JOIN tbl_data_agent d ON d.id = s.agent_id
+		<where>
+			s.status != 'deleted'
+			<if test="query.agentId != null">
+				AND s.agent_id = #{query.agentId}
+			</if>
+			<if test="query.userId != null and query.userId != ''">
+				AND s.user_id = #{query.userId}
+			</if>
+			<if test="query.title != null and query.title != ''">
+				AND s.title LIKE CONCAT('%', #{query.title}, '%')
+			</if>
+			<if test="query.role != null and query.role != ''">
+				AND m.role = #{query.role}
+			</if>
+			<if test="query.messageType != null and query.messageType != ''">
+				AND m.message_type = #{query.messageType}
+			</if>
+			<if test="query.content != null and query.content != ''">
+				AND m.content LIKE CONCAT('%', #{query.content}, '%')
+			</if>
+			<if test="query.keyword != null and query.keyword != ''">
+				AND (s.title LIKE CONCAT('%', #{query.keyword}, '%')
+					 OR m.content LIKE CONCAT('%', #{query.keyword}, '%')
+					 OR a.username LIKE CONCAT('%', #{query.keyword}, '%')
+					 OR a.real_name LIKE CONCAT('%', #{query.keyword}, '%'))
+			</if>
+			<if test="query.startTime != null and query.startTime != ''">
+				AND m.create_time &gt;= #{query.startTime}::timestamp
+			</if>
+			<if test="query.endTime != null and query.endTime != ''">
+				AND m.create_time &lt;= #{query.endTime}::timestamp
+			</if>
+		</where>
+		ORDER BY m.create_time DESC
+		LIMIT #{limit} OFFSET #{offset}
+	</select>
+
+	<select id="countByQuery" resultType="long">
+		SELECT COUNT(*)
+		FROM tbl_data_chat_session s
+		LEFT JOIN tbl_data_chat_message m ON s.id = m.session_id
+		INNER JOIN tbl_platform_account_info a ON a.id = s.user_id
+		LEFT JOIN tbl_data_agent d ON d.id = s.agent_id
+		<where>
+			s.status != 'deleted'
+			<if test="query.agentId != null">
+				AND s.agent_id = #{query.agentId}
+			</if>
+			<if test="query.userId != null and query.userId != ''">
+				AND s.user_id = #{query.userId}
+			</if>
+			<if test="query.title != null and query.title != ''">
+				AND s.title LIKE CONCAT('%', #{query.title}, '%')
+			</if>
+			<if test="query.role != null and query.role != ''">
+				AND m.role = #{query.role}
+			</if>
+			<if test="query.messageType != null and query.messageType != ''">
+				AND m.message_type = #{query.messageType}
+			</if>
+			<if test="query.content != null and query.content != ''">
+				AND m.content LIKE CONCAT('%', #{query.content}, '%')
+			</if>
+			<if test="query.keyword != null and query.keyword != ''">
+				AND (s.title LIKE CONCAT('%', #{query.keyword}, '%')
+					 OR m.content LIKE CONCAT('%', #{query.keyword}, '%')
+					 OR a.username LIKE CONCAT('%', #{query.keyword}, '%')
+					 OR a.real_name LIKE CONCAT('%', #{query.keyword}, '%'))
+			</if>
+			<if test="query.startTime != null and query.startTime != ''">
+				AND m.create_time &gt;= #{query.startTime}::timestamp
+			</if>
+			<if test="query.endTime != null and query.endTime != ''">
+				AND m.create_time &lt;= #{query.endTime}::timestamp
+			</if>
+		</where>
+	</select>
+
+	<!-- 按智能体维度统计 -->
+	<select id="selectAgentStatsByQuery" resultType="com.phoenix.platform.vo.ChatSessionAgentStatVO">
+		SELECT
+			s.agent_id                AS agentId,
+			d.name                   AS agentName,
+			COUNT(DISTINCT s.user_id) AS userCount,
+			COUNT(DISTINCT s.id)     AS requestCount,
+			MAX(m.create_time)      AS lastRequestTime
+		FROM tbl_data_chat_session s
+		INNER JOIN tbl_platform_account_info a ON a.id = s.user_id
+		LEFT JOIN tbl_data_chat_message m ON s.id = m.session_id
+		LEFT JOIN tbl_data_agent d ON d.id = s.agent_id
+		<where>
+			s.status != 'deleted'
+			<if test="query.agentId != null">
+				AND s.agent_id = #{query.agentId}
+			</if>
+			<if test="query.keyword != null and query.keyword != ''">
+				AND (d.name LIKE CONCAT('%', #{query.keyword}, '%'))
+			</if>
+			<if test="query.startTime != null and query.startTime != ''">
+				AND m.create_time &gt;= #{query.startTime}::timestamp
+			</if>
+			<if test="query.endTime != null and query.endTime != ''">
+				AND m.create_time &lt;= #{query.endTime}::timestamp
+			</if>
+		</where>
+		GROUP BY s.agent_id, d.name
+		ORDER BY requestCount DESC
+		LIMIT #{limit}
+	</select>
+
+	<!-- 按用户维度统计 -->
+	<select id="selectUserStatsByQuery" resultType="com.phoenix.platform.vo.ChatSessionUserStatVO">
+		SELECT
+			s.user_id                 AS userId,
+			a.username                AS username,
+			a.real_name               AS realName,
+			COUNT(DISTINCT s.agent_id) AS agentCount,
+			COUNT(DISTINCT s.id)      AS requestCount,
+			MAX(m.create_time)       AS lastRequestTime
+		FROM tbl_data_chat_session s
+		INNER JOIN tbl_platform_account_info a ON a.id = s.user_id
+		LEFT JOIN tbl_data_chat_message m ON s.id = m.session_id
+		<where>
+			s.status != 'deleted'
+			<if test="query.keyword != null and query.keyword != ''">
+				AND (a.username LIKE CONCAT('%', #{query.keyword}, '%')
+					 OR a.real_name LIKE CONCAT('%', #{query.keyword}, '%'))
+			</if>
+			<if test="query.startTime != null and query.startTime != ''">
+				AND m.create_time &gt;= #{query.startTime}::timestamp
+			</if>
+			<if test="query.endTime != null and query.endTime != ''">
+				AND m.create_time &lt;= #{query.endTime}::timestamp
+			</if>
+		</where>
+		GROUP BY s.user_id, a.username, a.real_name
+		ORDER BY requestCount DESC
+		LIMIT #{limit}
+	</select>
+
+</mapper>

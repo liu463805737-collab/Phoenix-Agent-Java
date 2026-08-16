@@ -1,6 +1,10 @@
 package com.phoenix.data.workflow.node;
 
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.util.StrUtil;
+import com.alibaba.cloud.ai.graph.GraphResponse;
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.phoenix.data.dto.planner.ExecutionStep;
 import com.phoenix.data.dto.planner.Plan;
 import com.phoenix.data.entity.UserPromptConfig;
@@ -9,12 +13,8 @@ import com.phoenix.data.prompt.PromptHelper;
 import com.phoenix.data.service.llm.LlmService;
 import com.phoenix.data.service.prompt.UserPromptService;
 import com.phoenix.data.util.ChatResponseUtil;
-import com.phoenix.data.utils.FluxUtil;
 import com.phoenix.data.util.StateUtil;
-import com.alibaba.cloud.ai.graph.GraphResponse;
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
+import com.phoenix.data.utils.FluxUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.converter.BeanOutputConverter;
@@ -171,29 +171,35 @@ public class ReportGeneratorNode extends AabstractNodeAction {
 		String reportPrompt = PromptHelper.buildReportGeneratorPromptWithOptimization(userRequirementsAndPlan,
 				analysisStepsAndData, summaryAndRecommendations, optimizationConfigs, currDate);
 		log.debug("Report Node Prompt: \n {} \n", reportPrompt);
-		return generateWithContinuation(reportPrompt, 0);
+
+		// 续写时只携带报告结构要求（用户需求+计划+总结），不再重复发送庞大的执行数据，加快续写速度
+		String continuationContext = "## 用户需求与计划\n" + userRequirementsAndPlan + "\n\n## 总结与推荐\n"
+				+ summaryAndRecommendations + "\n";
+		return generateWithContinuation(reportPrompt, continuationContext, new StringBuilder(), 0);
 	}
 
 	/**
 	 * 递归续写：检测到 finish_reason=length 时自动续写，直到完整或达到最大深度。
 	 *
-	 * @param prompt LLM 调用 prompt
+	 * @param prompt 本轮 LLM 调用 prompt
+	 * @param continuationContext 报告的结构要求（用户需求、计划、总结），供续写时把握结构与内容方向
+	 * @param fullReport 已生成报告的累计内容（跨多轮续写共享）
 	 * @param depth 当前递归深度
 	 * @return 合并后的 LLM 响应流
 	 */
-	private Flux<ChatResponse> generateWithContinuation(String prompt, int depth) {
+	private Flux<ChatResponse> generateWithContinuation(String prompt, String continuationContext,
+			StringBuilder fullReport, int depth) {
 		if (depth >= 5) {
 			log.warn("Report continuation reached max depth (5), report may still be incomplete");
 			return Flux.empty();
 		}
 
-		StringBuilder accumulated = new StringBuilder();
 		ChatResponse[] lastResponse = new ChatResponse[1];
 
 		Flux<ChatResponse> currentCall = llmService.callUser(prompt)
 			.doOnNext(r -> {
 				lastResponse[0] = r;
-				accumulated.append(ChatResponseUtil.getText(r));
+				fullReport.append(ChatResponseUtil.getText(r));
 			});
 
 		return Flux.concat(
@@ -204,25 +210,66 @@ public class ReportGeneratorNode extends AabstractNodeAction {
 							&& lastResponse[0].getResult().getMetadata() != null
 							&& "LENGTH".equals(lastResponse[0].getResult().getMetadata().getFinishReason())) {
 						log.warn("Report truncated by token limit, initiating continuation (depth={})", depth + 1);
-						String continuationPrompt = buildContinuationPrompt(accumulated.toString(), depth + 1);
-						return generateWithContinuation(continuationPrompt, depth + 1);
+						// 最后两轮续写进入收尾模式，确保报告能完整结束
+						boolean finalRound = depth + 1 >= 4;
+						String continuationPrompt = buildContinuationPrompt(fullReport.toString(),
+								continuationContext, depth + 1, finalRound);
+						return generateWithContinuation(continuationPrompt, continuationContext, fullReport, depth + 1);
 					}
 					return Flux.empty();
 				}));
 	}
 
 	/**
-	 * 构建续写 prompt，携带最后一段已输出内容作为上下文。
+	 * 构建续写 prompt：携带报告结构要求与已生成内容的末尾部分，供大模型从断点之后继续写。
 	 *
-	 * @param lastSegment 当前轮已输出的内容
+	 * @param fullReport 已生成的报告完整内容
+	 * @param continuationContext 报告的结构要求
 	 * @param continuationCount 第几次续写
+	 * @param finalRound 是否为最后一次续写（需强制收尾）
 	 * @return 续写 prompt
 	 */
-	private String buildContinuationPrompt(String lastSegment, int continuationCount) {
-		String tail = (lastSegment != null && lastSegment.length() > 300)
-				? lastSegment.substring(lastSegment.length() - 300) : lastSegment;
-		return "报告内容因长度限制被截断（第" + continuationCount + "次续写），请直接从断点处继续生成，不要重复已经输出的内容。\n\n"
-				+ "已输出的最后内容（仅供参考，不要重复）：\n" + tail + "\n\n请继续：";
+	private String buildContinuationPrompt(String fullReport, String continuationContext, int continuationCount,
+			boolean finalRound) {
+		String tail = extractContinuationTail(fullReport, 2000);
+		String closingInstruction = finalRound
+				? "4. **这是最后一次续写机会**：请直接用简洁的结论与建议收尾，确保报告完整结束，不要再展开新的长章节；\n"
+				: "4. 若剩余内容不多，直接给出收尾（结论与建议）结束报告；\n";
+		return "你正在续写一份因为输出长度限制而被截断的分析报告（第" + continuationCount + "次续写）。\n\n"
+				+ "【已生成报告的末尾部分】\n" + tail + "\n\n"
+				+ "【报告整体要求】\n" + continuationContext + "\n\n"
+				+ "【要求】\n" + "1. 直接从断点之后继续输出报告正文的 Markdown 内容，保持原有结构、语气和内容风格；\n"
+				+ "2. 不要重复已输出的任何内容；\n"
+				+ "3. 严禁提问、严禁要求提供更多上下文、严禁解释你在做什么，只输出报告内容；\n"
+				+ closingInstruction;
+	}
+
+	/**
+	 * 提取报告末尾内容用于续写定位断点，尽量从最近的 markdown 小节标题或段落边界开始。
+	 *
+	 * @param fullReport 已生成的报告完整内容
+	 * @param maxLength 保留的最大字符数
+	 * @return 末尾内容片段
+	 */
+	private String extractContinuationTail(String fullReport, int maxLength) {
+		if (fullReport == null || fullReport.isEmpty()) {
+			return "";
+		}
+		if (fullReport.length() <= maxLength) {
+			return fullReport;
+		}
+		String tail = fullReport.substring(fullReport.length() - maxLength);
+		// 从最近的 markdown 标题（\n#）处开始，让模型看到当前小节标题
+		int headingIndex = tail.lastIndexOf("\n#");
+		if (headingIndex > 0) {
+			return tail.substring(headingIndex + 1);
+		}
+		// 否则从最后的空行分段处开始
+		int paragraphIndex = tail.lastIndexOf("\n\n");
+		if (paragraphIndex > 0) {
+			return tail.substring(paragraphIndex + 1);
+		}
+		return tail;
 	}
 
 	/**
@@ -240,17 +287,19 @@ public class ReportGeneratorNode extends AabstractNodeAction {
 		sb.append("## 执行计划概述\n");
 		sb.append("**思考过程**: ").append(plan.getThoughtProcess()).append("\n\n");
 
-		sb.append("## 详细执行步骤\n");
+		sb.append("## 分析过程（简要）\n");
 		List<ExecutionStep> executionPlan = plan.getExecutionPlan();
 		for (int i = 0; i < executionPlan.size(); i++) {
 			ExecutionStep step = executionPlan.get(i);
-			sb.append("### 步骤 ").append(i + 1).append(": 步骤编号 ").append(step.getStep()).append("\n");
-			sb.append("**工具**: ").append(step.getToolToUse()).append("\n");
-			if (step.getToolParameters() != null) {
-				sb.append("**参数描述**: ").append(step.getToolParameters().getInstruction()).append("\n");
+			String purpose = step.getToolParameters() != null ? step.getToolParameters().getInstruction() : "";
+			// 截断到 80 字符，保留步骤用途，避免大段重复指令撑大输入
+			if (StrUtil.isNotBlank(purpose) && purpose.length() > 80) {
+				purpose = purpose.substring(0, 80) + "...";
 			}
-			sb.append("\n");
+			sb.append("- 步骤").append(i + 1).append(" [").append(step.getToolToUse()).append("]: ").append(purpose)
+				.append("\n");
 		}
+		sb.append("\n");
 
 		return sb.toString();
 	}
@@ -286,13 +335,10 @@ public class ReportGeneratorNode extends AabstractNodeAction {
 				sb.append("### ").append(stepKey).append("\n");
 				sb.append("**步骤编号**: ").append(step.getStep()).append("\n");
 				sb.append("**使用工具**: ").append(step.getToolToUse()).append("\n");
-				if (step.getToolParameters() != null) {
-					sb.append("**参数描述**: ").append(step.getToolParameters().getInstruction()).append("\n");
-					if (step.getToolParameters().getSqlQuery() != null) {
-						sb.append("**执行SQL**: \n```sql\n")
-							.append(step.getToolParameters().getSqlQuery())
-							.append("\n```\n");
-					}
+				if (step.getToolParameters() != null && step.getToolParameters().getSqlQuery() != null) {
+					sb.append("**执行SQL**: \n```sql\n")
+						.append(step.getToolParameters().getSqlQuery())
+						.append("\n```\n");
 				}
 
 				if (stepResult != null && !stepResult.trim().isEmpty()) {

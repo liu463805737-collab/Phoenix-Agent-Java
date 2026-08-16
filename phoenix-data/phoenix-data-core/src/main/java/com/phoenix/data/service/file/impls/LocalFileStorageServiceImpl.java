@@ -131,8 +131,12 @@ public class LocalFileStorageServiceImpl implements FileStorageService {
 	@Override
 	public String getFileUrl(String filePath) {
 		checkPathSecurity(fileStorageProperties.getLocalBasePath().resolve(filePath));
-		// 返回相对路径，前端会自动基于当前域名访问
-		return fileStorageProperties.getUrlPrefix() + "/" + filePath;
+		String relativePath = fileStorageProperties.getUrlPrefix() + "/" + filePath;
+		String urlBase = fileStorageProperties.getUrlBase();
+		if (urlBase != null && !urlBase.isBlank()) {
+			return urlBase + relativePath;
+		}
+		return relativePath;
 	}
 
 	/**

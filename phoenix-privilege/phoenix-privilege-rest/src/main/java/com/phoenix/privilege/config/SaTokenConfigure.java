@@ -56,7 +56,7 @@ public class SaTokenConfigure implements WebFilter {
     @Order(Ordered.HIGHEST_PRECEDENCE + 1)
     public SaReactorFilter getSaReactorFilter() {
         return new SaReactorFilter()
-                .addInclude("/api/**")
+                .addInclude("/api/**", "/platform/**")
                 .addExclude("favicon.ico", "/api/privilege/auth/*", "/api/auth/*")
                 .setAuth(r -> StpUtil.checkLogin())
                 .setError(e -> {

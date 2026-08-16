@@ -136,7 +136,10 @@ async function handleConfirmAction(
             role: 'assistant',
             content,
             messageType: 'text',
-          }).catch(() => {});
+          }).catch((e: any) => {
+            console.error(e);
+            debugger;
+          });
         } catch {
           /* ignore */
         }
@@ -431,7 +434,7 @@ async function handleRegenerate(idx: number) {
               />
             </template>
             <ChatBubble
-                v-if="isActiveSessionSending"
+                v-if="isActiveSessionSending && !activeMessages.some((m: any) => m.streaming)"
                 role="assistant"
                 typing
             />
@@ -440,7 +443,12 @@ async function handleRegenerate(idx: number) {
       </div>
 
       <div v-if="hasAgent" class="chat-page__composer">
-        <ChatComposer :disabled="isActiveSessionSending || hasPendingConfirm" @submit="handleSend" />
+        <ChatComposer
+          :disabled="isActiveSessionSending || hasPendingConfirm"
+          :streaming="isActiveSessionSending || confirming"
+          @submit="handleSend"
+          @stop="chat.stopSending(activeSessionId!)"
+        />
       </div>
 
     </div>

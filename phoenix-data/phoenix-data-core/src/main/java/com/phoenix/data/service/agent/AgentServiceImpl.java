@@ -44,7 +44,10 @@ public class AgentServiceImpl extends ServiceImpl<AgentMapper, Agent> implements
 	@Override
 	@Transactional(readOnly = true)
 	public List<Agent> findAll() {
-		return list();
+		return QueryChain.of(getMapper())
+			.orderBy(Agent::getOrderNum, true)
+			.orderBy(Agent::getCreateTime, false)
+			.list();
 	}
 
 	/**
@@ -75,6 +78,7 @@ public class AgentServiceImpl extends ServiceImpl<AgentMapper, Agent> implements
 	public List<Agent> findByStatus(String status) {
 		return QueryChain.of(getMapper())
 			.eq(Agent::getStatus, status)
+			.orderBy(Agent::getOrderNum, true)
 			.orderBy(Agent::getCreateTime, false)
 			.list();
 	}

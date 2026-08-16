@@ -1,5 +1,8 @@
 package com.phoenix.data.controller;
 
+import cn.dev33.satoken.exception.NotLoginException;
+import cn.dev33.satoken.exception.NotPermissionException;
+import cn.dev33.satoken.exception.NotRoleException;
 import com.phoenix.data.exception.InternalServerException;
 import com.phoenix.data.exception.InvalidInputException;
 import com.phoenix.data.vo.ApiResponse;
@@ -40,6 +43,27 @@ public class GlobalExceptionHandler {
 	public ApiResponse<Object> handleInternalServerException(InternalServerException e) {
 		log.error("Internal server error: {}", e.getMessage(), e);
 		return ApiResponse.error(e.getMessage());
+	}
+
+	@ExceptionHandler(NotLoginException.class)
+	@ResponseStatus(HttpStatus.UNAUTHORIZED)
+	public ApiResponse<Object> handleNotLoginException(NotLoginException e) {
+		log.warn("未授权访问: {}", e.getMessage());
+		return ApiResponse.error("未授权，请先登录");
+	}
+
+	@ExceptionHandler(NotPermissionException.class)
+	@ResponseStatus(HttpStatus.FORBIDDEN)
+	public ApiResponse<Object> handleNotPermissionException(NotPermissionException e) {
+		log.warn("权限不足: {}", e.getMessage());
+		return ApiResponse.error("权限不足");
+	}
+
+	@ExceptionHandler(NotRoleException.class)
+	@ResponseStatus(HttpStatus.FORBIDDEN)
+	public ApiResponse<Object> handleNotRoleException(NotRoleException e) {
+		log.warn("角色不匹配: {}", e.getMessage());
+		return ApiResponse.error("角色不匹配");
 	}
 
 	/**

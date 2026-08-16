@@ -1228,15 +1228,9 @@ onMounted(async () => {
     >
       <ChatSessionSidebar
         :agent="agent"
-        :handleSetCurrentSession="
-          async (session: ChatSession | null) => {
-            currentSession = session;
-            await selectSession(session);
-          }
-        "
-        :handleGetCurrentSession="() => currentSession"
-        :handleSelectSession="selectSession"
-        :handleDeleteSessionState="deleteSessionState"
+        :current-session="currentSession"
+        @select-session="selectSession"
+        @delete-session-state="deleteSessionState"
       />
 
       <el-main
@@ -1421,7 +1415,7 @@ onMounted(async () => {
         <HumanFeedback
           v-if="showHumanFeedback"
           :request="lastRequest!"
-          :handleFeedback="handleHumanFeedback"
+          @feedback="handleHumanFeedback"
         />
 
         <div v-if="showHarnessConfirm && pendingConfirmButtons.length > 0" class="harness-confirm-area">
