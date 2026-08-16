@@ -18,6 +18,7 @@ import lombok.NoArgsConstructor;
 public class RagCategory extends BaseModel {
     @Id(keyType = KeyType.Generator, value = KeyGenerators.snowFlakeId)
     private String id;
+    private String pid;
     private String code;
     private String name;
     private String description;
