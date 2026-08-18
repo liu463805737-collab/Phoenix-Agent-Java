@@ -1,11 +1,11 @@
 package com.phoenix.data.entity;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.phoenix.data.enums.EmbeddingStatus;
 import com.phoenix.data.enums.KnowledgeType;
 import com.mybatisflex.annotation.Id;
 import com.mybatisflex.annotation.KeyType;
 import com.mybatisflex.annotation.Table;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
