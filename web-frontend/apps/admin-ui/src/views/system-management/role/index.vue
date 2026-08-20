@@ -661,5 +661,6 @@ onMounted(() => {
   height: auto;
   padding: 0.35rem 0.5rem;
   padding-left: 8px !important;
+  overflow: visible;
 }
 </style>
