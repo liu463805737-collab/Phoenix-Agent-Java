@@ -27,6 +27,8 @@ const [Modal, modalApi] = useVbenModal({
     if (isOpen) {
       const data = modalApi.getData<any>();
       if (data) {
+        currentRole.value = data;
+        formData.value = data;
         try {
           modalApi.lock();
           const [treeRes, aclRes] = await Promise.all([
@@ -41,7 +43,6 @@ const [Modal, modalApi] = useVbenModal({
           for (const item of aclList) {
             if (item.moduleId) map.set(item.moduleId, item);
           }
-          debugger;
           existingAclMap.value = map;
         } catch {
           aclTreeData.value = [];
@@ -128,13 +129,13 @@ const treeProps = {
 function handlePvalueChange(data: any) {
   updateNodeState(data);
   const role = currentRole.value;
-  if (!role?.id || !role?.sn) return;
+  if (!role?.id) return;
   const aclState = Number(calcAclState(data.pvalues));
   saveModuleAclApi({
     releaseId: role.id,
-    releaseSn: role.sn,
+    releaseSn: role.sn || '',
     moduleId: data.id,
-    moduleSn: data.sn,
+    moduleSn: data.sn || '',
     aclState,
     status: aclState > 0 ? 'check' : 'uncheck',
   });
@@ -142,7 +143,7 @@ function handlePvalueChange(data: any) {
 </script>
 
 <template>
-  <Modal :title="getTitle" class="w-200 ">
+  <Modal :title="getTitle" class="w-250 ">
     <div v-loading="aclLoading" class="acl-body max-h-[600px] overflow-y-auto">
       <div v-if="aclTreeData.length === 0 && !aclLoading" class="py-8 text-center text-gray-400">
         暂无菜单数据
@@ -191,15 +192,15 @@ function handlePvalueChange(data: any) {
                     @change="(val: string | number | boolean) => {
                       data.pvalues.forEach((pv) => { pv.enabled = !!val; });
                       updateNodeState(data);
-                      const role = currentRole.value;
-                      if (!role?.id || !role?.sn) return;
+                      const role = currentRole;
+                      if (!role?.id) return;
                       const aclState = Number(calcAclState(data.pvalues));
                       saveModuleAclApi({
                         releaseId: role.id,
-                        releaseSn: role.sn,
+                        releaseSn: role.sn || '',
                         systemSn: '',
                         moduleId: data.id,
-                        moduleSn: data.sn,
+                        moduleSn: data.sn || '',
                         aclState,
                         status: aclState > 0 ? 'check' : 'uncheck',
                       });
@@ -236,5 +237,6 @@ function handlePvalueChange(data: any) {
 :deep(.el-tree-node__content) {
   height: auto;
   min-height: 32px;
+  overflow: visible;
 }
 </style>
