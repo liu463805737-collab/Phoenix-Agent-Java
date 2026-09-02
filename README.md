@@ -149,7 +149,78 @@ Phoenix 前端基于 **Vben 5**（Vue 3 + TypeScript + Vite）构建，实现前
 | **后台（智能体管理）** | 智能体创建/配置、数据源管理、模型配置、知识库管理、Prompt 优化 |
 | **系统管理** | 用户管理、角色权限、API Key、租户配置、操作日志 |
 
-前端源码位于独立仓库，与本后端通过 REST + SSE 接口通信。
+前端源码位于web-frontend目录下，分为三端（管理后台，PC前台，移动端前台），与本后端通过 REST + SSE 接口通信。
+- 管理后台/PC前台：web-frontend/apps/admin-ui  
+- 移动端前台：web-frontend/apps/mobile-ui
+- web-frontend/apps/pc-ui - 用于参考，暂未使用
+### 环境要求
+
+- Node.js: `^22.18.0` 或 `^24.0.0`
+- pnpm: `>=11.0.0`
+
+### 安装依赖
+
+```bash
+# 进入项目目录
+cd web-frontend
+
+# 安装所有依赖
+pnpm install
+```
+
+### 启动开发服务器
+
+项目包含两个独立应用，可单独启动：
+
+#### Admin 管理后台 与 PC聊天界面
+```bash
+cd apps/admin-ui
+pnpm dev
+# 默认端口: 5777
+# 访问地址: http://localhost:5777
+```
+
+#### Mobile 移动端聊天界面
+```bash
+# 方式1: 使用根目录脚本（选择 mobile-ui）
+pnpm dev
+
+# 方式2: 直接进入应用目录启动
+cd apps/mobile-ui
+pnpm dev
+# 默认端口: 5999
+# 访问地址: http://localhost:5999
+```
+
+### 构建生产版本
+
+```bash
+# Admin 管理后台与PC聊天
+cd apps/admin-ui
+pnpm build
+
+# Mobile 移动端聊天界面
+cd apps/mobile-ui
+pnpm run build
+```
+
+### 代理配置
+
+各应用已配置 API 代理，开发环境会自动将请求代理到后端服务 `http://localhost:8066`。
+
+### 项目结构
+
+```
+web-frontend/
+├── apps/               # 应用目录
+│   ├── admin-ui/       # Admin 管理后台 / PC 聊天界面
+│   ├── pc-ui/          # 静态页面，用于参考，暂未使用
+│   └── mobile-ui/      # Mobile 移动端
+├── packages/           # 共享包
+├── internal/           # 内部工具配置
+└── package.json        # 根配置
+```
+
 
 ## 🚀 快速开始
 
