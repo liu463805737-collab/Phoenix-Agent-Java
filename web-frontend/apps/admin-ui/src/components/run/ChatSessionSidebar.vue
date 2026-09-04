@@ -532,7 +532,7 @@ onUnmounted(() => {
 }
 
 .session-list {
-  max-height: calc(100vh - 200px);
+  max-height: calc(100vh - 250px);
   padding: 12px;
   overflow-y: auto;
 }
