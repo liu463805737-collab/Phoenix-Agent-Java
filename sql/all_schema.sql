@@ -3650,6 +3650,9 @@ INSERT INTO "public"."tbl_privilege_module" ("id", "name", "url", "sn", "state",
 INSERT INTO "public"."tbl_privilege_module" ("id", "name", "url", "sn", "state", "component", "system_id", "status", "image", "order_no", "is_show", "create_time", "create_by", "update_time", "update_by", "del_flag", "pid", "category_id", "type") VALUES ('432372884167696384', '测试', 'aa', 'aa', '31', 'aa', NULL, NULL, 'aa', 0, 0, '2026-07-08 15:56:28.791', '432061200055025664', NULL, NULL, 1, '638d2319c2d54f3ea36b2a519c9a1d0f', NULL, '0');
 INSERT INTO "public"."tbl_privilege_module" ("id", "name", "url", "sn", "state", "component", "system_id", "status", "image", "order_no", "is_show", "create_time", "create_by", "update_time", "update_by", "del_flag", "pid", "category_id", "type") VALUES ('37def68697b54109a57c18508fc4358c', '三方平台', '/basic/platform-info', 'PlatformInfo', '31', '#/views/platform/platform-info/index.vue', 110, 1, 'lucide:globe', 1, 1, '2026-07-16 00:00:00', 'admin', NULL, NULL, 0, '71b572d54b7042359e73e64a6fc40dfc', 111, '1');
 INSERT INTO "public"."tbl_privilege_module" ("id", "name", "url", "sn", "state", "component", "system_id", "status", "image", "order_no", "is_show", "create_time", "create_by", "update_time", "update_by", "del_flag", "pid", "category_id", "type") VALUES ('71b572d54b7042359e73e64a6fc40dfc', '基础管理', '/basic', 'BasicManagement', '31', NULL, 110, 1, 'lucide:settings', 400, 1, '2026-07-16 14:34:51.878', 'admin', '2026-07-16 14:34:51.986', '428011841386577920', 0, NULL, 111, '0');
+INSERT INTO "public"."tbl_privilege_module" ("id", "name", "url", "sn", "state", "component", "system_id", "status", "image", "order_no", "is_show", "create_time", "create_by", "update_time", "update_by", "del_flag", "pid", "category_id", "type") VALUES('005478eb84974dd1b970f5939ec65d56', '知识库管理', '/knowledge-base', 'KnowledgeBaseManagement', '31', NULL, 110, 1, 'lucide:book-open', 500, 1, now(), 'admin', NULL, NULL, 0, NULL, 111, '0');
+INSERT INTO "public"."tbl_privilege_module" ("id", "name", "url", "sn", "state", "component", "system_id", "status", "image", "order_no", "is_show", "create_time", "create_by", "update_time", "update_by", "del_flag", "pid", "category_id", "type") VALUES('0197aee504654318ad7b5a869502e516', '知识库分类', '/knowledge-base/category', 'RagCategoryManagement', '31', '#/views/rag/category/index.vue', 110, 1, 'lucide:folder-tree', 1, 1, now(), 'admin', NULL, NULL, 0, '005478eb84974dd1b970f5939ec65d56', 111, '1');
+INSERT INTO "public"."tbl_privilege_module" ("id", "name", "url", "sn", "state", "component", "system_id", "status", "image", "order_no", "is_show", "create_time", "create_by", "update_time", "update_by", "del_flag", "pid", "category_id", "type") VALUES('023707e41fee4f2db3f6a627dd775017', '分类详情', '/knowledge-base/file-info', 'RagFileInfoManagement', '31', '#/views/rag/file-info/index.vue', 110, 1, 'lucide:file-text', 2, 1, now(), 'admin', NULL, NULL, 0, '005478eb84974dd1b970f5939ec65d56', 111, '1');
 COMMIT;
 
 -- ----------------------------
@@ -41331,3 +41334,87 @@ ALTER TABLE "public"."tbl_tmp_products" ADD CONSTRAINT "tbl_data_products_pkey" 
 -- Primary Key structure for table tbl_tmp_users
 -- ----------------------------
 ALTER TABLE "public"."tbl_tmp_users" ADD CONSTRAINT "tbl_data_users_pkey" PRIMARY KEY ("id");
+
+-- ----------------------------
+-- Table structure for tbl_rag_category
+-- ----------------------------
+DROP TABLE IF EXISTS "public"."tbl_rag_category";
+CREATE TABLE "public"."tbl_rag_category" (
+    "id"          varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
+    "pid"         varchar(64) COLLATE "pg_catalog"."default",
+    "code"        varchar(128) COLLATE "pg_catalog"."default",
+    "name"        varchar(256) COLLATE "pg_catalog"."default",
+    "description" varchar(512) COLLATE "pg_catalog"."default",
+    "create_time" timestamp(6) DEFAULT now(),
+    "creator"     varchar(64) COLLATE "pg_catalog"."default",
+    "update_time" timestamp(6) DEFAULT now(),
+    "updator"     varchar(64) COLLATE "pg_catalog"."default",
+    "del_flag"    int2 DEFAULT 0
+)
+;
+ALTER TABLE "public"."tbl_rag_category" OWNER TO "phoenix";
+COMMENT ON COLUMN "public"."tbl_rag_category"."id" IS '主键ID，雪花算法生成';
+COMMENT ON COLUMN "public"."tbl_rag_category"."pid" IS '父级分类ID，用于构建树形结构';
+COMMENT ON COLUMN "public"."tbl_rag_category"."code" IS '分类编码，唯一标识';
+COMMENT ON COLUMN "public"."tbl_rag_category"."name" IS '分类名称';
+COMMENT ON COLUMN "public"."tbl_rag_category"."description" IS '分类描述';
+COMMENT ON COLUMN "public"."tbl_rag_category"."create_time" IS '创建时间';
+COMMENT ON COLUMN "public"."tbl_rag_category"."creator" IS '创建人';
+COMMENT ON COLUMN "public"."tbl_rag_category"."update_time" IS '更新时间';
+COMMENT ON COLUMN "public"."tbl_rag_category"."updator" IS '更新人';
+COMMENT ON COLUMN "public"."tbl_rag_category"."del_flag" IS '删除标识：0-未删除，1-已删除';
+COMMENT ON TABLE "public"."tbl_rag_category" IS '知识库分类表';
+
+-- ----------------------------
+-- Primary Key structure for table tbl_rag_category
+-- ----------------------------
+ALTER TABLE "public"."tbl_rag_category" ADD CONSTRAINT "tbl_rag_category_pkey" PRIMARY KEY ("id");
+
+-- ----------------------------
+-- Table structure for tbl_rag_file_info
+-- ----------------------------
+DROP TABLE IF EXISTS "public"."tbl_rag_file_info";
+CREATE TABLE "public"."tbl_rag_file_info" (
+    "id"                  varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
+    "file_type"            varchar(32) COLLATE "pg_catalog"."default",
+    "category_id"           varchar(64) COLLATE "pg_catalog"."default",
+    "name"                 varchar(256) COLLATE "pg_catalog"."default",
+    "title"                varchar(512) COLLATE "pg_catalog"."default",
+    "content"             text COLLATE "pg_catalog"."default",
+    "description"         varchar(512) COLLATE "pg_catalog"."default",
+    "path"                varchar(1024) COLLATE "pg_catalog"."default",
+    "pdf_type"            varchar(32) COLLATE "pg_catalog"."default",
+    "page_top_margin"     int4,
+    "pages_per_document"  int4,
+    "text_splitter"       bool DEFAULT false,
+    "create_time"        timestamp(6) DEFAULT now(),
+    "creator"            varchar(64) COLLATE "pg_catalog"."default",
+    "update_time"        timestamp(6) DEFAULT now(),
+    "updator"            varchar(64) COLLATE "pg_catalog"."default",
+    "del_flag"           int2 DEFAULT 0
+)
+;
+ALTER TABLE "public"."tbl_rag_file_info" OWNER TO "phoenix";
+COMMENT ON COLUMN "public"."tbl_rag_file_info"."id" IS '主键ID，雪花算法生成';
+COMMENT ON COLUMN "public"."tbl_rag_file_info"."file_type" IS '文件类型：pdf/word/md/text';
+COMMENT ON COLUMN "public"."tbl_rag_file_info"."category_id" IS '关联分类ID';
+COMMENT ON COLUMN "public"."tbl_rag_file_info"."name" IS '文件名称';
+COMMENT ON COLUMN "public"."tbl_rag_file_info"."title" IS '文件标题';
+COMMENT ON COLUMN "public"."tbl_rag_file_info"."content" IS '文件内容，全文存储';
+COMMENT ON COLUMN "public"."tbl_rag_file_info"."description" IS '文件描述';
+COMMENT ON COLUMN "public"."tbl_rag_file_info"."path" IS '文件存储路径';
+COMMENT ON COLUMN "public"."tbl_rag_file_info"."pdf_type" IS 'PDF分割类型：1-按页生成document，2-按段落生成document';
+COMMENT ON COLUMN "public"."tbl_rag_file_info"."page_top_margin" IS '页面上边距';
+COMMENT ON COLUMN "public"."tbl_rag_file_info"."pages_per_document" IS '每个document包含的页数';
+COMMENT ON COLUMN "public"."tbl_rag_file_info"."text_splitter" IS '是否启用文本分割器：false-否，true-是';
+COMMENT ON COLUMN "public"."tbl_rag_file_info"."create_time" IS '创建时间';
+COMMENT ON COLUMN "public"."tbl_rag_file_info"."creator" IS '创建人';
+COMMENT ON COLUMN "public"."tbl_rag_file_info"."update_time" IS '更新时间';
+COMMENT ON COLUMN "public"."tbl_rag_file_info"."updator" IS '更新人';
+COMMENT ON COLUMN "public"."tbl_rag_file_info"."del_flag" IS '删除标识：0-未删除，1-已删除';
+COMMENT ON TABLE "public"."tbl_rag_file_info" IS '知识库文件信息表';
+
+-- ----------------------------
+-- Primary Key structure for table tbl_rag_file_info
+-- ----------------------------
+ALTER TABLE "public"."tbl_rag_file_info" ADD CONSTRAINT "tbl_rag_file_info_pkey" PRIMARY KEY ("id");

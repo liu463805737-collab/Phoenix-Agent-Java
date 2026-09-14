@@ -38,5 +38,9 @@
             <groupId>com.phoenix</groupId>
             <artifactId>phoenix-data-rest</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.phoenix</groupId>
+            <artifactId>phoenix-rag-rest</artifactId>
+        </dependency>
     </dependencies>
 </project>
